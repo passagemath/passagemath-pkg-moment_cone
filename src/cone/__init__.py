@@ -1,13 +1,9 @@
-from sage.all import SymmetricFunctions, QQ, Integer as SageInteger
-sym_f = SymmetricFunctions(QQ).s()
+#from sage.all import SymmetricFunctions, QQ, Integer as SageInteger
+#sym_f = SymmetricFunctions(QQ).s()
 #import sage.libs.lrcalc.lrcalc as lr
-import itertools
-from dataclasses import dataclass
-
 
 from .utils import *
 from .typing import *
-
 from .matrix import PartialMatrix
 from .partition import Partition
 
