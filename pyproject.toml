@@ -1,0 +1,31 @@
+[build-system]
+requires = [
+    "setuptools>=64",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cone"
+version = "0.0.1"
+description = "Kronecker, cone and co."
+readme = "README.md"
+authors = [
+    {name = "Michael Bulois", email = "michael.bulois@univ-st-etienne.fr"},
+    {name = "Roland Denis", email = "denis@math.univ-lyon1.fr"},
+    {name = "Nicolas Ressayre", email = "ressayre@math.univ-lyon1.fr"},
+]
+maintainers = []
+classifiers = [
+    Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+keywords = []
+dependencies = [
+   "sage >= 10",
+]
+requires-python = ">=3.10"
+
