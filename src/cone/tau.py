@@ -40,10 +40,20 @@ class Tau(Generic[Integer]):
     def __repr__(self) -> str:
         return f"{self.ccomponent} | " + " | ".join(" ".join(map(str, c)) for c in self.components)
     
-    def dotV(self, weight: WeightV) -> Integer:
+    def dotV(self, weight: WeightV, ccomponent: Optional[Integer] = None) -> Integer:
         """ Scalar product of tau with a weight of V """
-        assert self.ccomponent is not None
-        return self.ccomponent, Integer + cast(Integer, sum(c[wi] for c, wi in zip(self.components, weight))) # type: ignore
+        # TODO : rename to dot_weight
+        assert not (self.ccomponent is None and ccomponent is None)
+        if ccomponent is None:
+            ccomponent = self.ccomponent
+        return ccomponent + cast(Integer, sum(c[wi] for c, wi in zip(self.components, weight))) # type: ignore
+    
+    def dotU(self, weight: WeightU) -> Integer:
+        """ Scalar product of tau with a weight of U """
+        # TODO : rename to dot_root
+        k, i, j = weight
+        c = self.components[k]
+        return c[i] - c[j] # type: ignore
     
     @property
     def is_regular(self) -> bool:
