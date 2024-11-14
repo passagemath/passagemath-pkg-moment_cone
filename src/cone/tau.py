@@ -2,13 +2,13 @@ from .typing import *
 from .matrix import PartialMatrix
 from .weight import *
 
-class Tau(Generic[Integer]):
+class Tau:
     """ Tuple of partition along with a coefficient """
     __slots__ = 'ccomponent', '_components'
-    ccomponent: Optional[Integer]
-    _components: PartialMatrix[Integer]
+    ccomponent: Optional[int]
+    _components: PartialMatrix[int]
 
-    def __init__(self, components: Sequence[Sequence[Integer]] | PartialMatrix[Integer], ccomponent: Optional[Integer] = None):
+    def __init__(self, components: Sequence[Sequence[int]] | PartialMatrix[int], ccomponent: Optional[int] = None):
         """ Tau initialization from a sequence of sub-group or directly from a partial matrix """
         self.ccomponent = ccomponent
         if isinstance(components, PartialMatrix):
@@ -28,39 +28,39 @@ class Tau(Generic[Integer]):
         return self._components.sizes
     
     @property
-    def components(self) -> Sequence[Sequence[Integer]]:
+    def components(self) -> Sequence[Sequence[int]]:
         """ Sequence of the components of tau """
         return self._components.columns
 
     @property
-    def reduced(self) -> "ReducedTau[Integer]":
+    def reduced(self) -> "ReducedTau":
         """ Returns reduced form of tau """
         return ReducedTau(self)
     
     def __repr__(self) -> str:
         return f"{self.ccomponent} | " + " | ".join(" ".join(map(str, c)) for c in self.components)
     
-    def dotV(self, weight: WeightV, ccomponent: Optional[Integer] = None) -> Integer:
+    def dotV(self, weight: WeightV, ccomponent: Optional[int] = None) -> int:
         """ Scalar product of tau with a weight of V """
         # TODO : rename to dot_weight
         assert not (self.ccomponent is None and ccomponent is None)
         if ccomponent is None:
             ccomponent = self.ccomponent
-        return ccomponent + cast(Integer, sum(c[wi] for c, wi in zip(self.components, weight))) # type: ignore
+        return cast(int, ccomponent) + sum(c[wi] for c, wi in zip(self.components, weight))
     
-    def dotU(self, weight: WeightU) -> Integer:
+    def dotU(self, weight: WeightU) -> int:
         """ Scalar product of tau with a weight of U """
         # TODO : rename to dot_root
         k, i, j = weight
         c = self.components[k]
-        return c[i] - c[j] # type: ignore
+        return c[i] - c[j]
     
     @property
     def is_regular(self) -> bool:
         """ Check is tau is regular assuming it is dominant """
         return not any(any(a == b for a, b in itertools.pairwise(c)) for c in self.components)
     
-    def positive_weights(self, weights: Iterable[WeightV]) -> dict[Integer, list[WeightV]]:
+    def positive_weights(self, weights: Iterable[WeightV]) -> dict[int, list[WeightV]]:
         """ Inverse image of each non-zero p = <w, tau> for each w in weights """
         result = {}
         for chi in weights:
@@ -70,22 +70,22 @@ class Tau(Generic[Integer]):
         return result
 
 
-class ReducedTau(Generic[Integer]):
+class ReducedTau:
     """ Tau in a reduction form """
     __slots__ = 'ccomponent', 'values', 'mult'
-    ccomponent: Optional[Integer]
-    values: PartialMatrix[Integer]
-    mult: PartialMatrix[Integer]
+    ccomponent: Optional[int]
+    values: PartialMatrix[int]
+    mult: PartialMatrix[int]
 
-    def __init__(self, tau: Tau[Integer]):
+    def __init__(self, tau: Tau):
         from .utils import compress
-        values: PartialMatrix[Integer] = PartialMatrix(max(tau.d), len(tau))
-        mult: PartialMatrix[Integer] = PartialMatrix(max(tau.d), len(tau))
+        values: PartialMatrix[int] = PartialMatrix(max(tau.d), len(tau))
+        mult: PartialMatrix[int] = PartialMatrix(max(tau.d), len(tau))
 
         for j, component in enumerate(tau.components):
             for v, m in compress(component):
                 values.append(j, v)
-                mult.append(j, cast(Integer, m))
+                mult.append(j, cast(int, m))
 
         self.ccomponent = tau.ccomponent
         self.values = values
@@ -98,7 +98,7 @@ class ReducedTau(Generic[Integer]):
     def small_d(self) -> tuple[int, ...]:
         return self.values.sizes
     
-    def __getitem__(self, idx: tuple[int, int]) -> tuple[Integer, Integer]:
+    def __getitem__(self, idx: tuple[int, int]) -> tuple[int, int]:
         return self.values[idx], self.mult[idx]
     
     def __repr__(self) -> str:
@@ -107,9 +107,9 @@ class ReducedTau(Generic[Integer]):
             for cv, cm in zip(self.values.columns, self.mult.columns)
         )
     
-    def Pzero(self, n: Integer) -> Iterable[WeightV]:
+    def Pzero(self, n: int) -> Iterable[WeightV]:
         """ Search for weights w of V so that n + sum_k tau_red[w_k, k] = 0 """
         for weight in all_weights_V(self.small_d):
-            s = cast(Integer, sum(self.values[i, j] for j, i in enumerate(weight)))
+            s = cast(int, sum(self.values[i, j] for j, i in enumerate(weight)))
             if s + n == 0:
                 yield weight

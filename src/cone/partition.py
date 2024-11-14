@@ -1,11 +1,11 @@
 from .typing import *
 
-class Partition(Sequence[Integer]):
-    """ Decreasing sequence of positive integer """
+class Partition(Sequence[int]):
+    """ Decreasing sequence of positive int """
     __slots__ = "_data",
-    _data: tuple[Integer, ...]
+    _data: tuple[int, ...]
 
-    def __init__(self, p: Sequence[Integer]):
+    def __init__(self, p: Sequence[int]):
         from .utils import is_decreasing, trim_zeros
         assert is_decreasing(p) and p[-1] >= 0, "Invalid partition"
 
@@ -15,10 +15,10 @@ class Partition(Sequence[Integer]):
     def __len__(self) -> int:
         return len(self._data)
     
-    def __getitem__(self, idx: int) -> Integer:
-        return self._data[idx] if idx < len(self) else cast(Integer, 0)
+    def __getitem__(self, idx: int) -> int:
+        return self._data[idx] if idx < len(self) else cast(int, 0)
     
-    def __iter__(self) -> Iterator[Integer]:
+    def __iter__(self) -> Iterator[int]:
         return iter(self._data)
     
     def __repr__(self) -> str:

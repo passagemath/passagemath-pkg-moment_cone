@@ -9,12 +9,12 @@ from .partition import Partition
 
     
 
-def fct_Weights_of_Nu(nu: PartialMatrix[Partition[Integer]]) -> PartialMatrix[Integer]:
+def fct_Weights_of_Nu(nu: PartialMatrix[Partition]) -> PartialMatrix[int]:
     """ Constructing size_nu from nu """
-    size_nu = PartialMatrix[Integer](*nu.shape)
+    size_nu = PartialMatrix[int](*nu.shape)
 
     for j, col in enumerate(nu.columns):
-        size_nu.extend(j, (cast(Integer, sum(p)) for p in col))
+        size_nu.extend(j, (cast(int, sum(p)) for p in col))
 
     return size_nu
 
