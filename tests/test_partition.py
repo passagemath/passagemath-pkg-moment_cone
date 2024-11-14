@@ -11,6 +11,7 @@ class TestPartition(unittest.TestCase):
         self.assertEqual(p[3], 2)
         self.assertEqual(p[10], 0)
         self.assertEqual(list(p), [4, 4, 3, 2, 1])
+        self.assertEqual(p.pad(6), (4, 4, 3, 2, 1, 0))
 
     def test_non_decreasing(self):
         with self.assertRaises(Exception):
@@ -19,3 +20,12 @@ class TestPartition(unittest.TestCase):
     def test_negative(self):
         with self.assertRaises(Exception):
             p = Partition([4, 4, 3, 2, -1])
+
+    def test_all_of_integer(self):
+        # TODO
+        pass
+
+    def test_all_of_height(self):
+        # TODO
+        pass
+

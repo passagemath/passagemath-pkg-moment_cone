@@ -24,4 +24,28 @@ class Partition(Sequence[int]):
     def __repr__(self) -> str:
         return f"Partition({self._data})"
     
+    def pad(self, length: int) -> tuple[int, ...]:
+        """ Returns a padded version of this partition """
+        assert length >= len(self._data)
+        return self._data + (0,) * (length - len(self._data))
+
+    @staticmethod
+    def all_for_integer(n: int) -> Iterable["Partition"]:
+        """
+        Generates all partitions of an integer n >= 0.
+
+        Could be optimized but it is clearly enough for the n we will consider.
+        """
+        assert n > 0
+        for head in range(n, 0, -1):
+            for tail in Partition.all_for_integer(n - head):
+                if len(tail) == 0 or head >= tail[0]:
+                    yield Partition((head,) + tail._data)
+
+    @staticmethod
+    def all_of_height(height: int, alpha: int) -> Iterable["Partition"]:
+        """
+        Generates all partitions of given height and with given maximum value
+        """
+        raise NotImplemented
     
