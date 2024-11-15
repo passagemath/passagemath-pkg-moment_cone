@@ -6,6 +6,13 @@ from .root import Root
 import itertools
 from functools import cached_property
 
+"""
+TODO:
+- test file
+- same method for both scalar product using @singledispatch?
+- property or method for Pzero?
+"""
+
 class Tau:
     """ Tuple of partition along with a coefficient """
     __slots__ = 'ccomponent', '_components'
@@ -44,6 +51,7 @@ class Tau:
     def __repr__(self) -> str:
         return f"{self.ccomponent} | " + " | ".join(" ".join(map(str, c)) for c in self.components)
     
+    # TODO: or same dot method with @singledispatch ?
     def dot_weight(self, weight: Weight, ccomponent: Optional[int] = None) -> int:
         """ Scalar product of tau with a weight of V """
         assert not (self.ccomponent is None and ccomponent is None)
@@ -58,8 +66,18 @@ class Tau:
     
     @cached_property
     def is_regular(self) -> bool:
-        """ Check is tau is regular assuming it is dominant """
+        """ Check if tau is regular assuming it is dominant """
         return not any(any(a == b for a, b in itertools.pairwise(c)) for c in self.components)
+    
+    @cached_property
+    def is_dominant(self) -> bool:
+        """ Check if tau is dominant """
+        return all(all(a >= b for a, b in itertools.pairwise(c)) for c in self.components)
+    
+    @cached_property
+    def is_normalized(self) -> bool:
+        """ Check if the sum of coefficients in each block is zero """
+        return all(sum(c) == 0 for c in self.components)
     
     def positive_weights(self, weights: Iterable[Weight]) -> dict[int, list[Weight]]:
         """ Inverse image of each non-zero p = <w, tau> for each w in weights """
@@ -108,10 +126,10 @@ class ReducedTau:
             for cv, cm in zip(self.values.columns, self.mult.columns)
         )
     
-    @cached_property
+    @property # FIXME: returns an generator and not a sequence. Is it adapted to a property (or a cached_property?)
     def Pzero(self) -> Iterable[Weight]:
         """ Search for weights w of V so that C_component + sum_k tau_red[w_k, k] = 0 """
-        as_tau = Tau(self.values, self.ccomponent)
+        as_tau = Tau(self.values, self.ccomponent) # We use the scalar product of Tau
         for weight in Weight.all(self.small_d):
             if as_tau.dot_weight(weight) == 0:
                 yield weight
