@@ -18,13 +18,13 @@ class Weight(Sequence[int]):
         self.index = index
 
     @staticmethod
-    def all(d: Iterable[int]) -> Iterable["Weight"]:
+    def all(d: Dimension) -> Iterable["Weight"]:
         """ Returns all possible weights for a given sequence of dimensions, in the lexicographical order """
         for idx, w in enumerate(itertools.product(*(range(di) for di in d))):
             yield Weight(w, idx)
 
     @staticmethod
-    def from_index(d: Sequence[int], index: int) -> "Weight":
+    def from_index(d: Dimension, index: int) -> "Weight":
         """ Generate the weight of given index in the lexicographical order """
         weights = []
         tmp_index = index
@@ -34,7 +34,7 @@ class Weight(Sequence[int]):
             tmp_index -= weights[-1] * si
         return Weight(weights, index)
 
-    def index_in(self, d: Sequence[int]) -> int:
+    def index_in(self, d: Dimension) -> int:
         """ Returns index of this weight in the lexicographical order for given dimensions (see `all` method)"""
         stride = itertools.accumulate(reversed(d[1:]), operator.mul, initial=1)
         return sum(v * s for v, s in zip(reversed(self._weights), stride))

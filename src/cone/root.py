@@ -15,7 +15,7 @@ class Root:
 
 
 if False: # TODO
-    def all_weights_U(d: Iterable[int]) -> Iterable[WeightU]:
+    def all_weights_U(d: Dimension) -> Iterable[WeightU]:
         """ Returns all possible weights of U for a given sequence of length """
         # TODO: verify that the actual definition of this weight are so that i < j
         for k, l in enumerate(d):

@@ -34,7 +34,7 @@ class Tau:
         return self._components.shape[1]
 
     @cached_property
-    def d(self) -> tuple[int, ...]:
+    def d(self) -> Dimension:
         """ Length of each component """
         return self._components.sizes
     
@@ -114,7 +114,7 @@ class ReducedTau:
         return self.values.shape[1]
     
     @cached_property
-    def small_d(self) -> tuple[int, ...]:
+    def small_d(self) -> Dimension:
         return self.values.sizes
     
     def __getitem__(self, idx: tuple[int, int]) -> tuple[int, int]:
