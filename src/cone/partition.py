@@ -32,7 +32,7 @@ class Partition(Sequence[int]):
     
     def pad(self, length: int) -> tuple[int, ...]:
         """ Returns a padded version of this partition """
-        assert length >= len(self._data)
+        assert length >= len(self._data), "Padding length must be greater that Partition length"
         return self._data + (0,) * (length - len(self._data))
 
     @staticmethod
@@ -54,9 +54,10 @@ class Partition(Sequence[int]):
     @staticmethod
     def all_of_height(height: int, lambda_max: int) -> Iterable["Partition"]:
         """
-        Generates all partitions of given height and with given maximum value
+        Generates all partitions of given height and with given maximum value (included).
         """
-        for w in itertools.combinations_with_replacement(reversed(range(lambda_max)), height):
+        # Note that combinations_with_replacement keeps order of input sequence
+        for w in itertools.combinations_with_replacement(reversed(range(lambda_max + 1)), height):
             yield Partition(w, check=False)
 
     
