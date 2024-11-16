@@ -1,0 +1,39 @@
+import unittest
+
+from cone.utils import *
+
+class TestUtils(unittest.TestCase):
+
+    def test_monotonicity(self):
+        a = (1, 2, 3, 3, 4)
+        b = (4, 4, 3, 1, 1, 0)
+        c = (1, 2, 3, 2, 4)
+        d = (1, 1, 1, 1, 1)
+
+        self.assertFalse(is_decreasing(a))
+        self.assertTrue(is_decreasing(b))
+        self.assertFalse(is_decreasing(c))
+        self.assertTrue(is_decreasing(d))
+    
+        self.assertTrue(is_increasing(a))
+        self.assertFalse(is_increasing(b))
+        self.assertFalse(is_increasing(c))
+        self.assertTrue(is_increasing(d))
+    
+    def test_trim(self):
+        self.assertEqual(trim_zeros((0, 1, 2, 0, 0)), (0, 1, 2))
+        self.assertEqual(trim_zeros((0, 1, 2, 0)), (0, 1, 2))
+        self.assertEqual(trim_zeros((0, 1, 2)), (0, 1, 2))
+        self.assertEqual(trim_zeros((0, 0, 0, 0)), ())
+
+    def test_compression(self):
+        s = (2, 2, 2, 3, 3, 1, 1, 1, 1, 5, 6, 6)
+        
+        sc = tuple(compress(s))
+        self.assertEqual(sc, ((2, 3), (3, 2), (1, 4), (5, 1), (6, 2)))
+
+        sd = tuple(decompress(*zip(*sc)))
+        self.assertEqual(sd, s)
+
+        self.assertEqual(tuple(compress(())), ())
+        self.assertEqual(tuple(decompress((), ())), ())
