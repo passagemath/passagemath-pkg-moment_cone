@@ -28,6 +28,27 @@ class Tau:
             self._components = PartialMatrix(max(len(c) for c in components), len(components))
             for j, c in enumerate(components):
                 self._components.extend(j, c)
+
+    @staticmethod
+    def from_flatten(s: Iterable[int], d: Dimension) -> "Tau":
+        """ Returns tau from its flattened version """
+        all_components = tuple(s)
+        sum_dim = sum(d)
+        if len(all_components) == sum_dim:
+            ccomponent = None
+        elif len(all_components) == sum_dim + 1:
+            ccomponent = all_components[0]
+            all_components = all_components[1:]
+        else:
+            raise ValueError("Invalid number of components")
+        
+        # TODO: from_flatten in PartialMatrix so that it can be optimized
+        # accordingly to the internal storage strategy!
+        shift = itertools.accumulate(d, initial=0)
+        return Tau(
+            tuple(all_components[a:b] for a, b in itertools.pairwise(shift)),
+            ccomponent
+        )
     
     def __len__(self) -> int:
         """ Number of components """
@@ -42,6 +63,18 @@ class Tau:
     def components(self) -> Sequence[Sequence[int]]:
         """ Sequence of the components of tau """
         return self._components.columns
+    
+    @property
+    def flattened(self) -> Iterable[int]:
+        """
+        Returns the whole tau as a unique sequence.
+        
+        ie (cc-component | column1 | column2 | ...)
+        """
+        if self.ccomponent is None:
+            return itertools.chain.from_iterable(self.components)
+        else:
+            return itertools.chain((self.ccomponent,), *self.components)
 
     @cached_property
     def reduced(self) -> "ReducedTau":
@@ -67,6 +100,7 @@ class Tau:
     @cached_property
     def is_regular(self) -> bool:
         """ Check if tau is regular assuming it is dominant """
+        # FIXME: why not just all(a > b for ...) then?
         return not any(any(a == b for a, b in itertools.pairwise(c)) for c in self.components)
     
     @cached_property
