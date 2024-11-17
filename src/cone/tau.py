@@ -128,6 +128,24 @@ class Tau:
             ccomponent // res_gcd
         )
 
+    @cached_property
+    def end0_representative(self) -> "Tau":
+        """ Returns representative of tau in ??? space (final value of each block is zero) """
+        assert self.ccomponent is not None
+        from math import gcd
+        total_shift = 0
+        columns = []
+        for cj in self.components:
+            columns.append([cji - cj[-1] for cji in cj])
+            total_shift += cj[-1]
+        ccomponent = self.ccomponent + total_shift
+
+        res_gcd = gcd(ccomponent, *itertools.chain.from_iterable(columns))
+        return Tau(
+            tuple(tuple(v // res_gcd for v in cj) for cj in columns),
+            ccomponent // res_gcd
+        )
+
     def positive_weights(self, weights: Iterable[Weight]) -> dict[int, list[Weight]]:
         """ Inverse image of each non-zero p = <w, tau> for each w in weights """
         result = {}
