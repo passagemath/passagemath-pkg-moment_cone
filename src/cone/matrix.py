@@ -25,7 +25,7 @@ class PartialMatrix(Generic[T]):
         i, j = idx
         return self._data[j][i]
     
-    def column(self, j: int) -> Sequence[T]:
+    def column(self, j: int) -> list[T]:
         """ Access to a given column """
         return self._data[j]
     
@@ -38,7 +38,7 @@ class PartialMatrix(Generic[T]):
         self._data[j].extend(values)
 
     @property
-    def columns(self) -> Sequence[Sequence[T]]:
+    def columns(self) -> tuple[list[T], ...]:
         """ Access to all columns """
         return self._data
 
