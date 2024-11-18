@@ -3,7 +3,7 @@ from .utils import is_decreasing, trim_zeros
 
 import itertools
 
-class Partition(Sequence[int]):
+class Partition:
     """ Decreasing sequence of positive int """
     __slots__ = "_data",
     _data: tuple[int, ...]
@@ -20,10 +20,10 @@ class Partition(Sequence[int]):
 
     def __len__(self) -> int:
         return len(self._data)
-    
-    def __getitem__(self, idx: int) -> int:
-        return self._data[idx] if idx < len(self) else cast(int, 0)
-    
+
+    def __getitem__(self, idx: int):
+            return self._data[idx] if idx < len(self) else 0
+        
     def __iter__(self) -> Iterator[int]:
         return iter(self._data)
     

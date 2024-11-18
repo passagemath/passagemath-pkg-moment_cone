@@ -9,7 +9,7 @@ TODO:
 - OrbitWeightSd method (needs multiset_permutations)
 """
 
-class Weight(Sequence[int]):
+class Weight:
     """ A weight on which tau can be applied """
     __slots__ = '_weights', 'index'
     _weights: tuple[int, ...]
@@ -92,8 +92,10 @@ class Weight(Sequence[int]):
         """ Implementation of self >= other (partial ordering)"""
         return all(ws <= wo for ws, wo in zip(self, other))
     
-    def __eq__(self, other: "Weight") -> bool:
+    def __eq__(self, other: object) -> bool:
         """ Equality between two weights (ignoring index) """
+        if not isinstance(other, Weight):
+            return NotImplemented
         return self._weights == other._weights
     
     def __repr__(self) -> str:

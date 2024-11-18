@@ -148,7 +148,7 @@ class Tau:
 
     def positive_weights(self, weights: Iterable[Weight]) -> dict[int, list[Weight]]:
         """ Inverse image of each non-zero p = <w, tau> for each w in weights """
-        result = {}
+        result: dict[int, list[Weight]] = {}
         for chi in weights:
             p = self.dot_weight(chi)
             if p >= 0:
