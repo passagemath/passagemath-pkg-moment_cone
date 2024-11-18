@@ -14,6 +14,13 @@ class Root:
     def is_in_U(self) -> bool:
         """ Check if this root is in U """
         return self.i < self.j
+    
+    @staticmethod
+    def all(d: Dimension) -> Iterable["Root"]:
+        """ Returns all possible root from U for given dimensions """
+        for k, dk in enumerate(d):
+            for i, j in itertools.combinations(range(dk), 2):
+                yield Root(k, i, j)
 
 
 if False: # TODO

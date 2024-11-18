@@ -3,6 +3,7 @@ import unittest
 from cone.tau import Tau, ReducedTau
 from cone.matrix import PartialMatrix
 from cone.dimension import Dimension
+from cone.root import Root
 
 class TestTau(unittest.TestCase):
 
@@ -53,6 +54,15 @@ class TestTau(unittest.TestCase):
     def test_pos_weights(self):
         # TODO
         pass
+
+    def test_pos_roots(self):
+        tau = Tau(((6, 2), (1, 4, 1), (2, 5, 3, 1)), 1)
+        pr = tau.positive_roots()
+        self.assertEqual(sorted(pr.keys()), [1, 2, 3, 4])
+        self.assertEqual(pr[1], [Root(2, 0, 3)])
+        self.assertEqual(pr[2], [Root(2, 1, 2), Root(2, 2, 3)])
+        self.assertEqual(pr[3], [Root(1, 1, 2)])
+        self.assertEqual(pr[4], [Root(0, 0, 1), Root(2, 1, 3)])
 
     def test_sort_mod_sd(self):
         d = Dimension((2, 2, 2, 1, 1, 1))

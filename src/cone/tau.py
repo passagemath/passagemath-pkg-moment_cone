@@ -145,8 +145,11 @@ class Tau:
             ccomponent // res_gcd
         )
 
-    def positive_weights(self, weights: Iterable[Weight]) -> dict[int, list[Weight]]:
-        """ Inverse image of each non-zero p = <w, tau> for each w in weights """
+    def positive_weights(self, weights: Optional[Iterable[Weight]] = None) -> dict[int, list[Weight]]:
+        """ Inverse image of each non-negative p = <w, tau> for each w in weights (all weights by default) """
+        if weights is None:
+            weights = Weight.all(self.d)
+
         result: dict[int, list[Weight]] = {}
         for chi in weights:
             p = self.dot_weight(chi)
@@ -154,6 +157,18 @@ class Tau:
                 result.setdefault(p, []).append(chi)
         return result
     
+    def positive_roots(self, roots: Optional[Iterable[Root]] = None) -> dict[int, list[Root]]:
+        """ Inverse image of each non-zero p = <beta, tau> for each beta in roots (all roots of U by default) """
+        if roots is None:
+            roots = Root.all(self.d)
+
+        result: dict[int, list[Root]] = {}
+        for r in roots:
+            p = self.dot_root(r)
+            if p > 0:
+                result.setdefault(p, []).append(r)
+        return result
+
     @cached_property
     def sort_mod_sym_dim(self) -> "Tau":
         """ Sort tau by block of the dimensions """
