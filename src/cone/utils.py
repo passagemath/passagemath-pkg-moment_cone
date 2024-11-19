@@ -30,3 +30,9 @@ def trim_zeros(s: Sequence[int]) -> Sequence[int]:
     else:
         return ()
     
+def count(s: Iterable[T]) -> int:
+    """ Count number of elements in an iterable """
+    if isinstance(s, Sized):
+        return len(s)
+    else:
+        return sum(1 for _ in s) # It seems that they exist faster method using `collections.deque`
