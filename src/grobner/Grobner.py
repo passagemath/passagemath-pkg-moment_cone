@@ -1,5 +1,21 @@
 #Attention, ne fonctionne que pour d_i<=9 et s<=9
 
+lim_st=input('Enter time limit per Grobner computation, (ex "3" for 3 seconds): ')
+lim=float(lim_st)
+
+restr_st=input('Probabilist? Y/N ')
+if restr_st=="Y":
+   restr=True
+else:
+   restr=False
+   print("Formal computations chosen")
+
+
+#reference list of tw
+#in 19/11/24, List_Tau_W is the last list in kron.py still containing all the informations (tau,w)
+
+List_tw=List_Tau_W
+
 def dict_Vtau_neg_ou_nul(tau,Poids,d):
     Res={}
     for chi in Poids:
@@ -77,7 +93,7 @@ def list_gi(dic_gi):
 
 def map_pi(Poids,tw,d,restr=False): 
    """ computes the map pi formally in terms of variables v[i_1,i_2,i_3] in V^{tau<=0} and u[k,i,j] (U_k=1+ sum u_[k,i,j])"""
-   R=polyring(Poids,tw,d)
+   R=polyring(Poids,tw,d,restr)
    F1=R.base_ring()
    v=vector(R,prod(d))
    dict_Inv_w=Dict_wUw(tw,d)
@@ -153,16 +169,16 @@ def Test_deg_Groebner(tw,restr=False):
 def Test_deg_Groebner_restr(tw):
    return Test_deg_Groebner(tw,True)
 
-def long_calculation(Liste, fonction, lim):
+def long_calculation(Liste, fonction, lim, restr=False):
     Res=[]
     for i,l in enumerate(Liste):
        alarm(lim)
        succ=True
        try:
            print('starting calculation..', i)
-           resl=fonction(l)
+           resl=fonction(l,restr)
        except:
-           print('did not complete!')
+           print('did not complete! in ', lim, ' seconds')
            succ=False
        # if the computation finished early, though, the alarm is still ticking!
        # so let's turn it off..
@@ -178,7 +194,7 @@ def long_calculation(Liste, fonction, lim):
 ################ Calculs explicites
 
 t1=time.time()
-quick_res=long_calculation(List_Tau_W,Test_deg_Groebner_restr,0.5)
+quick_res=long_calculation(List_tw,Test_deg_Groebner,lim,restr)
 t2=time.time()
 print("truncated Groebner in ", t2-t1, " seconds")
 
@@ -189,6 +205,10 @@ for m in quick_res:
 
 label_bir_quick_res
 
+print("over ", len(List_tw), " initial equalities")
+print(len(label_bir_quick_res), " are indeed necessary (birationnality condition)")
+print(len(quick_res)-len(label_bir_quick_res), " are non-necessary (non-birat)")
+print("For ", len(List_tw)-len(quick_res), " of them, the Grobner computation did not ended within ", lim, " seconds")
 
 
 """
