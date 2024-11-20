@@ -169,6 +169,13 @@ class Tau:
                 result.setdefault(p, []).append(r)
         return result
 
+    def orthogonal_roots(self) -> Iterable[Root]:
+        """ All the root beta so that <beta, tau> = 0 """
+        return filter(
+            lambda root: self.dot_root(root) == 0,
+            Root.all(self.d)
+        )
+
     @cached_property
     def sort_mod_sym_dim(self) -> "Tau":
         """ Sort tau by block of the dimensions """
