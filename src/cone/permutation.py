@@ -46,11 +46,20 @@ class Permutation(tuple[int, ...]): # Remark: hash of p is hash of underlying tu
     
     def is_min_rep(self, symmetries: Iterable[int]) -> bool:
         """ Check is permutation is decreasing along each block of given sizes """
-        stride = itertools.accumulate(symmetries, initial=0)
+        indexes = itertools.accumulate(symmetries, initial=0)
         return all(
-            all(a > b for a, b in itertools.pairwise(self[si:sj]))
-            for si, sj in itertools.pairwise(stride)
+            all(a > b for a, b in itertools.pairwise(self[i:j]))
+            for i, j in itertools.pairwise(indexes)
         )
+    
+    def orbit_symmetries(self, symmetries: Iterable[int]) -> Iterable["Permutation"]:
+        """ Permutation inside each block of given sizes """
+        from sympy.utilities.iterables import multiset_permutations
+        indexes = itertools.accumulate(symmetries, initial=0)
+        blocks = (multiset_permutations(self[i:j]) for i, j in itertools.pairwise(indexes))
+        for p in itertools.product(*blocks):
+            yield Permutation(itertools.chain.from_iterable(p))
+
 
     @staticmethod
     def all(n: int) -> Iterable["Permutation"]:
