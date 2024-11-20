@@ -44,6 +44,14 @@ class Permutation(tuple[int, ...]): # Remark: hash of p is hash of underlying tu
     def __repr__(self) -> str:
         return f"Permutation({super().__repr__()})"
     
+    def is_min_rep(self, symmetries: Iterable[int]) -> bool:
+        """ Check is permutation is decreasing along each block of given sizes """
+        stride = itertools.accumulate(symmetries, initial=0)
+        return all(
+            all(a > b for a, b in itertools.pairwise(self[si:sj]))
+            for si, sj in itertools.pairwise(stride)
+        )
+
     @staticmethod
     def all(n: int) -> Iterable["Permutation"]:
         """ Returns all the possible permutation of S_n """
