@@ -6,16 +6,20 @@ import itertools
 
 class Permutation(tuple[int, ...]): # Remark: hash of p is hash of underlying tuple
     """
-    Permutation represented using the one-line notation.
+    Permutation of S_n represented using the one-line notation.
 
     So that length computation is faster.
     """
+    @property
+    def n(self) -> int:
+        return len(self)
+    
     @cached_property
     def inversions(self) -> tuple[tuple[int, int], ...]:
         """ Sequence of the indexes of all the inversions """
         return tuple(filter(
             lambda ij: self[ij[0]] > self[ij[1]],
-            itertools.combinations(range(len(self)), 2)
+            itertools.combinations(range(self.n), 2)
         ))
     
     @cached_property
@@ -26,7 +30,7 @@ class Permutation(tuple[int, ...]): # Remark: hash of p is hash of underlying tu
     @cached_property
     def inverse(self) -> "Permutation":
         """ Inverse of the permutation """
-        inv = [0] * len(self)
+        inv = [0] * self.n
         for i, pi in enumerate(self):
             inv[pi] = i
         p_inv = Permutation(inv)
