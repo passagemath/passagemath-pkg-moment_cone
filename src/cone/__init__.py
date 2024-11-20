@@ -10,6 +10,7 @@ from .dimension import Dimension
 from .tau import Tau, ReducedTau
 from .weight import Weight
 from .root import Root
+from .task import Task
 
     
 
