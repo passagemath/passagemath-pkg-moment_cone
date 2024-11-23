@@ -1,7 +1,7 @@
 import unittest
 
 from cone.tau import Tau, ReducedTau
-from cone.matrix import PartialMatrix
+from cone.blocks import Blocks
 from cone.dimension import Dimension
 from cone.root import Root
 
@@ -12,11 +12,8 @@ class TestTau(unittest.TestCase):
         tau_columns = Tau(((3, 2, 1), (2, 3), (1, 4, 5, 3)), 3)
         tau_flatten = Tau.from_flatten((3, 3, 2, 1, 2, 3, 1, 4, 5, 3), d)
         
-        matrix = PartialMatrix(4, 3)
-        matrix.extend(0, (3, 2, 1))
-        matrix.extend(1, (2, 3))
-        matrix.extend(2, (1, 4, 5, 3))
-        tau_matrix = Tau(matrix, 3)
+        blocks = Blocks.from_blocks(((3, 2, 1), (2, 3), (1, 4, 5, 3)))
+        tau_matrix = Tau(blocks, 3)
 
         self.assertTrue(tau_columns.ccomponent == tau_flatten.ccomponent == tau_matrix.ccomponent)
         self.assertTrue(tau_columns.components == tau_flatten.components == tau_matrix.components)
@@ -25,7 +22,7 @@ class TestTau(unittest.TestCase):
         tau = Tau(((3, 2, 1), (2, 3), (1, 4, 5, 3)), 3)
         self.assertEqual(len(tau), 3)
         self.assertEqual(tau.d, (3, 2, 4))
-        self.assertEqual(tau.components, ([3, 2, 1], [2, 3], [1, 4, 5, 3]))
+        self.assertEqual(tau.components, ((3, 2, 1), (2, 3), (1, 4, 5, 3)))
         self.assertEqual(tuple(tau.flattened), (3, 3, 2, 1, 2, 3, 1, 4, 5, 3))
         self.assertEqual(repr(tau), "3 | 3 2 1 | 2 3 | 1 4 5 3")
 
@@ -76,8 +73,8 @@ class TestTau(unittest.TestCase):
         self.assertEqual(len(red_tau), 3)
         self.assertEqual(red_tau.small_d, (2, 4, 2))
         self.assertEqual(red_tau.ccomponent, 3)
-        self.assertEqual(red_tau.mult.columns, ([2, 1], [1, 2, 3, 1], [1, 2]))
-        self.assertEqual(red_tau.values.columns, ([2, 3], [4, 3, 2, 1], [5, 2]))
+        self.assertEqual(tuple(red_tau.mult.blocks), ((2, 1), (1, 2, 3, 1), (1, 2)))
+        self.assertEqual(tuple(red_tau.values.blocks), ((2, 3), (4, 3, 2, 1), (5, 2)))
 
         self.assertEqual(red_tau[1, 2], (2, 2))
         self.assertEqual(red_tau[0, 1], (4, 1))
@@ -85,3 +82,15 @@ class TestTau(unittest.TestCase):
     def test_pzero(self):
         # TODO
         pass
+
+    def test_hash(self):
+        d = Dimension((2, 3, 4))
+        tau1 = Tau.from_flatten([6,2,1,4,1,2,5,3,1], d)
+        tau2 = Tau.from_flatten([6,2,1,4,1,2,5,3,1], d)
+        self.assertEqual(tau1, tau2)
+        self.assertEqual(hash(tau1), hash(tau2))
+
+        rtau1 = tau1.reduced
+        rtau2 = tau2.reduced
+        self.assertEqual(rtau1, rtau2)
+        self.assertEqual(hash(rtau1), hash(rtau2))

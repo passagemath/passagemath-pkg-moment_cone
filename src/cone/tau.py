@@ -1,6 +1,6 @@
 from .typing import *
 from .dimension import Dimension
-from .matrix import PartialMatrix
+from .blocks import Blocks
 from .weight import Weight
 from .root import Root
 
@@ -18,17 +18,15 @@ class Tau:
     """ Tuple of partition along with a coefficient """
     #__slots__ = 'ccomponent', '_components' # FIXME cached_property cannot work without __dict__ ... => self managed cache or removing __slots__
     ccomponent: Optional[int]
-    _components: PartialMatrix[int]
+    _components: Blocks[int]
 
-    def __init__(self, components: Sequence[Sequence[int]] | PartialMatrix[int], ccomponent: Optional[int] = None):
+    def __init__(self, components: Iterable[Sequence[int]] | Blocks[int], ccomponent: Optional[int] = None):
         """ Tau initialization from a sequence of sub-group or directly from a partial matrix """
         self.ccomponent = ccomponent
-        if isinstance(components, PartialMatrix):
-            self._components = components # FIXME: copy ?
+        if isinstance(components, Blocks):
+            self._components = components.freeze()
         else:
-            self._components = PartialMatrix(max(len(c) for c in components), len(components))
-            for j, c in enumerate(components):
-                self._components.extend(j, c)
+            self._components = Blocks.from_blocks(components)
 
     @staticmethod
     def from_flatten(s: Iterable[int], d: Dimension) -> "Tau":
@@ -41,49 +39,53 @@ class Tau:
             all_components = all_components[1:]
         else:
             raise ValueError("Invalid number of components")
-        
-        # TODO: from_flatten in PartialMatrix so that it can be optimized
-        # accordingly to the internal storage strategy!
-        shift = itertools.accumulate(d, initial=0)
-        return Tau(
-            tuple(all_components[a:b] for a, b in itertools.pairwise(shift)),
-            ccomponent
-        )
-    
+
+        # Tau will be always immutable
+        return Tau(Blocks.from_flatten(tuple(all_components), d), ccomponent)
+
     def __len__(self) -> int:
         """ Number of components """
-        return self._components.shape[1]
+        return len(self._components)
 
     @cached_property
     def d(self) -> Dimension:
         """ Length of each component """
         return Dimension(self._components.sizes)
-    
+
     @cached_property
-    def components(self) -> tuple[list[int], ...]:
+    def components(self) -> tuple[tuple[int, ...], ...]:
         """ Sequence of the components of tau """
-        return self._components.columns
-    
+        return cast(tuple[tuple[int, ...], ...], tuple(self._components.blocks))
+
     @property
     def flattened(self) -> Iterable[int]:
         """
         Returns the whole tau as a unique sequence.
-        
+
         ie (cc-component | column1 | column2 | ...)
         """
         if self.ccomponent is None:
-            return itertools.chain.from_iterable(self.components)
+            return self._components.flatten
         else:
-            return itertools.chain((self.ccomponent,), *self.components)
+            return (self.ccomponent,) + cast(tuple[int], self._components.flatten)
 
     @cached_property
     def reduced(self) -> "ReducedTau":
         """ Returns reduced form of tau """
         return ReducedTau(self)
-    
+
     def __repr__(self) -> str:
-        return f"{self.ccomponent} | " + " | ".join(" ".join(map(str, c)) for c in self.components)
-    
+        return f"{self.ccomponent} | " + repr(self._components)
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Tau):
+            return NotImplemented
+        return self.ccomponent == other.ccomponent and self._components == other._components
+
+    def __hash__(self) -> int:
+        """ Hash consistent with equality so that to be safely used in a set or a dict """
+        return hash((self.ccomponent, self._components))
+
     # TODO: or same dot method with @singledispatch ?
     def dot_weight(self, weight: Weight, ccomponent: Optional[int] = None) -> int:
         """ Scalar product of tau with a weight of V """
@@ -91,22 +93,22 @@ class Tau:
         if ccomponent is None:
             ccomponent = self.ccomponent
         return cast(int, ccomponent) + sum(c[wi] for c, wi in zip(self.components, weight))
-    
+
     def dot_root(self, root: Root) -> int:
         """ Scalar product of tau with a root of U """
         c = self.components[root.k]
         return c[root.i] - c[root.j]
-    
+
     @cached_property
     def is_dom_reg(self) -> bool:
         """ Check if tau is dominant and regular """
         return all(all(a > b for a, b in itertools.pairwise(c)) for c in self.components)
-    
+
     @cached_property
     def is_dominant(self) -> bool:
         """ Check if tau is dominant """
         return all(all(a >= b for a, b in itertools.pairwise(c)) for c in self.components)
-    
+
     @cached_property
     def sl_representative(self) -> "Tau":
         """ Returns representative of tau in C^* x (SLn)^3 """
@@ -120,7 +122,7 @@ class Tau:
             shift = column_sum * tau_lcm // dj
             columns.append([tau_lcm * cji - shift for cji in cj])
             ccomponent += shift
-        
+
         res_gcd = gcd(ccomponent, *itertools.chain.from_iterable(columns))
         return Tau(
             tuple(tuple(v // res_gcd for v in cj) for cj in columns),
@@ -159,7 +161,7 @@ class Tau:
             if p >= 0:
                 result.setdefault(p, []).append(chi)
         return result
-    
+
     # TODO: generate the dictionary for all values of the product scalar
     # and filtering it later. Renaming it like grading_roots and removing
     # the optional weights list so that to be a @cached_property.
@@ -186,52 +188,56 @@ class Tau:
     @cached_property
     def sort_mod_sym_dim(self) -> "Tau":
         """ Sort tau by block of the dimensions """
-        col_split = itertools.accumulate(self.d.symmetries, initial=0)
-        columns = itertools.chain.from_iterable(
-            sorted(self.components[a:b])
-            for a, b in itertools.pairwise(col_split)
-        )
-        return Tau(tuple(columns), self.ccomponent)
+        blocks = (sorted(b) for b in Blocks(self.components, self.d.symmetries))
+        return Tau(itertools.chain.from_iterable(blocks), self.ccomponent)
 
 
 class ReducedTau:
     """ Tau in a reduction form """
     __slots__ = 'ccomponent', 'values', 'mult'
     ccomponent: Optional[int]
-    values: PartialMatrix[int]
-    mult: PartialMatrix[int]
+    values: Blocks[int]
+    mult: Blocks[int]
 
     def __init__(self, tau: Tau):
         from .utils import group_by_block
-        values: PartialMatrix[int] = PartialMatrix(max(tau.d), len(tau))
-        mult: PartialMatrix[int] = PartialMatrix(max(tau.d), len(tau))
+        values = Blocks.from_flatten([], (0,) * len(tau.d))
+        mult = Blocks.from_flatten([], (0,) * len(tau.d))
 
         for j, component in enumerate(tau.components):
-            for v, m in group_by_block(component):
-                values.append(j, v)
-                mult.append(j, cast(int, m))
+            values[j], mult[j] = zip(*group_by_block(component))
 
         self.ccomponent = tau.ccomponent
-        self.values = values
-        self.mult = mult
+        self.values = values.freeze()
+        self.mult = mult.freeze()
 
     def __len__(self) -> int:
-        return self.values.shape[1]
-    
+        """ Number of components """
+        return len(self.values)
+
     @property
     def small_d(self) -> Dimension:
         return Dimension(self.values.sizes)
-    
+
     # FIXME: it seems that i,j is not really needed => simplification?
     def __getitem__(self, idx: tuple[int, int]) -> tuple[int, int]:
-        return self.values[idx], self.mult[idx]
-    
+        return self.values[idx[1], idx[0]], self.mult[idx[1], idx[0]]
+
     def __repr__(self) -> str:
         return f"{self.ccomponent} | " + " | ".join(
             " ".join(f"{v}^{m}" for v, m in zip(cv, cm))
-            for cv, cm in zip(self.values.columns, self.mult.columns)
+            for cv, cm in zip(self.values.blocks, self.mult.blocks)
         )
-    
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, ReducedTau):
+            return NotImplemented
+        return self.ccomponent == other.ccomponent and self.values == other.values and self.mult == other.mult
+
+    def __hash__(self) -> int:
+        """ Hash consistent with equality so that to be safely used in a set or a dict """
+        return hash((self.ccomponent, self.values, self.mult))
+
     # FIXME: returns an generator and not a sequence. Is it adapted to a property (or a cached_property?)
     # TODO: it will be used many time => returns a sequence and @cached_property
     @property
