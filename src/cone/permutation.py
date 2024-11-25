@@ -5,6 +5,11 @@ from .blocks import Blocks
 from functools import cached_property
 import itertools
 
+__all__ = (
+    "Permutation",
+    "AllPermutationsByLength",
+)
+
 class Permutation(tuple[int, ...]): # Remark: hash of p is hash of underlying tuple
     """
     Permutation of S_n represented using the one-line notation.

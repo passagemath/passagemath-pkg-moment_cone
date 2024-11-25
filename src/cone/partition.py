@@ -3,6 +3,10 @@ from .utils import is_decreasing, trim_zeros
 
 import itertools
 
+__all__ = (
+    "Partition",
+)
+
 class Partition:
     """ Decreasing sequence of positive int """
     __slots__ = "_data",

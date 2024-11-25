@@ -2,6 +2,10 @@ from .typing import *
 from .tau import Tau
 from .permutation import Permutation
 
+__all__ = (
+    "Inequality",
+)
+
 class Inequality:
     """ An inequality composed of a Tau and a permutation """
     tau: Tau

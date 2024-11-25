@@ -3,6 +3,10 @@ from .dimension import Dimension
 from dataclasses import dataclass
 import itertools
 
+__all__ = (
+    "Root",
+)
+
 @dataclass(frozen=True, slots=True)
 class Root:
     """ Root element for tau """

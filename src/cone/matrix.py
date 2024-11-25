@@ -9,6 +9,11 @@ We could eventually keep a mutable version like the one below and a freezed one
 that could be optimized as a one tuple like in the original code.
 
 """ 
+
+__all__ = (
+    "PartialMatrix",  
+)
+
 class PartialMatrix(Generic[T]):
     """ Kind of sparse matrix with fixed number of column, each of them containing a variable number of values """
     __slots__ = '_data', 'shape'

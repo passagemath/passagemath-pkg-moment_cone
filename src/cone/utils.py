@@ -3,6 +3,17 @@ import itertools
 import functools
 import operator
 
+__all__ = (
+    "is_decreasing",
+    "is_increasing",
+    "group_by_block",
+    "expand_blocks",
+    "trim_zeros",
+    "count",
+    "prod",
+    "short_prod",
+)
+
 def is_decreasing(l: Iterable[int]) -> bool:
     """ Check if a given sequence is not increasing """
     return all(a >= b for a, b in itertools.pairwise(l))

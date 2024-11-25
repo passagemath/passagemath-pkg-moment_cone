@@ -3,28 +3,28 @@
 #import sage.libs.lrcalc.lrcalc as lr
 
 from .utils import *
-from .typing import *
-from .matrix import PartialMatrix
-from .blocks import Blocks
-from .partition import Partition
-from .dimension import Dimension
-from .tau import Tau, ReducedTau
-from .weight import Weight
-from .root import Root
-from .task import Task
-from .inequality import Inequality
-from .permutation import Permutation
+from .matrix import *
+from .blocks import *
+from .partition import *
+from .dimension import *
+from .tau import *
+from .weight import *
+from .root import *
+from .task import *
+from .inequality import *
+from .permutation import *
+from .hyperplane_candidates import *
 
     
 
-def fct_Weights_of_Nu(nu: PartialMatrix[Partition]) -> PartialMatrix[int]:
-    """ Constructing size_nu from nu """
-    size_nu = PartialMatrix[int](*nu.shape)
-
-    for j, col in enumerate(nu.columns):
-        size_nu.extend(j, (cast(int, sum(p)) for p in col))
-
-    return size_nu
+#def fct_Weights_of_Nu(nu: PartialMatrix[Partition]) -> PartialMatrix[int]:
+#    """ Constructing size_nu from nu """
+#    size_nu = PartialMatrix[int](*nu.shape)
+#
+#    for j, col in enumerate(nu.columns):
+#        size_nu.extend(j, (cast(int, sum(p)) for p in col))
+#
+#    return size_nu
 
 
 

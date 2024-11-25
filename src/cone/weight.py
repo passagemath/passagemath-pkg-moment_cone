@@ -9,6 +9,10 @@ TODO:
 - OrbitWeightSd method (needs multiset_permutations)
 """
 
+__all__ = (
+    "Weight",
+)
+
 class Weight:
     """ A weight on which tau can be applied """
     __slots__ = '_weights', 'index'

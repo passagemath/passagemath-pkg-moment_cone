@@ -1,5 +1,9 @@
 from functools import cached_property
 
+__all__ = (
+    "Dimension",
+)
+
 class Dimension(tuple[int, ...]):
     """ Dimensions of the ??? space """
     @cached_property
