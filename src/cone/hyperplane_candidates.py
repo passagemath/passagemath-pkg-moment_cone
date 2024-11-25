@@ -36,6 +36,11 @@ def smart_remove(l: list[T], idx: int):
     Remove an element of a list by swapping it with the last element
 
     It saves the O(N) cost of shift all the remaining elements.
+
+    TODO: if necessary, it could be possible to use this trick
+    to remove the necessary of copying each list by always moving removed
+    elements to the end and by emulating a shorter list while being able
+    to recover the previous size (and thus the removed elements).
     """
     if idx < len(l) - 1:
         l[idx] = l.pop()
