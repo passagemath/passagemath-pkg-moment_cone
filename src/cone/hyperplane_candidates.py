@@ -31,7 +31,7 @@ class WeightSieve:
         )
 
 
-def smart_remove(l: list[T], idx: int):
+def smart_remove(l: list[T], idx: int) -> None:
     """
     Remove an element of a list by swapping it with the last element
 
@@ -50,7 +50,7 @@ def smart_remove(l: list[T], idx: int):
 def sign_assignment(chi: Weight,
                     S_input: list[Weight],
                     S_negative: list[Weight],
-                    S_positive: list[Weight]):
+                    S_positive: list[Weight]) -> None:
     """ Determining the sign of weight from S_input by comparing it to the curring weight chi """
     idx = 0
     while idx < len(S_input):
@@ -64,7 +64,7 @@ def sign_assignment(chi: Weight,
         else:
             idx += 1 # index incremented only when not element where removed
 
-def hyperplane_matrix(S: Sequence[Weight], d: Dimension):
+def hyperplane_matrix(S: Sequence[Weight], d: Dimension) -> matrix:
     """ Matrix with columns the weights indexed by the set S """
     M = matrix(ZZ, d.sum + 1, len(S))
     for j, chi in enumerate(S):
@@ -75,7 +75,7 @@ def hyperplane_matrix(S: Sequence[Weight], d: Dimension):
             shift += d[u]
     return M
 
-def check_hyperplane_dim(S: Sequence[Weight], d: Dimension):
+def check_hyperplane_dim(S: Sequence[Weight], d: Dimension) -> bool:
     """ Check that the given sequence of weight has the dimension of an hyperplane """
     target_rank = d.sum - len(d)
     if len(S) < target_rank:
