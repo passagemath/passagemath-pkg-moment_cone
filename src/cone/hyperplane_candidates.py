@@ -6,7 +6,7 @@ from .weight import Weight
 from .dimension import Dimension
 from .utils import short_prod
 
-from sage.all import matrix, ZZ
+from sage.all import matrix, ZZ # type: ignore
 
 __all__ = (
     "find_hyperplanes",
@@ -96,7 +96,7 @@ def simplify_regularity(St: WeightSieve, d: Dimension, chi: Weight) -> None:
     Changing a single epsilon^s_i into epsilon^s_j prevents regularity of tau, since this introduces equation epsilon^s_i-epsilon^s_j. When c gets in the zero list, the function removes these weights (with respect to c) from the indeterminate liste and places them in the zero list.
     """
     for k, dk in enumerate(d):
-        mchi2 = list(chi)
+        mchi2 = list(chi) # Weight is not mutable
         for y in range(dk):
             if y != chi[k]:
                 mchi2[k] = y
