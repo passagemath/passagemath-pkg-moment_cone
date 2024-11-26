@@ -1,4 +1,5 @@
 from functools import cached_property
+from .utils import prod
 
 __all__ = (
     "Dimension",
@@ -15,3 +16,7 @@ class Dimension(tuple[int, ...]):
     @cached_property
     def sum(self) -> int:
         return sum(self)
+
+    @cached_property
+    def prod(self) -> int:
+        return prod(self)
