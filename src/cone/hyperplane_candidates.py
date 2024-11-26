@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import itertools
 
 from .typing import *
 from .weight import Weight
@@ -67,12 +68,12 @@ def sign_assignment(chi: Weight,
 def hyperplane_matrix(S: Sequence[Weight], d: Dimension) -> matrix:
     """ Matrix with columns the weights indexed by the set S """
     M = matrix(ZZ, d.sum + 1, len(S))
+    # We could use Blocks but matrix doesn't support len
+    shift = tuple(itertools.accumulate(d, initial=1))[:-1]
     for j, chi in enumerate(S):
         M[0, j] = 1
-        shift = 1
-        for u in range(len(chi)):        
-            M[shift + chi[u], j] = 1
-            shift += d[u]
+        for c, s in zip(chi, shift):
+            M[s + c, j] = 1
     return M
 
 def check_hyperplane_dim(S: Sequence[Weight], d: Dimension) -> bool:
