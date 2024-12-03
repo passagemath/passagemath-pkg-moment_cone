@@ -3,6 +3,7 @@ import itertools
 
 from .typing import *
 from .weight import Weight
+from .permutation import Permutation
 from .dimension import Dimension
 from .utils import short_prod
 
@@ -10,6 +11,7 @@ from sage.all import matrix, ZZ # type: ignore
 
 __all__ = (
     "find_hyperplanes",
+    "find_hyperplanes_mod_sym_dim",
 )
 
 
@@ -93,17 +95,54 @@ def has_enough_leq_weights(chi: Weight, u: int) -> bool:
 
 def find_hyperplanes(d: Dimension, u: int) -> Iterable[list[Weight]]:
     """
-    Returns hyperplane candidates
-
-    What is u?
+    Returns hyperplane candidates with a maximal number u of positive elements
     """
     St = WeightSieve([], [], [], [], [])
     for chi in Weight.all(d):
         if has_enough_leq_weights(chi, u):
-            St.positive.append(chi)
+            St.negative.append(chi)
         else:
             St.indeterminate.append(chi)
     return find_hyperplanes_impl(St, d, u)
+
+def find_hyperplanes_mod_sym_dim(d: Dimension, u: int) -> Iterable[list[Weight]]:
+    """
+    Returns hyperplane candidates with a maximal number u of positive elements (u-condition) module the symmetries of d.
+    """
+    # Earlier filtering
+    St = WeightSieve([], [], [], [], [])
+    for chi in Weight.all(d):
+        if has_enough_leq_weights(chi, u):
+            St.negative.append(chi)
+        else:
+            St.indeterminate.append(chi)
+
+    # Calling the recursive function modulo the symmetries of d
+    for chi in Weight.all_mod_sym_dim(d):
+        # Checking if the element is indeterminate
+        try:
+            idx = St.indeterminate.index(chi)
+        except ValueError:
+            continue
+
+        # If so, we explore the branch where it is defined as a zero element (on the hyperplane)
+        St2 = St.copy()
+        St2.zero.append(chi)
+        smart_remove(St2.indeterminate, idx)
+
+        # Deducing sign of lower and upper elements
+        sign_assignment(chi, St2.indeterminate, St2.negative, St2.positive)
+        sign_assignment(chi, St2.excluded, St2.negative, St2.positive)
+
+        # Further exploring the branch
+        yield from find_hyperplanes_impl(St2, d, u)
+
+        # Removing symmetries
+        # FIXME: orbit on weight or permutation ?!!
+        for p in Permutation(chi).orbit_symmetries(d.symmetries):
+            wp = Weight(p)
+            St.indeterminate.remove(wp)
+            St.excluded.append(wp)
 
 def find_hyperplanes_impl(St: WeightSieve, d: Dimension, u: int) -> Iterable[list[Weight]]:
     """ Recursive part to find the hyperplane candidates """

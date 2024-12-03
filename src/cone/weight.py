@@ -4,11 +4,6 @@ from .dimension import Dimension
 import itertools
 import operator
 
-"""
-TODO:
-- OrbitWeightSd method (needs multiset_permutations)
-"""
-
 __all__ = (
     "Weight",
 )
