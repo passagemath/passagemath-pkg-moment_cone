@@ -98,5 +98,5 @@ class Weight:
         return self._weights == other._weights
     
     def __repr__(self) -> str:
-        return f"Weight{self._weights}" + (f", (index: {self.index}" if self.index is not None else "") + ")"
+        return f"Weight({self._weights}" + (f", idx: {self.index}" if self.index is not None else "") + ")"
 
