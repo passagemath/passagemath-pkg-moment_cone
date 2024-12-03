@@ -117,12 +117,12 @@ def find_hyperplanes_impl(St: WeightSieve, d: Dimension, u: int) -> Iterable[lis
 
         # Two possible actions with this element:
 
-        # 1. We exclude it from the possible zero elements
+        # 1. We explore the branch where it is excluded from the possible zero elements
         St.excluded.append(chi)
         yield from find_hyperplanes_impl(St, d, u)
         St.excluded.pop()
 
-        # 2. We define it as a zero element (on the hyperplane)
+        # 2. We explore the branch where it is defined as a zero element (on the hyperplane)
         St2 = St.copy()
         St2.zero.append(chi)
 
@@ -130,8 +130,8 @@ def find_hyperplanes_impl(St: WeightSieve, d: Dimension, u: int) -> Iterable[lis
         sign_assignment(chi, St2.indeterminate, St2.negative, St2.positive)
         sign_assignment(chi, St2.excluded, St2.negative, St2.positive)
 
-        # 2.2 Continuing if there are not too much negative elements
-        if len(St2.negative) <= u:
+        # 2.2 Continuing if there are not too much positive elements
+        if len(St2.positive) <= u:
             yield from find_hyperplanes_impl(St2, d, u)
 
         # Current element back to the indeterminate
