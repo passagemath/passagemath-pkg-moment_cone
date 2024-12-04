@@ -8,7 +8,7 @@ doctest:
 	python -m pytest --doctest-modules --verbose src/cone
 
 mypy:
-	python -m mypy src tests
+	python -m mypy src/cone tests
 
 doc:
 	pdoc3 --html --force src/cone
