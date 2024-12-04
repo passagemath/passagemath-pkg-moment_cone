@@ -67,11 +67,15 @@ class Tau:
         else:
            return Tau.from_flatten(b[0],d)
 
-
-        
-        
-        return Tau.from_flatten(self.)
-    
+    def opposite(self) -> "Tau":
+        """ Returns the opposite of some tau (same orthogonal hyperplane)
+        """
+        flatten_opp=[-self.ccomponent]
+        dd=[]
+        for comp in self.components:
+           flatten_opp+=[-x for x in comp]
+           dd.append(len(comp))
+        return Tau.from_flatten(flatten_opp,Dimension(dd))
 
     def __len__(self) -> int:
         """ Number of components """
@@ -224,32 +228,27 @@ class Tau:
         return self.filter_dict(self.grading_weights,lambda x: x>=0)
     
     @property
-    def positive_roots2(self) -> dict[int, list[Weight]]:
+    def positive_roots(self) -> dict[int, list[Root]]:
         return self.filter_dict(self.grading_roots,lambda x: x>0)
 
-    # TODO: generate the dictionary for all values of the product scalar
-    # and filtering it later. Renaming it like grading_roots and removing
-    # the optional weights list so that to be a @cached_property.
-    def positive_roots(self, roots: Optional[Iterable[Root]] = None) -> dict[int, list[Root]]:
-        """ Inverse image of each non-zero p = <beta, tau> for each beta in roots (all roots of U by default) """
-        if roots is None:
-            roots = Root.all(self.d)
-
-        result: dict[int, list[Root]] = {}
-        for r in roots:
-            p = self.dot_root(r)
-            if p > 0:
-                result.setdefault(p, []).append(r)
-        return result
-
-
-    # TODO: as a @cache_property ?
+    #TODO: definition changed thanks to above definition.
+    #Optimization might be done to avoid lists and dict, dealing only with iterables?
+    @property
     def orthogonal_roots(self) -> Iterable[Root]:
         """ All the root beta so that <beta, tau> = 0 """
-        return filter(
-            lambda root: self.dot_root(root) == 0,
-            Root.all(self.d)
-        )
+        if 0 in self.grading_roots:
+           return self.grading_roots[0]
+        else: 
+           return []
+
+    @property
+    def orthogonal_weights(self) -> Iterable[Root]:
+        """ All the root beta so that <beta, tau> = 0 """
+        if 0 in self.grading_weights:
+           return self.grading_weights[0]
+        else: 
+           return []
+
 
     @cached_property
     def sort_mod_sym_dim(self) -> "Tau":
