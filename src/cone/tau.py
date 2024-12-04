@@ -170,11 +170,10 @@ class Tau:
             ccomponent // res_gcd
         )
 
-    def dict_weights(self, weights: Optional[Iterable[Weight]] = None) -> dict[int, list[Weight]]:
+    @cached_property
+    def grading_weights(self) -> dict[int, list[Weight]]:
         """ dictionnary whose keys are eigenvalues of the action of tau on V. For each key p, the weights in the entry p correspond to a basis of the eigenspace """
-        if weights is None:
-            weights = Weight.all(self.d)
-
+        weights = Weight.all(self.d)
         result: dict[int, list[Weight]] = {}
         for chi in weights:
             p = self.dot_weight(chi)
@@ -184,17 +183,17 @@ class Tau:
     # TODO: generate the dictionary for all values of the product scalar
     # and filtering it later. Renaming it like grading_weights and removing
     # the optional weights list so that to be a @cached_property.
-    def positive_weights(self, weights: Optional[Iterable[Weight]] = None) -> dict[int, list[Weight]]:
-        """ Inverse image of each non-negative p = <w, tau> for each w in weights (all weights by default) """
-        if weights is None:
-            weights = Weight.all(self.d)
+    
+    def filter_dict(self, dic, prop) -> dict[int, list]:
+        """ Selects in the dictionnary dic, the keys satisfying the property prop"""
+        def property_key(pair):
+           x,v=pair
+           return prop(x)
+        return dict(filter(property_key, dic.items()))
 
-        result: dict[int, list[Weight]] = {}
-        for chi in weights:
-            p = self.dot_weight(chi)
-            if p >= 0:
-                result.setdefault(p, []).append(chi)
-        return result
+    @property
+    def positive_weights(self) -> dict[int, list[Weight]]:
+        return self.filter_dict(self.grading_weights,lambda x: x>0)
 
     # TODO: generate the dictionary for all values of the product scalar
     # and filtering it later. Renaming it like grading_roots and removing
