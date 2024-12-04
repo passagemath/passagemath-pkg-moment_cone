@@ -170,6 +170,17 @@ class Tau:
             ccomponent // res_gcd
         )
 
+    def dict_weights(self, weights: Optional[Iterable[Weight]] = None) -> dict[int, list[Weight]]:
+        """ dictionnary whose keys are eigenvalues of the action of tau on V. For each key p, the weights in the entry p correspond to a basis of the eigenspace """
+        if weights is None:
+            weights = Weight.all(self.d)
+
+        result: dict[int, list[Weight]] = {}
+        for chi in weights:
+            p = self.dot_weight(chi)
+            result.setdefault(p, []).append(chi)
+        return result
+
     # TODO: generate the dictionary for all values of the product scalar
     # and filtering it later. Renaming it like grading_weights and removing
     # the optional weights list so that to be a @cached_property.
