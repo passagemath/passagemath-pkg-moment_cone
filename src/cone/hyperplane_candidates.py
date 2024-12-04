@@ -75,24 +75,26 @@ def hyperplane_matrix(S: Sequence[Weight], d: Dimension) -> matrix:
     (1st coordinate 1 for C-component, len(d) other blocks of respective size di)
     
     Example :
-    sage: SW=list(Weight.all(Dimension([3,3,3])))[0:5]
-    sage: SW
-    [Weight((0, 0, 0), idx: 0),
-     Weight((0, 0, 1), idx: 1),
-     Weight((0, 0, 2), idx: 2),
-     Weight((0, 1, 0), idx: 3),
-     Weight((0, 1, 1), idx: 4)]
-    sage: hyperplane_matrix(SW,Dimension([3,3,3]))
-     [1 1 1 1 1]
-     [1 1 1 1 1]
-     [0 0 0 0 0]
-     [0 0 0 0 0]
-     [1 1 1 0 0]
-     [0 0 0 1 1]
-     [0 0 0 0 0]
-     [1 0 0 1 0]
-     [0 1 0 0 1]
-     [0 0 1 0 0]
+    >>> d = Dimension((3, 3, 3))
+    >>> SW = list(Weight.all(d))[0:5]
+    >>> for chi in SW:
+    ...     print(chi)
+    Weight((0, 0, 0), idx: 0)
+    Weight((0, 0, 1), idx: 1)
+    Weight((0, 0, 2), idx: 2)
+    Weight((0, 1, 0), idx: 3)
+    Weight((0, 1, 1), idx: 4)
+    >>> hyperplane_matrix(SW, d)
+    [1 1 1 1 1]
+    [1 1 1 1 1]
+    [0 0 0 0 0]
+    [0 0 0 0 0]
+    [1 1 1 0 0]
+    [0 0 0 1 1]
+    [0 0 0 0 0]
+    [1 0 0 1 0]
+    [0 1 0 0 1]
+    [0 0 1 0 0]
     """
     M = matrix(ZZ, d.sum + 1, len(S))
     # We could use Blocks but matrix doesn't support len
@@ -120,7 +122,14 @@ def has_too_much_geq_weights(chi: Weight, u: int) -> bool:
 
 def find_hyperplanes(d: Dimension, u: int) -> Iterable[list[Weight]]:
     """
-    Returns sets of weights, each set generating an hyperplane in X^*(T) likely to be the orthogonal of a dominant character tau, such that there is at most u weights we of V with tau(we)>0 
+    Returns sets of weights, each set generating an hyperplane in X^*(T) likely to be the orthogonal of a dominant character tau, such that there is at most u weights we of V with tau(we)>0
+
+    Example:
+    >>> from cone import *
+    >>> d = Dimension((4, 4, 4))
+    >>> hp = list(find_hyperplanes(d, 4**3))
+    >>> print("Number of raw hyperplanes:", len(hp))
+    Number of raw hyperplanes: 3622
     """
     St = WeightSieve([], [], [], [], [])
     for chi in Weight.all(d):
@@ -133,7 +142,15 @@ def find_hyperplanes(d: Dimension, u: int) -> Iterable[list[Weight]]:
 def find_hyperplanes_mod_sym_dim(d: Dimension, u: int) -> Iterable[list[Weight]]:
     """
     Same as find_hyperplanes, with results up to the action of the symmetries of d.
-    it should be faster since less possibilities are explored
+    
+    It should be faster since less possibilities are explored.
+
+    Example:
+    >>> from cone import *
+    >>> d = Dimension((4, 4, 4))
+    >>> hp = list(find_hyperplanes_mod_sym_dim(d, 4**3))
+    >>> print("Number of raw hyperplanes:", len(hp))
+    Number of raw hyperplanes: 1604
     """
     # Earlier filtering
     St = WeightSieve([], [], [], [], [])
@@ -165,10 +182,9 @@ def find_hyperplanes_mod_sym_dim(d: Dimension, u: int) -> Iterable[list[Weight]]
 
         # Removing symmetries
         # FIXME: orbit on weight or permutation ?!!
-        for p in Permutation(chi).orbit_symmetries(d.symmetries):
-            wp = Weight(p)
-            St.indeterminate.remove(wp)
-            St.excluded.append(wp)
+        for orbit_chi in chi.orbit_symmetries(d.symmetries):
+            St.indeterminate.remove(orbit_chi)
+            St.excluded.append(orbit_chi)
 
 def find_hyperplanes_impl(St: WeightSieve, d: Dimension, u: int) -> Iterable[list[Weight]]:
     """ Recursive part to find the hyperplane candidates """
