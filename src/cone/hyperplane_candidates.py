@@ -233,19 +233,17 @@ def find_1PS_mod_sym_dim(d: Dimension) -> Sequence["Tau"]:
     # Initialisation with regular 1-PS
     Liste_1PS=find_1PS_reg_mod_sym_dim(d,d.uMAX(d))
     print('For d=',d,'we get',len(Liste_1PS),' candidates regular dominant')
-    #Liste=Action_Sd_Liste_Tau(Liste1,d,Symd(d))
     # Looking for 1-PS by extension
     sub_dim=[Dimension(p) for p in Partition(d).all_subpartitions()][1:-1] #[1:-1] excludes 1... 1 and d
     for small_d in sub_dim:  
         umax=uMAX(d,small_d)
-        #Weights_small_d=Weight.all(small_d)
-        #sd_small_d=small_d.symmetries
-        #Weights_mod_small_d=Weight.all_mod_sym_dim(small_d)
-        ListeTau_sd_reg_ModSym= hyperplane_reg_mod_sym_dim(small_d,umax)
-        print('For d=',small_d,'we get',len(ListeTau_sd_reg_ModSym),' candidates regular dominant')
-        ListeTau_sd_reg=Action_Sd_Liste_Tau(ListeTau_sd_reg_ModSym,small_d,sd_small_d)
+        #Recover by induction all candidates 1-PS mod symmetry
+        Liste_1PS_smalld_mod_sym= hyperplane_reg_mod_sym_dim(small_d,umax)
+        print('For d=',small_d,'we get',len(Liste_1PS_small_mod_sym),' candidates regular dominant')
+        #from now on, the program has to be adapted
+        Liste_1PS_smalld=Action_Sd_Liste_Tau(Liste_1PS_smalld_mod_sym,small_d,sd_small_d)
         for e in Embeddings(d,small_d) :
-            for tau in ListeTau_sd_reg :
+            for tau in Liste_1PS_smalld:
                 tau_twist=[]
                 for i in e[1]:
                     shift=1+sum(small_d[:i])

@@ -304,6 +304,7 @@ class ReducedTau:
 
     # FIXME: returns an generator and not a sequence. Is it adapted to a property (or a cached_property?)
     # TODO: it will be used many time => returns a sequence and @cached_property
+    # TODO: remove? information already contained in orthogonal weight like subsequent function.
     @property
     def Pzero(self) -> Iterable[Weight]:
         """ Search for weights w of V so that C_component + sum_k tau_red[w_k, k] = 0 """

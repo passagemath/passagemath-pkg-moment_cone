@@ -30,3 +30,5 @@ from .hyperplane_candidates import *
 
 ##### Pour 444, il y a un cas où on rentre dans LR_multi avec L=[] (liste vide) et nu=[].
 ## Cela bugue mais je ne comprends pas si c'est normal d'avoir une telle entrée
+
+
