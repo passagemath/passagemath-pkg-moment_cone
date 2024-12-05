@@ -55,13 +55,12 @@ class Tau:
     def from_zero_weights(S: Sequence[Weight], d: Dimension) -> "Tau":
         """ From a set of weights generating an hyperplane in X^*(T), returns a primitive Tau orthogonal to the hyperplane"""
         M = hyperplane_matrix(S, d)
-        MQ = M.change_ring(QQ)
-        MQp=MQ.augment(matrix(QQ,[len(d)*[0] for i in range(sum(d)+1)])) 
+        Mp=M.augment(matrix(ZZ,[len(d)*[0] for i in range(sum(d)+1)])) 
         for u in range(len(d)):
            shift=sum(d[k] for k in range(u))
            for i in range(d[u]):
-               MQp[shift+i+1,u+len(S)]=1
-        b=MQp.kernel().basis()
+               Mp[shift+i+1,u+len(S)]=1
+        b=Mp.kernel().basis()
         if len(b)!=1:
            raise ValueError("Given set of weights does not generates an hyperplane")
         else:
@@ -250,7 +249,7 @@ class Tau:
            return []
 
 
-    @cached_property
+    @property
     def sort_mod_sym_dim(self) -> "Tau":
         """ Sort tau by block of the dimensions """
         blocks = (sorted(b) for b in Blocks(self.components, self.d.symmetries))

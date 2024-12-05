@@ -1,6 +1,5 @@
 from functools import cached_property
 from sage.all import Ring # type: ignore
-from math import floor
 
 from .utils import prod
 from .typing import *
@@ -71,6 +70,7 @@ class Dimension(tuple[int, ...]):
         For a dimension vector d=(d_i), and a list of number of Levi blocks in each d_i,
         computes the maximal dimension of a nilradical.
         """
+        from math import floor
         return(sum([floor(self[i]*self[i]/2*(1-1/e[i])) for i in range(len(self))]))
         
         
