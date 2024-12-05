@@ -32,3 +32,5 @@ dependencies = [
 ]
 requires-python = ">=3.10"
 
+[project.scripts]
+kron_cone = "cone.main:main_from_cmd"
