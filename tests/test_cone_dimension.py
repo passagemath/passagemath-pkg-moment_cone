@@ -13,11 +13,11 @@ class TestPermutation(unittest.TestCase):
         N = 10
         pds = random.sample(tuple(Weight.all(d)), N)
 
-        for ring in d.Q, d.QI, d.QV, d.QIV:
+        for ring in d.Q, d.QI, d.QV, d.QIV, d.QV2:
             v = cd.point_vect(pds, d, ring, bounds=(4, 10))
 
             self.assertTrue(all(
-                v[i] == 0 for i in range(d.prod)
+                v[i] == 0 for i in range(d.dimV)
                 if Weight.from_index(d, i) not in pds
             ))
 

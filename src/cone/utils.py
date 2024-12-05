@@ -83,8 +83,8 @@ def create_bijection(list1: Sequence[T], list2:Sequence[T]):
         list2cp[i] = None
     return Permutation(bijection)
 
-#TODO: à vérifier
-def Embeddings(d:Dimension,e:Dimension): # List of permutations of e that are at most d
+#TODO: à insérer dans le contexte
+def Embeddings(d,e): # List of permutations of e that are at most d
     Res=[]
     for ep in multiset_permutations(e):
         if all(ep[i] <= d[i] for i in range(len(e))): 

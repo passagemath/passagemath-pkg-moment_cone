@@ -3,7 +3,6 @@
 #import sage.libs.lrcalc.lrcalc as lr
 
 from .utils import *
-from .matrix import *
 from .blocks import *
 from .partition import *
 from .dimension import *
@@ -14,6 +13,7 @@ from .task import *
 from .inequality import *
 from .permutation import *
 from .hyperplane_candidates import *
+from .rings import *
 
     
 
