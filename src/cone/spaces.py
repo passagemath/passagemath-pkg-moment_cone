@@ -11,7 +11,27 @@ from .ring import vector, Vector
 from .weight import Weight
 
 def action_op_el(alpha: Root, v: Vector, d: Dimension) -> Vector:
-    """ Elementary action of a root on the vector v """
+    """
+    Elementary action of a root on the vector v
+    
+    Examples:
+    >>> from cone import *
+    >>> d = Dimension((2, 3))
+    >>> v = vector(QQ, d.dimV)
+    >>> v[:] = range(1, d.dimV + 1)
+    >>> v
+    (1, 2, 3, 4, 5, 6)
+    >>> alpha = Root(k=1, i=0, j=2)
+    >>> action_op_el(alpha, v, d)
+    (3, 0, 0, 6, 0, 0)
+
+    >>> d = Dimension((2, 3, 4))
+    >>> v = vector(QQ, d.dimV)
+    >>> v[:] = range(1, d.dimV + 1)
+    >>> alpha = Root(k=1, i=0, j=2)
+    >>> action_op_el(alpha, v, d)
+    (9, 10, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 21, 22, 23, 24, 0, 0, 0, 0, 0, 0, 0, 0)
+    """
     assert len(v) == d.dimV
     vp = vector(v.base_ring(), d.dimV)
 
