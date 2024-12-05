@@ -17,11 +17,11 @@ from .weight import Weight
 __all__ = (
     'VariableName',
     'PolynomialRingForWeights',
-    'PolynomialRing',
-    'Ring',
+    'PolynomialRing', 'Ring',
     'real_part', 'imag_part',
     'vector', 'matrix',
-    'QQ', 'I',
+    'Vector', 'Matrix',
+    'ZZ', 'QQ', 'I',
 )
 
 VariableName = str | Weight
