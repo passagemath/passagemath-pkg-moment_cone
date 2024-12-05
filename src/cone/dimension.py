@@ -1,8 +1,9 @@
 from functools import cached_property
 from sage.all import Ring # type: ignore
+from math import floor
 
 from .utils import prod
-
+from .typing import *
 
 __all__ = (
     "Dimension",
@@ -64,3 +65,12 @@ class Dimension(tuple[int, ...]):
             for chi in Weight.all(self)
         )
         return PolynomialRing(QQ[I], list(variables_names))
+
+    def uMAX(self,e: "Dimension")->int: # Maximal value of u obtained by extending a e-1-PS to a d-1-PS
+        """
+        For a dimension vector d=(d_i), and a list of number of Levi blocks in each d_i,
+        computes the maximal dimension of a nilradical.
+        """
+        return(sum([floor(self[i]*self[i]/2*(1-1/e[i])) for i in range(len(self))]))
+        
+        
