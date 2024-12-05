@@ -28,7 +28,7 @@ class Dimension(tuple[int, ...]):
     (4, 4, 3, 2)
     >>> d.sum
     13
-    >>> d.prod
+    >>> d.dimV
     96
     >>> d.symmetries
     (2, 1, 1)
@@ -44,7 +44,8 @@ class Dimension(tuple[int, ...]):
         return sum(self)
 
     @cached_property
-    def prod(self) -> int:
+    def dimV(self) -> int:
+        """ Dimension of the vectorial space V """
         return prod(self)
     
     @cached_property

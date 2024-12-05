@@ -15,7 +15,7 @@ def point_vect_QI(pds: Iterable[Weight], d: Dimension, ring: Ring, bounds: tuple
     Coefficients are integers withing the given closed interval.
     """
     from random import randint
-    v = vector(ring, d.prod)
+    v = vector(ring, d.dimV)
 
     for chi in pds:
         coeffs = tuple(randint(*bounds) for _ in range(ring.degree()))
@@ -31,7 +31,7 @@ def point_vect_QV(pds: Iterable[Weight], d: Dimension, ring: PolynomialRingForWe
     """
     Generates a base vector of Vect(pds) over given polynomial (real) ring using the variables associated to the weights.
     """
-    v = vector(ring, d.prod)
+    v = vector(ring, d.dimV)
 
     for chi in pds:
         v[chi.index_in(d)] = ring.variable(chi)
@@ -44,7 +44,7 @@ def point_vect_QV2(pds: Iterable[Weight], d: Dimension, ring: PolynomialRingForW
 
     For each weights, at its index, returns va_chi * z + vb_chi
     """
-    v = vector(ring, d.prod)
+    v = vector(ring, d.dimV)
     z = ring.variable("z")
     for chi in pds:
         va, vb = ring.variable(chi)
@@ -55,7 +55,7 @@ def point_vect_QIV(pds: Iterable[Weight], d: Dimension, ring: PolynomialRingForW
     """
     Generates a base vector of Vect(pds) over given polynomial (complex) ring using the variables associated to the weights.
     """
-    v = vector(ring, d.prod)
+    v = vector(ring, d.dimV)
 
     for chi in pds:
         vr, vi = ring.variable(chi)
@@ -70,7 +70,7 @@ def point_vect_QZ(pds: Iterable[Weight], d: Dimension, ring: Ring, bounds: tuple
     Coefficients are integers withing the given closed interval.
     """
     from random import randint
-    v = vector(ring, d.prod)
+    v = vector(ring, d.dimV)
     z = ring.variable("z")
 
     for chi in pds:
