@@ -37,6 +37,18 @@ def point_vect_QV(pds: Iterable[Weight], d: Dimension, ring: PolynomialRingForWe
 
     return v
 
+def point_vect_QV2(pds: Iterable[Weight], d: Dimension, ring: PolynomialRingForWeights) -> Vector:
+    """
+    Generates a base vector of Vect(pds) over given polynomial (real) ring using the variables associated to the weights.
+
+    For each weights, at its index, returns va_chi * z + vb_chi
+    """
+    v = vector(ring, d.prod)
+    z = ring.variable("z")
+    for chi in pds:
+        va, vb = ring.variable(chi)
+        v[chi.index_in(d)] = va * z + vb
+    return v
 
 def point_vect_QIV(pds: Iterable[Weight], d: Dimension, ring: PolynomialRingForWeights) -> Vector:
     """
@@ -75,6 +87,8 @@ def point_vect(pds: Iterable[Weight], d: Dimension, ring: PolynomialRingForWeigh
             return point_vect_QZ(pds, d, ring, bounds)
         case d.QV:
             return point_vect_QV(pds, d, ring)
+        case d.QV2:
+            return point_vect_QV2(pds, d, ring)
         case d.QIV:
             return point_vect_QIV(pds, d, ring)
         case _:

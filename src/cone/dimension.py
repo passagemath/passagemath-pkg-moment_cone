@@ -74,6 +74,7 @@ class Dimension(tuple[int, ...]):
         from .weight import Weight
         return PolynomialRingForWeights(
             QQ,
+            "z",
             weights=Weight.all(self),
             seed=('va', 'vb'),
         )
