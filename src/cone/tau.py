@@ -281,7 +281,21 @@ class Tau:
         return (sum_di2 - sum_mi2) // 2
 
 class ReducedTau:
-    """ Tau in a reduction form """
+    """
+    Tau in a reduction form
+    
+    Example:
+    >>> tau = Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1)), 1)
+    >>> tau
+    1 | 3 3 2 2 | 2 2 1 | 2 2 1
+    >>> rtau = tau.reduced
+    >>> rtau
+    1 | 3^2 2^2 | 2^2 1^1 | 2^2 1^1
+    >>> rtau.values
+    3 2 | 2 1 | 2 1
+    >>> rtau.mult
+    2 2 | 2 1 | 2 1
+    """
     __slots__ = 'ccomponent', 'values', 'mult'
     ccomponent: Optional[int]
     values: Blocks[int]
