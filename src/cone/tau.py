@@ -81,15 +81,21 @@ class Tau:
         else:
            return Tau.from_flatten(b[0],d)
 
+    @property
     def opposite(self) -> "Tau":
-        """ Returns the opposite of some tau (same orthogonal hyperplane)
         """
-        flatten_opp=[-self.ccomponent]
-        dd=[]
-        for comp in self.components:
-           flatten_opp+=[-x for x in comp]
-           dd.append(len(comp))
-        return Tau.from_flatten(flatten_opp,Dimension(dd))
+        Returns the opposite of some tau (same orthogonal hyperplane)
+
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau
+        -7 | 3 2 2 | 4 2 1 | 3 2
+        >>> tau.opposite
+        7 | -3 -2 -2 | -4 -2 -1 | -3 -2
+        """
+        return Tau.from_flatten(
+            (-x for x in self.flattened),
+            self.d
+        )
 
     def __len__(self) -> int:
         """ Number of components """
@@ -208,23 +214,47 @@ class Tau:
 
     @cached_property
     def grading_weights(self) -> dict[int, list[Weight]]:
-        """ dictionary whose keys are eigenvalues of the action of tau on V. For each key p, the weights in the entry p correspond to a basis of the eigenspace """
-        weights = Weight.all(self.d)
-        return self.grading_dictionary(weights,self.dot_weight)
-        # Former version
-        #weights = Weight.all(self.d)
-        #result: dict[int, list[Weight]] = {}
-        #for chi in weights:
-        #    p = self.dot_weight(chi)
-        #    result.setdefault(p, []).append(chi)
-        #return result
+        """
+        Dictionary whose keys are eigenvalues of the action of tau on V.
         
+        For each key p, the weights in the entry p correspond to a basis of the eigen space
+        
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau
+        -7 | 3 2 2 | 4 2 1 | 3 2
+        >>> gw = tau.grading_weights
+        >>> for k in sorted(gw.keys()):
+        ...     print(f"{k}:", gw[k])
+        -2: [Weight((1, 2, 1), idx: 11), Weight((2, 2, 1), idx: 17)]
+        -1: [Weight((0, 2, 1), idx: 5), Weight((1, 1, 1), idx: 9), Weight((1, 2, 0), idx: 10), Weight((2, 1, 1), idx: 15), Weight((2, 2, 0), idx: 16)]
+        0: [Weight((0, 1, 1), idx: 3), Weight((0, 2, 0), idx: 4), Weight((1, 1, 0), idx: 8), Weight((2, 1, 0), idx: 14)]
+        1: [Weight((0, 1, 0), idx: 2), Weight((1, 0, 1), idx: 7), Weight((2, 0, 1), idx: 13)]
+        2: [Weight((0, 0, 1), idx: 1), Weight((1, 0, 0), idx: 6), Weight((2, 0, 0), idx: 12)]
+        3: [Weight((0, 0, 0), idx: 0)]
+        """
+        from .utils import grading_dictionary
+        return grading_dictionary(Weight.all(self.d), self.dot_weight)
 
     @cached_property
     def grading_roots(self) -> dict[int, list[Root]]:
-        """ dictionary whose keys are eigenvalues of the action of tau on u (sum of positive root spaces). For each key p, the roots in the entry p correspond to a basis of the eigenspace """
-        roots = Root.all_of_U(self.d)
-        return self.grading_dictionary(roots,self.dot_root)
+        """
+        Dictionary whose keys are eigenvalues of the action of tau on U (sum of positive root spaces).
+        
+        For each key p, the roots in the entry p correspond to a basis of the eigen space.
+
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau
+        -7 | 3 2 2 | 4 2 1 | 3 2
+        >>> gr = tau.grading_roots
+        >>> for k in sorted(gr.keys()):
+        ...     print(f"{k}:", gr[k])
+        0: [Root(k=0, i=1, j=2)]
+        1: [Root(k=0, i=0, j=1), Root(k=0, i=0, j=2), Root(k=1, i=1, j=2), Root(k=2, i=0, j=1)]
+        2: [Root(k=1, i=0, j=1)]
+        3: [Root(k=1, i=0, j=2)]
+        """
+        from .utils import grading_dictionary
+        return grading_dictionary(Root.all_of_U(self.d), self.dot_root)
     
     def filter_dict(self, dic, prop) -> dict[int, list]:
         """ Selects in the dictionary dic, the keys satisfying the property prop"""
@@ -235,33 +265,86 @@ class Tau:
 
     @property
     def positive_weights(self) -> dict[int, list[Weight]]:
-        return self.filter_dict(self.grading_weights,lambda x: x>0)
+        """
+        Basis of the eigen space for positive eigen values for the action of tau on V.
+
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau
+        -7 | 3 2 2 | 4 2 1 | 3 2
+        >>> gw = tau.positive_weights
+        >>> for k in sorted(gw.keys()):
+        ...     print(f"{k}:", gw[k])
+        1: [Weight((0, 1, 0), idx: 2), Weight((1, 0, 1), idx: 7), Weight((2, 0, 1), idx: 13)]
+        2: [Weight((0, 0, 1), idx: 1), Weight((1, 0, 0), idx: 6), Weight((2, 0, 0), idx: 12)]
+        3: [Weight((0, 0, 0), idx: 0)]
+        """
+        from .utils import filter_dict_by_key
+        return filter_dict_by_key(self.grading_weights, lambda x: x > 0)
     
     @property
     def non_negative_weights(self) -> dict[int, list[Weight]]:
-        return self.filter_dict(self.grading_weights,lambda x: x>=0)
+        """
+        Basis of the eigen space for non-negative eigen values for the action of tau on V.
+
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau
+        -7 | 3 2 2 | 4 2 1 | 3 2
+        >>> gw = tau.non_negative_weights
+        >>> for k in sorted(gw.keys()):
+        ...     print(f"{k}:", gw[k])
+        0: [Weight((0, 1, 1), idx: 3), Weight((0, 2, 0), idx: 4), Weight((1, 1, 0), idx: 8), Weight((2, 1, 0), idx: 14)]
+        1: [Weight((0, 1, 0), idx: 2), Weight((1, 0, 1), idx: 7), Weight((2, 0, 1), idx: 13)]
+        2: [Weight((0, 0, 1), idx: 1), Weight((1, 0, 0), idx: 6), Weight((2, 0, 0), idx: 12)]
+        3: [Weight((0, 0, 0), idx: 0)]
+        """
+        from .utils import filter_dict_by_key
+        return filter_dict_by_key(self.grading_weights, lambda x: x >= 0)
     
     @property
     def positive_roots(self) -> dict[int, list[Root]]:
-        return self.filter_dict(self.grading_roots,lambda x: x>0)
+        """
+        Basis of the eigen space for positive eigen values for the action of tau on U.
+
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau
+        -7 | 3 2 2 | 4 2 1 | 3 2
+        >>> gr = tau.positive_roots
+        >>> for k in sorted(gr.keys()):
+        ...     print(f"{k}:", gr[k])
+        1: [Root(k=0, i=0, j=1), Root(k=0, i=0, j=2), Root(k=1, i=1, j=2), Root(k=2, i=0, j=1)]
+        2: [Root(k=1, i=0, j=1)]
+        3: [Root(k=1, i=0, j=2)]
+        """
+        from .utils import filter_dict_by_key
+        return filter_dict_by_key(self.grading_roots, lambda x: x > 0)
 
     #TODO: definition changed thanks to above definition.
     #Optimization might be done to avoid lists and dict, dealing only with iterables?
     @property
-    def orthogonal_roots(self) -> Iterable[Root]:
-        """ All the root beta so that <beta, tau> = 0 """
-        if 0 in self.grading_roots:
-           return self.grading_roots[0]
-        else: 
-           return []
+    def orthogonal_roots(self) -> list[Root]:
+        """
+        All the roots beta so that <beta, tau> = 0
+
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau
+        -7 | 3 2 2 | 4 2 1 | 3 2
+        >>> tau.orthogonal_roots
+        [Root(k=0, i=1, j=2)]
+        """
+        return self.grading_roots.get(0, [])
 
     @property
-    def orthogonal_weights(self) -> Iterable[Root]:
-        """ All the root beta so that <beta, tau> = 0 """
-        if 0 in self.grading_weights:
-           return self.grading_weights[0]
-        else: 
-           return []
+    def orthogonal_weights(self) -> list[Weight]:
+        """
+        All the root beta so that <beta, tau> = 0
+        
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau
+        -7 | 3 2 2 | 4 2 1 | 3 2
+        >>> tau.orthogonal_weights
+        [Weight((0, 1, 1), idx: 3), Weight((0, 2, 0), idx: 4), Weight((1, 1, 0), idx: 8), Weight((2, 1, 0), idx: 14)]
+        """
+        return self.grading_weights.get(0, [])
 
     @cached_property
     def sort_mod_sym_dim(self) -> "Tau":
