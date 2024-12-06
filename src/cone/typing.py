@@ -4,3 +4,5 @@ from typing import Any, Self, Literal, TYPE_CHECKING
 from collections.abc import Sequence, MutableSequence, Sized, Callable
 
 T = TypeVar('T') # Template parameter for generic classes or functions
+U = TypeVar('U') # Template parameter for generic classes or functions
+

@@ -62,3 +62,45 @@ def short_prod(values: Iterable[int]) -> int:
         if result == 0:
             return 0
     return result
+
+def grading_dictionary(elements: Iterable[T], fn: Callable[[T], U]) -> dict[U, list[T]]:
+    """ 
+    From a sequence of elements and a function that applies on these elements,
+    generates a dictionary that maps each image to it's preimage.
+
+    Example:
+    >>> elements = range(40)
+    >>> fn = lambda e: e % 7
+    >>> gd = grading_dictionary(elements, fn)
+    >>> for k in sorted(gd.keys()):
+    ...     print(f"{k}:", gd[k])
+    0: [0, 7, 14, 21, 28, 35]
+    1: [1, 8, 15, 22, 29, 36]
+    2: [2, 9, 16, 23, 30, 37]
+    3: [3, 10, 17, 24, 31, 38]
+    4: [4, 11, 18, 25, 32, 39]
+    5: [5, 12, 19, 26, 33]
+    6: [6, 13, 20, 27, 34]
+    """
+    result: dict[U, list[T]] = {}
+    for e in elements:
+        v = fn(e)
+        result.setdefault(v, []).append(e)
+    return result
+
+def filter_dict_by_key(d: dict[T, U], predicate: Callable[[T], bool]) -> dict[T, U]:
+    """
+    Filter a dictionary using a predicate on its keys
+    Example:
+    >>> elements = range(40)
+    >>> fn = lambda e: e % 7
+    >>> gd = grading_dictionary(elements, fn)
+    >>> gdf = filter_dict_by_key(gd, lambda k: k % 2 == 0)
+    >>> for k in sorted(gdf.keys()):
+    ...     print(f"{k}:", gdf[k])
+    0: [0, 7, 14, 21, 28, 35]
+    2: [2, 9, 16, 23, 30, 37]
+    4: [4, 11, 18, 25, 32, 39]
+    6: [6, 13, 20, 27, 34]
+    """
+    return {k: v for k, v in d.items() if predicate(k)}
