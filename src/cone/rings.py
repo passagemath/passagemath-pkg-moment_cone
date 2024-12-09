@@ -1,8 +1,16 @@
 """
-Basic tools to manipulate rings and polynomial rings with variables
+Basic tools to manipulate rings and polynomial rings with variables.
 
 Also re-implements some common functions and classes from Sage with support
-for polynomial rings with variables.
+for polynomial rings with variables, eg vector creation with `vector`,
+matrix creation with `matrix`, and real/imag part with `real_part` and `imag_part`
+
+This module also features some of the basics rings from Sage that we will
+commonly used, like `ZZ` and `QQ`.
+
+Remark: it is recommended to import this module instead of importing directly from Sage, when possible.
+
+
 """
 from sage.all import Ring, PolynomialRing # type: ignore
 from sage.rings.polynomial.polynomial_element import Polynomial # type: ignore
