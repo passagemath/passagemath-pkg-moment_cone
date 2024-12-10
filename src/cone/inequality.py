@@ -12,7 +12,7 @@ __all__ = (
 
 class Inequality:
     """
-    An inequality composed of a Tau and a permutation
+    An inequality composed of a Tau and a list of permutations
     
     Example :
     >>> from cone import *
