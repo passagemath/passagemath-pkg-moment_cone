@@ -95,7 +95,7 @@ def point_vect(pds: Iterable[Weight], d: Dimension, ring: PolynomialRingForWeigh
         case _:
             raise ValueError("Unknown ring")
         
-def rank_RC(M: Matrix, d: Dimension) -> int:
+def rank_RC(M: Matrix) -> int:
     """
     Rank of the R-linear from R^(number of columns) to C^(number of rows)
 
@@ -105,7 +105,7 @@ def rank_RC(M: Matrix, d: Dimension) -> int:
     >>> vr, vi = d.QIV.variable(weights[2])
     >>> M[0, 0] = vr + I * vi
     >>> M[0, 5] = 3 * vr
-    >>> rank_RC(M, d)
+    >>> rank_RC(M)
     2
     >>> M.change_ring(M.base_ring().fraction_field()).rank()
     1
