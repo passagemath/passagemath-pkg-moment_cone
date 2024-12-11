@@ -202,6 +202,13 @@ class Tau:
             ccomponent // res_gcd
         )
 
+    def grading_weights_in(self, weights: Iterable[Weight]) -> dict[int, list[Weight]]:
+        """
+        Dictionary whose keys are eigenvalues of the action of tau on a give subset of V.
+        """
+        from .utils import grading_dictionary
+        return grading_dictionary(weights, self.dot_weight)
+
     @cached_property
     def grading_weights(self) -> dict[int, list[Weight]]:
         """
@@ -222,8 +229,15 @@ class Tau:
         2: [Weight((0, 0, 1), idx: 1), Weight((1, 0, 0), idx: 6), Weight((2, 0, 0), idx: 12)]
         3: [Weight((0, 0, 0), idx: 0)]
         """
+        return self.grading_weights_in(Weight.all(self.d))
+
+    def grading_roots_in(self, roots: Iterable[Root]) -> dict[int, list[Root]]:
+        """
+        Dictionary whose keys are eigenvalues of the action of tau on the given subset of U.
+        """
         from .utils import grading_dictionary
-        return grading_dictionary(Weight.all(self.d), self.dot_weight)
+        return grading_dictionary(roots, self.dot_root)
+
 
     @cached_property
     def grading_roots(self) -> dict[int, list[Root]]:
@@ -243,8 +257,7 @@ class Tau:
         2: [Root(k=1, i=0, j=1)]
         3: [Root(k=1, i=0, j=2)]
         """
-        from .utils import grading_dictionary
-        return grading_dictionary(Root.all_of_U(self.d), self.dot_root)
+        return self.grading_roots_in(Root.all_of_U(self.d))
 
     @property
     def positive_weights(self) -> dict[int, list[Weight]]:
@@ -263,7 +276,27 @@ class Tau:
         """
         from .utils import filter_dict_by_key
         return filter_dict_by_key(self.grading_weights, lambda x: x > 0)
-    
+
+    @property
+    def non_positive_weights(self) -> dict[int, list[Weight]]:
+        """
+        Basis of the eigen space for non-positive eigen values for the action of tau on V.
+
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau
+        -7 | 3 2 2 | 4 2 1 | 3 2
+        >>> gw = tau.non_positive_weights
+        >>> for k in sorted(gw.keys()):
+        ...     print(f"{k}:", gw[k])
+        -2: [Weight((1, 2, 1), idx: 11), Weight((2, 2, 1), idx: 17)]
+        -1: [Weight((0, 2, 1), idx: 5), Weight((1, 1, 1), idx: 9), Weight((1, 2, 0), idx: 10), Weight((2, 1, 1), idx: 15), Weight((2, 2, 0), idx: 16)]
+        0: [Weight((0, 1, 1), idx: 3), Weight((0, 2, 0), idx: 4), Weight((1, 1, 0), idx: 8), Weight((2, 1, 0), idx: 14)]
+
+        """
+        from .utils import filter_dict_by_key
+        return filter_dict_by_key(self.grading_weights, lambda x: x <= 0)
+
+
     @property
     def non_negative_weights(self) -> dict[int, list[Weight]]:
         """

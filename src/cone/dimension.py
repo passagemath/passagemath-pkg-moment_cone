@@ -31,9 +31,24 @@ class Dimension(tuple[int, ...]):
     13
     >>> d.dimV
     96
+    >>> d.dimU
+    20
     >>> d.symmetries
     (2, 1, 1)
+
+    It should also be noted that this class ensure uniqueness of an instance
+    for a given sequence of dimensions:
+    >>> d2 = Dimension((4, 4, 3, 2))
+    >>> d is d2
+    True
     """
+    all_instances: dict["Dimension", "Dimension"] = {}
+
+    def __new__(cls, dimensions):
+        """ Construction with reusing of already computed Dimension instance """
+        d = super().__new__(cls, dimensions)
+        return cls.all_instances.setdefault(d, d)
+    
     @cached_property
     def symmetries(self) -> tuple[int, ...]:
         """ Returns length of the symmetries in the dimensions """
@@ -46,8 +61,14 @@ class Dimension(tuple[int, ...]):
 
     @cached_property
     def dimV(self) -> int:
-        """ Dimension of the vectorial space V """
+        """ Dimension of the vector space V """
         return prod(self)
+
+    @cached_property
+    def dimU(self) -> int:
+        """ Dimension of the unipotent subgroup U """
+        g = sum(i**2 for i in self)
+        return (g - len(self)) // 2
     
     @cached_property
     def Q(self) -> "Ring":

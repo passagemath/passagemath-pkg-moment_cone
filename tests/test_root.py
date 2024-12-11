@@ -15,7 +15,7 @@ class TestRoot(unittest.TestCase):
         self.assertTrue(r1.is_in_U)
         self.assertFalse(r2.is_in_U)
 
-    def test_all(self) -> None:
+    def test_all_of_U(self) -> None:
         d = Dimension((2, 3, 4))
         all_r = tuple(Root.all_of_U(d))
 
