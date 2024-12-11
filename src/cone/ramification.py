@@ -14,7 +14,7 @@ def is_not_contracted(inverse_v: Sequence[Root], tau: Tau, method: Method) -> bo
 
     TODO: example
     """
-    d = tau.d # FIXME: Here, d is recreated from scratch, without rings. Should we ensure the uniqueness of the instance of d?
+    d = tau.d
 
     # Ring depending on the computational method
     if method == "probabilistic":
@@ -30,7 +30,7 @@ def is_not_contracted(inverse_v: Sequence[Root], tau: Tau, method: Method) -> bo
     non_negative_weights = list(chain.from_iterable(tau.non_negative_weights.values()))
     positive_weights = list(chain.from_iterable(tau.positive_weights.values()))
 
-    # FIXME: Weight.all(d) or simply tau.orthogonal_weights?
+    # FIXME: why not positive_weights instead of non_negative_weights?
     v = point_vect(non_negative_weights, d, ring, bounds=(-1000, 1000))
 
     T = matrix(ring, len(positive_weights), len(inverse_v))
