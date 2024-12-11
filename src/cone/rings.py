@@ -1,8 +1,16 @@
 """
-Basic tools to manipulate rings and polynomial rings with variables
+Basic tools to manipulate rings and polynomial rings with variables.
 
 Also re-implements some common functions and classes from Sage with support
-for polynomial rings with variables.
+for polynomial rings with variables, eg vector creation with `vector`,
+matrix creation with `matrix`, and real/imag part with `real_part` and `imag_part`
+
+This module also features some of the basics rings from Sage that we will
+commonly used, like `ZZ` and `QQ`.
+
+Remark: it is recommended to import this module instead of importing directly from Sage, when possible.
+
+
 """
 from sage.all import Ring, PolynomialRing # type: ignore
 from sage.rings.polynomial.polynomial_element import Polynomial # type: ignore
@@ -36,11 +44,11 @@ def variable_name(name_or_weight: VariableName, seed: str = "v") -> str:
         return seed + "_" + "_".join(map(str, name_or_weight))
 
 def variable(ring_or_gens: Ring | RingGens, name_or_weight: VariableName, seed: str = "v") -> Variable:
-    """ Get variable of a ring from it's name or sequence of coefficients (typically a weight) """
+    """ Get variable of a ring from it's name or weight """
     return variables(ring_or_gens, (name_or_weight,), seed)[0]
     
 def variables(ring_or_gens: Ring | RingGens, name_or_weight: Iterable[VariableName], seed: str = "v") -> tuple[Variable, ...]:
-    """ Get multiple variables of a ring from it's name or sequence of coefficients (typically a weight) """
+    """ Get multiple variables of a ring from it's name or weight """
     if not isinstance(ring_or_gens, dict):
         ring_or_gens = ring_or_gens.gens_dict()
     return tuple(ring_or_gens[variable_name(nc, seed)] for nc in name_or_weight)
@@ -113,7 +121,6 @@ class PolynomialRingForWeights:
                  names: str | Iterable[str] = (), # Fixed variable names
                  weights: Iterable[Weight] = (), # Generates variables for each weight
                  seed: str | Iterable[str] = "v", # Seed(s) of the variable associated to each weight
-
                  ):
         if isinstance(names, str):
             names = (names,)
@@ -124,6 +131,7 @@ class PolynomialRingForWeights:
             seed = tuple(seed)
         assert len(seed) > 0
 
+        # One variable name per weight and per seed
         from itertools import chain
         variables_names = list(names) + [
             variable_name(chi, seed=s)
@@ -133,10 +141,11 @@ class PolynomialRingForWeights:
 
         from sage.all import PolynomialRing
         self.sage_ring = PolynomialRing(base_ring, variables_names)
-        self.ring_gens = self.sage_ring.gens_dict()
+        self.ring_gens = self.sage_ring.gens_dict() # Faster if we don't regenerate the dictionary at each variable access
         self.seed = seed
 
     def variable(self, name_or_weight: VariableName) -> Variable:
+        """ Get variable of this polynomial ring from it's name or weight """
         if isinstance(name_or_weight, str):
             return variable(self.ring_gens, name_or_weight)
         else:
@@ -153,12 +162,15 @@ class PolynomialRingForWeights:
         return repr(self.sage_ring)
     
     def __call__(self, *args, **kwargs) -> Any:
+        """ Forward call to the internal Sage ring """
         return self.sage_ring(*args, **kwargs)
     
     def __getattr__(self, name) -> Any:
+        """ Forward access to missing attributes & methods to the internal Sage ring """
         return getattr(self.sage_ring, name)
     
     def __getitem__(self, idx) -> Any:
+        """ Forward item reading to the internal Sage ring """
         return self.sage_ring[idx]
 
 
