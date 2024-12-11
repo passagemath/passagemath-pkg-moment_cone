@@ -2,6 +2,7 @@ from .typing import *
 from .tau import Tau
 from .permutation import Permutation
 from .blocks import Blocks
+from .root import Root
 
 from functools import cached_property
 import itertools
@@ -66,10 +67,24 @@ class Inequality:
         tau = Tau(tau_components, self.tau.ccomponent)
         return Inequality(tau, w)
 
-    def inversions(self) -> Iterable["Root"]:
-        """ Returns all possible inversions Root([k,i,j]) of ineq.w """
-        for k,p in enumerate(self.w):
-            for i,j in p.inversions: # parenthese ou pas ??
+    @property
+    def inversions(self) -> Iterable[Root]:
+        """
+        Returns all possible inversions Root(k, i, j) of w
+        
+        >>> from cone import *
+        >>> d = Dimension((2, 2, 2, 3))
+        >>> tau = Tau.from_flatten([1, 6, 2, 1, 4, 1, 4, 5, 3, 1], d)
+        >>> w = Permutation((0, 1)), Permutation((1, 0)), Permutation((0, 1)), Permutation((2, 0, 1))
+        >>> ineq = Inequality(tau, w)
+        >>> for r in ineq.inversions:
+        ...     print(r)
+        Root(k=1, i=0, j=1)
+        Root(k=3, i=0, j=1)
+        Root(k=3, i=0, j=2)
+        """
+        for k, p in enumerate(self.w):
+            for i, j in p.inversions:
                 yield Root(k, i, j)
 
 
