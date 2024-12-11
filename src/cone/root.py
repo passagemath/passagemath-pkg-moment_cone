@@ -21,22 +21,62 @@ class Root:
     
     @staticmethod
     def all_of_U(d: Dimension) -> Iterable["Root"]:
-        """ Returns all possible root from U for given dimensions """
+        """
+        Returns all possible root from U for given dimensions
+        
+        Example:
+        >>> d = Dimension((2, 3))
+        >>> for root in Root.all_of_U(d):
+        ...     print(root)
+        Root(k=0, i=0, j=1)
+        Root(k=1, i=0, j=1)
+        Root(k=1, i=0, j=2)
+        Root(k=1, i=1, j=2)
+        """
         for k, dk in enumerate(d):
             for i, j in itertools.combinations(range(dk), 2):
                 yield Root(k, i, j)
 
     @staticmethod
     def all(d: Dimension) -> Iterable["Root"]:
-        """ Returns all possible roots from G for given dimensions """
+        """
+        Returns all possible roots from G (i != j) for given dimensions
+        
+        Example:
+        >>> d = Dimension((2, 3))
+        >>> for root in Root.all(d):
+        ...     print(root)
+        Root(k=0, i=0, j=1)
+        Root(k=0, i=1, j=0)
+        Root(k=1, i=0, j=1)
+        Root(k=1, i=1, j=0)
+        Root(k=1, i=0, j=2)
+        Root(k=1, i=2, j=0)
+        Root(k=1, i=1, j=2)
+        Root(k=1, i=2, j=1)
+        """
         for k, dk in enumerate(d):
-            for i, j in itertools.product(range(dk), repeat=2) :
-                if i != j:
-                    yield Root(k, i, j)
+            for i, j in itertools.combinations(range(dk), 2):
+                yield Root(k, i, j)
+                yield Root(k, j, i)
+
 
     @staticmethod
     def all_of_T(d: Dimension) -> Iterable["Root"]:
-        """ Returns all possible roots from T for given dimensions """
+        """
+        Returns all possible roots from T (i == j) for given dimensions
+        
+        
+        Example:
+        >>> d = Dimension((2, 3))
+        >>> for root in Root.all_of_T(d):
+        ...     print(root)
+        Root(k=0, i=0, j=0)
+        Root(k=0, i=1, j=1)
+        Root(k=1, i=0, j=0)
+        Root(k=1, i=1, j=1)
+        Root(k=1, i=2, j=2)
+        """
         for k, dk in enumerate(d):
             for i in range(dk):
                 yield Root(k, i, i)            
