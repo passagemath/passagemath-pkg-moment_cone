@@ -505,7 +505,7 @@ def find_1PS_reg_mod_sym_dim(d:Dimension,u) -> Sequence["Tau"]:
     """
     Liste_hr=find_hyperplanes_reg_mod_sym_dim(d,u)
     Liste_1PS=list(set([Tau.from_zero_weights(h,d).end0_representative.sort_mod_sym_dim for h in Liste_hr]))
-    Liste_1PS_sign=Liste_1PS+[tau.opposite() for tau in Liste_1PS]
+    Liste_1PS_sign=Liste_1PS+[tau.opposite for tau in Liste_1PS]
     return [tau for tau in Liste_1PS_sign if tau.is_dom_reg]
 
 def find_1PS_mod_sym_dim(d: Dimension) -> Sequence["Tau"]:
