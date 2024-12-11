@@ -278,6 +278,13 @@ class Tau:
         """
         blocks = (sorted(b) for b in Blocks(self.components, self.d.symmetries))
         return Tau(itertools.chain.from_iterable(blocks), self.ccomponent)
+        
+    def orbit_symmetries(self) -> Iterable["Tau"]:
+        """
+        Lists the orbit of tau under symmetries of dimensions of its components  
+        """
+        for sym_comp in self._components.orbit_symmetries():
+           yield Tau(sym_comp,self.ccomponent)
 
     @cached_property
     def dim_Pu(self) -> int:
@@ -398,7 +405,7 @@ def find_1PS_mod_sym_dim(d: Dimension) -> Sequence["Tau"]:
                     shift=1+sum(small_d[:i])
                     tau_twist+=tau[shift:shift+small_d[i]]   
                 #We just applied to tau the permutation applied to small_d
-                list_tau_extended=ExtendTauGL_power_s(tau_twist,d,e[0])
+                list_tau_extended=expand_blocks(values,mult) #ExtendTauGL_power_s(tau_twist,d,e[0])
                 list_tau_extended=[[tau[0]]+l for l in list_tau_extended]
                 # Check dimU
                 list_tau_extended_dimU=[]
