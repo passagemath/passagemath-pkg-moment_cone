@@ -66,3 +66,10 @@ class Inequality:
         tau = Tau(tau_components, self.tau.ccomponent)
         return Inequality(tau, w)
 
+    def inversions(self) -> Iterable["Root"]:
+        """ Returns all possible inversions Root([k,i,j]) of ineq.w """
+        for k,p in enumerate(self.w):
+            for i,j in p.inversions: # parenthese ou pas ??
+                yield Root(k, i, j)
+
+
