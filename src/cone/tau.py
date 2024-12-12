@@ -136,19 +136,20 @@ class Tau:
         Extends self in all possible manners to a Tau of dimension d
                 
         Example:
-        >>>tau=Tau([[5,4,0],[4,3,0],[4,2,0]],-1)
-        >>>tau
+        >>> tau = Tau([[5, 4, 0], [4, 3, 0], [4, 2, 0]], -1)
+        >>> tau
         -1 | 5 4 0 | 4 3 0 | 4 2 0
-        >>>list(tau.m_extend_with_repetitions(Dimension([4,4,3])))
-        [-1 | 5 4 0 0 | 4 3 0 0 | 4 2 0,
-         -1 | 5 4 0 0 | 4 3 3 0 | 4 2 0,
-         -1 | 5 4 0 0 | 4 4 3 0 | 4 2 0,
-         -1 | 5 4 4 0 | 4 3 0 0 | 4 2 0,
-         -1 | 5 4 4 0 | 4 3 3 0 | 4 2 0,
-         -1 | 5 4 4 0 | 4 4 3 0 | 4 2 0,
-         -1 | 5 5 4 0 | 4 3 0 0 | 4 2 0,
-         -1 | 5 5 4 0 | 4 3 3 0 | 4 2 0,
-         -1 | 5 5 4 0 | 4 4 3 0 | 4 2 0]
+        >>> for t in tau.m_extend_with_repetitions(Dimension([4, 4, 3])):
+        ...     print(t)
+        -1 | 5 4 0 0 | 4 3 0 0 | 4 2 0
+        -1 | 5 4 0 0 | 4 3 3 0 | 4 2 0
+        -1 | 5 4 0 0 | 4 4 3 0 | 4 2 0
+        -1 | 5 4 4 0 | 4 3 0 0 | 4 2 0
+        -1 | 5 4 4 0 | 4 3 3 0 | 4 2 0
+        -1 | 5 4 4 0 | 4 4 3 0 | 4 2 0
+        -1 | 5 5 4 0 | 4 3 0 0 | 4 2 0
+        -1 | 5 5 4 0 | 4 3 3 0 | 4 2 0
+        -1 | 5 5 4 0 | 4 4 3 0 | 4 2 0
         """
         extend_each_comp=[extend_with_repetitions(x,d[i]) for i,x in enumerate(self._components)]
         for ext in itertools.product(*extend_each_comp):

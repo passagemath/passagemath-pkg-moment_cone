@@ -121,12 +121,12 @@ def Embeddings_mod_sym(d: Sequence[int],e:Sequence[int])-> Iterable[Iterable[int
     Outputs are irredundant modulo symmetries of e and d
     
     Example:
-    >>>d=[4,4,3,3,2]
-    >>>e=[4,3,3,2,1]
-    >>>emb=Embeddings(d,e)
-    >>>emb
+    >>> d = [4, 4, 3, 3, 2]
+    >>> e = [4, 3, 3, 2, 1]
+    >>> emb = Embeddings_mod_sym(d, e)
+    >>> emb
     [[0, 1, 2, 3, 4], [0, 1, 2, 4, 3], [0, 3, 1, 2, 4], [0, 4, 1, 2, 3]]
-    >>>[e[emb[-1][i]] for i in range(5)]
+    >>> [e[emb[-1][i]] for i in range(5)]
     [4, 1, 3, 3, 2]
     """
     Res=[]
