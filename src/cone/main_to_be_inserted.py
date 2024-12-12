@@ -31,12 +31,9 @@ else:
 ## Generate the list of candidates for tau
 
 #Candidates_for_tau=find_hyperplanes_mod_sym_dim(d0,d0.dimU) # This is the function for regular ops (todo : include this info in the name) - To be changed.
-   # Cette est-elle déjà filrée modulo répétition et symétrie. Sinon faire un Filter 0.
-   # En fait donne les listes de poids pas les tau. A modifier donc
 Candidates_for_tau=find_1PS_mod_sym_dim(d0)   
+
 # Filter 1: submodule condition
-
-
 
 Candidates_for_tau1=[tau for tau in Candidates_for_tau if tau.Check_sub_module()]
 

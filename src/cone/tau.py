@@ -512,8 +512,11 @@ class ReducedTau:
             if as_tau.dot_weight(weight) == 0:
                 yield weight
 
-def simplify_list_of_tau_end0(seq_tau:Sequence["Tau"]) -> Sequence["Tau"]:
+def unique_modulo_symmetry_list_of_tau(seq_tau:Sequence["Tau"]) -> Sequence["Tau"]:
     return list(set([tau.end0_representative.sort_mod_sym_dim for tau in seq_tau]))
+
+def full_under_symmetry_list_of_tau(seq_tau:Sequence["Tau"]) -> Sequence["Tau"]:
+    return sum([list(tau.orbit_symmetries()) for tau in seq_tau],[])
 
 def find_1PS_reg_mod_sym_dim(d:Dimension,u) -> Sequence["Tau"]:
     """
@@ -521,7 +524,7 @@ def find_1PS_reg_mod_sym_dim(d:Dimension,u) -> Sequence["Tau"]:
     With results up to the action of the symmetries of d.
     """
     Liste_hr=find_hyperplanes_reg_mod_sym_dim(d,u)
-    Liste_1PS=list(set([Tau.from_zero_weights(h,d).end0_representative.sort_mod_sym_dim for h in Liste_hr]))
+    Liste_1PS=unique_modulo_symmetry_list_of_tau([Tau.from_zero_weights(h,d) for h in Liste_hr])
     Liste_1PS_sign=Liste_1PS+[tau.opposite for tau in Liste_1PS]
     return [tau for tau in Liste_1PS_sign if tau.is_dom_reg]
 
@@ -540,7 +543,8 @@ def find_1PS_mod_sym_dim(d: Dimension) -> Sequence["Tau"]:
         #Recover by induction all candidates 1-PS mod symmetry
         Liste_1PS_smalld_mod_sym= find_1PS_reg_mod_sym_dim(small_d,umax)
         print('For d=',small_d,'we get',len(Liste_1PS_smalld_mod_sym),' candidates regular dominant up to symmetry')
-        Liste_1PS_smalld=sum([list(tau.orbit_symmetries()) for tau in Liste_1PS_smalld_mod_sym]  ,[])
+        Liste_1PS_smalld=full_under_symmetry_list_of_tau(Liste_1PS_smalld_mod_sym)
+        #Liste_1PS_smalld=sum([list(tau.orbit_symmetries()) for tau in Liste_1PS_smalld_mod_sym]  ,[])
         for permut in Embeddings_mod_sym(d,small_d):
             for tau in Liste_1PS_smalld:
                 tau_twist=Tau([tau._components[i] for i in permut],tau.ccomponent)
@@ -549,8 +553,8 @@ def find_1PS_mod_sym_dim(d: Dimension) -> Sequence["Tau"]:
                 for tau_ext in list_tau_extended:
                     if len(flatten_dictionary(tau_ext.positive_weights))<=tau_ext.dim_Pu:
                         list_tau_extended_dimU.append(tau_ext)
-                Liste_1PS+=list_tau_extended_dimU
-    return list(set([tau.sort_mod_sym_dim for tau in Liste_1PS]))
+                Liste_1PS+=unique_modulo_symmetry_list_of_tau(list_tau_extended_dimU)
+    return(Liste_1PS)
 
 
 
