@@ -6,7 +6,8 @@ from .weight import Weight
 from .root import Root
 from .hyperplane_candidates import *
 from .rings import matrix, ZZ, QQ
-from .utils import extend_with_repetitions,Embeddings_mod_sym,flatten_dictionary, grading_dictionary
+from .utils import extend_with_repetitions,flatten_dictionary, grading_dictionary
+from .permutation import Permutation
 
 import itertools
 from functools import cached_property
@@ -546,7 +547,7 @@ def find_1PS_mod_sym_dim(d: Dimension) -> Sequence["Tau"]:
         print('For d=',small_d,'we get',len(Liste_1PS_smalld_mod_sym),' candidates regular dominant up to symmetry')
         Liste_1PS_smalld=full_under_symmetry_list_of_tau(Liste_1PS_smalld_mod_sym)
         #Liste_1PS_smalld=sum([list(tau.orbit_symmetries()) for tau in Liste_1PS_smalld_mod_sym]  ,[])
-        for permut in Embeddings_mod_sym(d,small_d):
+        for permut in Permutation.embeddings_mod_sym(d, small_d):
             for tau in Liste_1PS_smalld:
                 tau_twist=Tau([tau._components[i] for i in permut],tau.ccomponent)
                 list_tau_extended=tau_twist.m_extend_with_repetitions(d)

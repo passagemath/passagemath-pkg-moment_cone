@@ -14,7 +14,6 @@ __all__ = (
     "count",
     "prod",
     "short_prod",
-    "Embeddings_mod_sym",
     "extend_with_repetitions",
     "flatten_dictionary",
     "grading_dictionary",
@@ -116,49 +115,6 @@ def filter_dict_by_key(d: dict[T, U], predicate: Callable[[T], bool]) -> dict[T,
     6: [6, 13, 20, 27, 34]
     """
     return {k: v for k, v in d.items() if predicate(k)}
-
-def Embeddings_mod_sym(d: Sequence[int], e: Sequence[int])-> Iterable["Permutation"]:
-    """
-    List of permutations of e that are at most d
-
-    d and e are list of integers of the same length  (typically, dimensions), each in decreasing order.
-
-    Returns the list of permutation of e (each encoded by a permutation of the indices) such that the value in the i-th component of the permuted e is at most d[i]
-    Outputs are irredundant modulo symmetries of e and d
-    
-    Example:
-    >>> d = [4, 4, 3, 3, 2]
-    >>> e = [4, 3, 3, 2, 1]
-    >>> emb = list(Embeddings_mod_sym(d, e))
-    >>> for pe in emb:
-    ...     print(pe)
-    Permutation((0, 1, 2, 3, 4))
-    Permutation((0, 1, 2, 4, 3))
-    Permutation((0, 3, 1, 2, 4))
-    Permutation((0, 4, 1, 2, 3))
-    >>> for pe in emb:
-    ...     print(pe(e))
-    (4, 3, 3, 2, 1)
-    (4, 3, 3, 1, 2)
-    (4, 2, 3, 3, 1)
-    (4, 1, 3, 3, 2)
-    """
-    # TODO: lowercase name, move to Permutation
-    from .permutation import Permutation
-
-    eg = list(group_by_block(e))
-    dg = list(group_by_block(d))
-    partial_sum_mult_d = [0] + list(itertools.accumulate([x for _,x in dg]))
-    partial_sum_mult_e = [0] + list(itertools.accumulate([x for _,x in eg]))
-    indices_eg = expand_blocks([i for i, x in enumerate(eg)], [x[1] for i, x in enumerate(eg)]) # same as e, but with repetition of indices, rather than values
-    for ep in multiset_permutations(indices_eg):
-        p_i = cp.copy(partial_sum_mult_e)[:-1] # FIXME: slice of list ix already a copy
-        indices_e = []
-        for i in range(len(e)):
-           indices_e.append(p_i[ep[i]])
-           p_i[ep[i]] += 1
-        if all(e[indices_e[i]] <= d[i] for i in range(len(e))) and all(is_increasing(indices_e[a:b]) for a,b in itertools.pairwise(partial_sum_mult_d)):
-           yield Permutation(indices_e)
 
 def extend_with_repetitions(seq:Sequence[T], l: int) -> Iterable[tuple[T, ...]]:
     """
