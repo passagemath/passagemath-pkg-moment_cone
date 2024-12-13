@@ -1,10 +1,11 @@
-from src.cone.typing import *
-from src.cone.dimension import *
-from src.cone.cone_dimension import *
-from src.cone.hyperplane_candidates import *
-from src.cone.listW_temp import *
-from src.cone.inequality import *
-
+from cone.typing import *
+from cone.dimension import *
+from cone.cone_dimension import *
+from cone.hyperplane_candidates import *
+from cone.listW_temp import *
+from cone.inequality import *
+from cone.tau import *
+from cone.ramification import *
 
 
 ####
