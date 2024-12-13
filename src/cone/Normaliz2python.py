@@ -1,6 +1,7 @@
 from .typing import *
 from re import split as re_split
 from .tau import Tau
+from .inequality import Inequality
 
 def convert_lines_Nout2pyth(lines:Sequence[str],d:"Dimension") -> Sequence[Tau]:
     """ lines is a list of lines read from a Normaliz output file, e.g. via
@@ -40,11 +41,15 @@ def convert_file_Nout2pyth(rep_path:str, d:"Dimension") -> Sequence[Tau]:
     lines = fichier.readlines()
     fichier.close() 
     return(convert_lines_Nout2pyth(lines,d))
+
+#path="/home/bm29130h/Documents/Recherche/Ressources_autres/GDT/Machine Learning/calculs Kron/2 oct/"
+#reference=convert_file_Nout2pyth(path,d)
+
     
-def Compare_tau_candidates_reference(Candidates:Sequence[Tau],Reference:Sequence[Tau])->dict[str,Sequence[Tau]]:
+def compare_tau_candidates_reference(Candidates:Sequence[Inequality],Reference:Sequence[Tau])->dict[str,Sequence[Tau]]:
     res = {key: [] for key in ["cand_only","ref_only","both"]}
     for i,eq in enumerate(Candidates):
-        if eq.opposite in Reference:
+        if eq.wtau.end0_representative.opposite in Reference:
             res["both"].append(i)
         else:
             res["cand_only"].append(i)

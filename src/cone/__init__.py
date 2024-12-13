@@ -6,6 +6,7 @@ from .utils import *
 from .blocks import *
 from .partition import *
 from .dimension import *
+from .cone_dimension import *
 from .tau import *
 from .weight import *
 from .root import *
@@ -14,6 +15,8 @@ from .inequality import *
 from .permutation import *
 from .hyperplane_candidates import *
 from .rings import *
+from .listW_temp import *
+from .ramification import *
 
     
 

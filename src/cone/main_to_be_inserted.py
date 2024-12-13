@@ -6,7 +6,7 @@ from cone.listW_temp import *
 from cone.inequality import *
 from cone.tau import *
 from cone.ramification import *
-
+from cone.Normaliz2python import *
 
 ####
 d0=Dimension([4,4,4])
@@ -70,4 +70,7 @@ print('Step 7, checking dominance of map pi (again)')
 Birational_Ineq=[ineq for ineq in Dominant_Ineq if Is_Ram_contracted(ineq,ram_schub_method,ram0_method)]
 print(len(Birational_Ineq), ' inequalities selected in Step 7')
 
+#path="/home/bm29130h/Documents/Recherche/Ressources_autres/GDT/Machine Learning/calculs Kron/2 oct/"
+#reference=convert_file_Nout2pyth(path,d)
+#dictionary_list_lengths(compare_tau_candidates_reference(Candidates_for_Ineq,reference))
 
