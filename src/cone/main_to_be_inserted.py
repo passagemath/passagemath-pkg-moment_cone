@@ -38,7 +38,7 @@ print(len(Candidates_for_tau), ' dominant 1-PS selected in Step 1')
 # Filter 1: submodule condition
 
 print('Step 2, Checking submodule condition')
-Candidates_for_tau1=[tau for tau in Candidates_for_tau if tau.Check_sub_module()]
+Candidates_for_tau1=[tau for tau in Candidates_for_tau if tau.is_sub_module]
 print(len(Candidates_for_tau1), ' dominant 1-PS selected in Step 2')
 
 # Filter 2: stabilizer condition
