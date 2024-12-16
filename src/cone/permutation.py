@@ -15,14 +15,17 @@ class Permutation(tuple[int, ...]): # Remark: hash of p is hash of underlying tu
     """
     Permutation of S_n represented using the one-line notation.
 
-    The coefficients are the image of range(n) by the permutation.
-    So that length computation is faster.
+    The coefficients are the image of range(n) by the permutation, ie `p(range(n)) == p`.
+    
+    Using that convention, length computation is faster.
 
     Example:
     >>> from cone.permutation import Permutation
     >>> p = Permutation((3, 2, 1, 4, 0, 5))
     >>> p
     Permutation((3, 2, 1, 4, 0, 5))
+    >>> p(range(6))
+    (3, 2, 1, 4, 0, 5)
     >>> p.n
     6
     >>> p.inverse
