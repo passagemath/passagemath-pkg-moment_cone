@@ -375,7 +375,7 @@ class Tau:
     @property
     def orthogonal_roots(self) -> list[Root]:
         """
-        All the roots beta of V so that <beta, tau> = 0
+        All the positive roots beta of V so that <beta, tau> = 0
 
         >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
         >>> tau
@@ -384,6 +384,33 @@ class Tau:
         [Root(k=0, i=1, j=2)]
         """
         return self.grading_roots.get(0, [])
+
+    @property
+    def orthogonal_all_roots(self) -> list[Root]:
+        """
+        All the roots beta of V so that <beta, tau> = 0. beta=Root(k,i,i) allowed. 
+        We get a set indexing a bases of Lie(K^tau)
+
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau
+        -7 | 3 2 2 | 4 2 1 | 3 2
+        >>> tau.orthogonal_all_roots
+        Root(k=0, i=0, j=0)
+        Root(k=0, i=1, j=1)
+        Root(k=0, i=1, j=2)
+        Root(k=0, i=2, j=1)
+        Root(k=0, i=2, j=2)
+        Root(k=1, i=0, j=0)
+        Root(k=1, i=1, j=1)
+        Root(k=1, i=2, j=2)
+        Root(k=2, i=0, j=0)
+        Root(k=2, i=1, j=1)
+        """
+        res=[]
+        for alpha in Root.all_of_K(self.d):
+            if self.dot_root(alpha)==0:
+                res.append(alpha)
+        return(res)        
 
     @property
     def orthogonal_weights(self) -> list[Weight]:

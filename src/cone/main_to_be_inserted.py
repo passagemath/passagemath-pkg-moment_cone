@@ -9,7 +9,7 @@ from cone.ramification import *
 
 
 ####
-d0=Dimension([4,4,4])
+d0=Dimension([5,4,4])
 #stabilizer_method='symbolic'
 stabilizer_method='probabilistic'
 tpi_method='symbolic'
@@ -35,6 +35,9 @@ else:
 print('Step 1, looking for a first list of dominant 1-PS whose kernel is supported at hyperplanes of weights.')
 Candidates_for_tau=find_1PS_mod_sym_dim(d0)   
 print(len(Candidates_for_tau), ' dominant 1-PS selected in Step 1')
+Candidates_for_tau=unique_modulo_symmetry_list_of_tau(Candidates_for_tau)
+print(len(Candidates_for_tau), ' dominant 1-PS selected in Step 1 After Unicity')
+
 # Filter 1: submodule condition
 
 print('Step 2, Checking submodule condition')
@@ -43,12 +46,32 @@ print(len(Candidates_for_tau1), ' dominant 1-PS selected in Step 2')
 
 # Filter 2: stabilizer condition
 print('Step 3, Stabilizer condition')
-Candidates_for_tau2=[tau for tau in Candidates_for_tau1 if dim_of_stabilizer_in_K_tau(tau,stabilizer_method)==len(d0)]
+Candidates_for_tau2=[]
+for tau in Candidates_for_tau1:
+    if  tau.is_dom_reg :
+        Candidates_for_tau2.append(tau)
+    elif dim_of_stabilizer_in_K_tau(tau,stabilizer_method)==len(d0) :    
+        Candidates_for_tau2.append(tau)
 print(len(Candidates_for_tau2), ' dominant 1-PS selected in Step 3')
+
+### Avec le nouveau dimStab
+Candidates_for_tau2n=[]
+Ms=Lie_action_as_matrices_V(d0)
+for tau in Candidates_for_tau1:
+    if  tau.is_dom_reg :
+        Candidates_for_tau2n.append(tau)
+    else: 
+        Ms_tau=Lie_action_as_matrices_Vtau(tau,Ms)
+        Ms_tauR=[mat_C_to_R(M) for M in Ms_tau]
+        if dim_gen_stab_of_K(Ms_tauR)==len(d0):
+            Candidates_for_tau2n.append(tau)    
+
+print('Test New Stab',Candidates_for_tau2==Candidates_for_tau2n,len(Candidates_for_tau2),len(Candidates_for_tau2n))
 
 ## Generate the list of candidates for the inequalites (pairs tau,w)
 ## Here w has to belong to P^tau and U(w) is tau-isomorphic to V(tau>0)
-print('Step 4, computing action of W, in order to get (possibly non-dominant) 1-PS, yielding a redundant list of inequalities for the cone')
+
+print('Step 4, computing action of W, in order to get a first list of inequalities containing all the expected ones')
 Candidates_for_Ineq=[]
 for tau in Candidates_for_tau2 :
     Lw=ListWs_Mod(tau)
