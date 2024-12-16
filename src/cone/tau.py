@@ -544,19 +544,19 @@ def find_1PS_mod_sym_dim(d: Dimension) -> Sequence["Tau"]:
     for small_d in sub_dim:  
         umax=d.uMAX(small_d)
         #Recover by induction all candidates 1-PS mod symmetry
-        Liste_1PS_smalld_mod_sym= find_1PS_reg_mod_sym_dim(small_d,umax)
-        print('For d=',small_d,'we get',len(Liste_1PS_smalld_mod_sym),' candidates regular dominant up to symmetry')
-        Liste_1PS_smalld=full_under_symmetry_list_of_tau(Liste_1PS_smalld_mod_sym)
-        #Liste_1PS_smalld=sum([list(tau.orbit_symmetries()) for tau in Liste_1PS_smalld_mod_sym]  ,[])
+        Liste_1PS_smalld_reg_mod_sym= find_1PS_reg_mod_sym_dim(small_d,umax)
+        print('For d=',small_d,'we get',len(Liste_1PS_smalld_reg_mod_sym),' candidates regular dominant up to symmetry')
+        Liste_1PS_smalld_reg=full_under_symmetry_list_of_tau(Liste_1PS_smalld_reg_mod_sym)
+        #Liste_1PS_smalld_reg=sum([list(tau.orbit_symmetries()) for tau in Liste_1PS_smalld_reg_mod_sym]  ,[])
+        Liste_1PS_smalld_extended=[]
         for permut in Permutation.embeddings_mod_sym(d, small_d):
-            for tau in Liste_1PS_smalld:
+            for tau in Liste_1PS_smalld_reg:
                 tau_twist=Tau([tau._components[i] for i in permut],tau.ccomponent)
                 list_tau_extended=tau_twist.m_extend_with_repetitions(d)
-                list_tau_extended_dimU=[]
                 for tau_ext in list_tau_extended:
                     if len(flatten_dictionary(tau_ext.positive_weights))<=tau_ext.dim_Pu:
-                        list_tau_extended_dimU.append(tau_ext)
-                Liste_1PS+=unique_modulo_symmetry_list_of_tau(list_tau_extended_dimU)
+                        Liste_1PS_smalld_extended.append(tau_ext)
+        Liste_1PS+=unique_modulo_symmetry_list_of_tau(Liste_1PS_smalld_extended)
     return(Liste_1PS)
 
 

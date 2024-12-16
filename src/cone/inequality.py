@@ -36,7 +36,7 @@ class Inequality:
         self.tau = tau
         self.w = tuple(w)
         assert len(tau.d) == len(self.w)
-        self.wtau = Tau(tuple(wk(ck) for wk, ck in zip(self.w, tau.components)), tau.ccomponent)
+        self.wtau = Tau(tuple((wk.inverse)(ck) for wk, ck in zip(self.w, tau.components)), tau.ccomponent)
    
     def from_tau(tau:Tau) -> "Inequality":
         """converts a (possibly non-dominant) tau to an element of the class Inequality, that is a pair (taup,w) where w.taup=tau
