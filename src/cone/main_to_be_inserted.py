@@ -9,7 +9,7 @@ from cone.ramification import *
 from cone.Normaliz2python import *
 
 ####
-d0=Dimension([5,4,4])
+d0=Dimension([5,5,5])
 #stabilizer_method='symbolic'
 stabilizer_method='probabilistic'
 tpi_method='symbolic'
@@ -21,8 +21,9 @@ ram0_method='probabilistic'
 
 ## Checking if the cone has the expected dimension
 
-tau_triv=Tau.from_flatten((d0.sum+1)*[0],d0) #The trivial one parameter subgroup
-if dim_of_stabilizer_in_K_tau(tau_triv,stabilizer_method)>len(d0)-1: # Check that the dim is computed in U_n(C)^s without the isolated S^1
+Ms=Lie_action_as_matrices_V(d0)
+MsR=[mat_C_to_R(M) for M in Ms]
+if dim_gen_stab_of_K(MsR)>len(d0)-1: # Check that the dim is computed in U_n(C)^s without the isolated S^1
     print('The moment cone has codimension bigger that the length of d. Namely', dim_of_stabilizer_in_K_tau(tau_triv,stabilizer_method))
     print('The program does not work in this case')
     sys.exit()
@@ -33,7 +34,9 @@ else:
 
 #Candidates_for_tau=find_hyperplanes_mod_sym_dim(d0,d0.dimU) # This is the function for regular ops (todo : include this info in the name) - To be changed.
 print('Step 1, looking for a first list of dominant 1-PS whose kernel is supported at hyperplanes of weights.')
-Candidates_for_tau=find_1PS_mod_sym_dim(d0)
+
+#Candidates_for_tau=find_1PS_mod_sym_dim(d0)
+
 print(len(Candidates_for_tau), ' dominant 1-PS selected in Step 1')
 Candidates_for_tau=unique_modulo_symmetry_list_of_tau(Candidates_for_tau)
 print(len(Candidates_for_tau), ' dominant 1-PS selected in Step 1 After Unicity')
@@ -46,27 +49,32 @@ print(len(Candidates_for_tau1), ' dominant 1-PS selected in Step 2')
 
 # Filter 2: stabilizer condition
 print('Step 3, Stabilizer condition')
+
+##### TO BE SUPRESSED #####
+Candidates_for_tau2o=[]
+for tau in Candidates_for_tau1:
+    if  tau.is_dom_reg :
+        Candidates_for_tau2o.append(tau)
+    elif dim_of_stabilizer_in_K_tau(tau,stabilizer_method)==len(d0) :    
+        Candidates_for_tau2o.append(tau)
+print(len(Candidates_for_tau2o), ' dominant 1-PS selected in Step 3')
+####### END SUPRESS ######
+
+### Avec le nouveau dimStab
 Candidates_for_tau2=[]
 for tau in Candidates_for_tau1:
     if  tau.is_dom_reg :
         Candidates_for_tau2.append(tau)
-    elif dim_of_stabilizer_in_K_tau(tau,stabilizer_method)==len(d0) :    
-        Candidates_for_tau2.append(tau)
-print(len(Candidates_for_tau2), ' dominant 1-PS selected in Step 3')
-
-### Avec le nouveau dimStab
-Candidates_for_tau2n=[]
-Ms=Lie_action_as_matrices_V(d0)
-for tau in Candidates_for_tau1:
-    if  tau.is_dom_reg :
-        Candidates_for_tau2n.append(tau)
     else: 
         Ms_tau=Lie_action_as_matrices_Vtau(tau,Ms)
         Ms_tauR=[mat_C_to_R(M) for M in Ms_tau]
         if dim_gen_stab_of_K(Ms_tauR)==len(d0):
-            Candidates_for_tau2n.append(tau)    
+            Candidates_for_tau2.append(tau)    
+print(len(Candidates_for_tau2), ' dominant 1-PS selected in Step 3')
 
-print('Test New Stab',Candidates_for_tau2==Candidates_for_tau2n,len(Candidates_for_tau2),len(Candidates_for_tau2n))
+##### TO BE SUPRESSED #####
+print('Test New Stab',Candidates_for_tau2==Candidates_for_tau2n,len(Candidates_for_tau2),len(Candidates_for_tau2o))
+####### END SUPRESS ######
 
 ## Generate the list of candidates for the inequalites (pairs tau,w)
 ## Here w has to belong to P^tau and U(w) is tau-isomorphic to V(tau>0)
@@ -84,12 +92,12 @@ Candidates_for_Ineq1=unique_modulo_symmetry_list_of_ineq(Candidates_for_Ineq)
 print(len(Candidates_for_Ineq1), ' inequalities selected in Step 5')
 
 # Filter 1: pi is dominant
-print('Step 6, checking dominance of map pi')
+print('Step 6, checking dominancy of the map pi')
 Dominant_Ineq=[ineq for ineq in Candidates_for_Ineq1 if Check_Rank_Tpi(ineq,tpi_method)] 
 print(len(Dominant_Ineq), ' inequalities selected in Step 6')
 
 # Filter 2: pi is dominant
-print('Step 7, checking dominance of map pi (again)')
+print('Step 7, checking birationality of the map pi')
 Birational_Ineq=[ineq for ineq in Dominant_Ineq if Is_Ram_contracted(ineq,ram_schub_method,ram0_method)]
 print(len(Birational_Ineq), ' inequalities selected in Step 7')
 

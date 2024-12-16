@@ -162,11 +162,12 @@ def dim_of_stabilizer_in_K_tau(tau: Tau, method: Method) -> int:
     dim_K_tau = d.sum + 2 * len(roots_K_tau)
     M = matrix(ring, len(weights_K_tau), dim_K_tau)
 
+
     # First block
     for j, root in enumerate(Root.all_of_T(d)):
         tv = action_op_el(root, v, d)
         for i, chi in enumerate(weights_K_tau):
-            M[i, j] = tv[chi.index_in(d)]
+            M[i, j] = I*tv[chi.index_in(d)]
     
     # Second block
     for j, root in enumerate(roots_K_tau):
@@ -177,6 +178,7 @@ def dim_of_stabilizer_in_K_tau(tau: Tau, method: Method) -> int:
         for i, chi in enumerate(weights_K_tau):
             M[i, 2*j + d.sum] = tv_k1[chi.index_in(d)]
             M[i, 2*j + d.sum + 1] = tv_k2[chi.index_in(d)]
+
     return dim_K_tau - rank_RC(M)
 
     
