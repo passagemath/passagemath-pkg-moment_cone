@@ -394,7 +394,8 @@ class Tau:
         >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
         >>> tau
         -7 | 3 2 2 | 4 2 1 | 3 2
-        >>> tau.orthogonal_all_roots
+        >>> for t in tau.orthogonal_all_roots:
+        ...     print(t)
         Root(k=0, i=0, j=0)
         Root(k=0, i=1, j=1)
         Root(k=0, i=1, j=2)
