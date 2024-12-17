@@ -58,7 +58,7 @@ def compare_ineq_candidates_reference_mod_sym_dim(Candidates:Sequence[Inequality
     l2=unique_modulo_symmetry_list_of_tau([ineq.wtau.sl_representative for ineq in unique_modulo_symmetry_list_of_ineq(Reference)])
     l2f=full_under_symmetry_list_of_tau(l2)
     res = {key: [] for key in ["candidates_only","reference_only","both"]}
-    for wtau in list(set(l1+l2)):
+    for wtau in list(set(list(l1)+list(l2))):
         wtau_opp=wtau.opposite
         ineq=Inequality.from_tau(wtau_opp) #we will store this orginal inequality in our results
         if wtau in l1f:

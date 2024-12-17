@@ -9,7 +9,7 @@ from cone.ramification import *
 from cone.Normaliz2python import *
 
 ####
-d0=Dimension([5,5,5])
+d0=Dimension([4,4,4])
 #stabilizer_method='symbolic'
 stabilizer_method='probabilistic'
 tpi_method='symbolic'
@@ -35,7 +35,7 @@ else:
 #Candidates_for_tau=find_hyperplanes_mod_sym_dim(d0,d0.dimU) # This is the function for regular ops (todo : include this info in the name) - To be changed.
 print('Step 1, looking for a first list of dominant 1-PS whose kernel is supported at hyperplanes of weights.')
 
-#Candidates_for_tau=find_1PS_mod_sym_dim(d0)
+Candidates_for_tau=find_1PS_mod_sym_dim(d0)
 
 print(len(Candidates_for_tau), ' dominant 1-PS selected in Step 1')
 Candidates_for_tau=unique_modulo_symmetry_list_of_tau(Candidates_for_tau)
@@ -50,6 +50,7 @@ print(len(Candidates_for_tau1), ' dominant 1-PS selected in Step 2')
 # Filter 2: stabilizer condition
 print('Step 3, Stabilizer condition')
 
+"""
 ##### TO BE SUPRESSED #####
 Candidates_for_tau2o=[]
 for tau in Candidates_for_tau1:
@@ -59,6 +60,7 @@ for tau in Candidates_for_tau1:
         Candidates_for_tau2o.append(tau)
 print(len(Candidates_for_tau2o), ' dominant 1-PS selected in Step 3')
 ####### END SUPRESS ######
+"""
 
 ### Avec le nouveau dimStab
 Candidates_for_tau2=[]
@@ -72,9 +74,11 @@ for tau in Candidates_for_tau1:
             Candidates_for_tau2.append(tau)    
 print(len(Candidates_for_tau2), ' dominant 1-PS selected in Step 3')
 
+"""
 ##### TO BE SUPRESSED #####
 print('Test New Stab',Candidates_for_tau2==Candidates_for_tau2n,len(Candidates_for_tau2),len(Candidates_for_tau2o))
 ####### END SUPRESS ######
+"""
 
 ## Generate the list of candidates for the inequalites (pairs tau,w)
 ## Here w has to belong to P^tau and U(w) is tau-isomorphic to V(tau>0)
@@ -104,6 +108,8 @@ print(len(Birational_Ineq), ' inequalities selected in Step 7')
 #path="/home/bm29130h/Documents/Recherche/Ressources_autres/GDT/Machine Learning/calculs Kron/2 oct/"
 #reference=[Inequality.from_tau(tau) for tau in convert_file_Nout2pyth(path,d0)]
 #dictionary_list_lengths(compare_ineq_candidates_reference_mod_sym_dim(Candidates_for_Ineq1,reference))
+#test fails following fusion 17dec 12h11
+
 #unique_reference=unique_modulo_symmetry_list_of_ineq(reference)
 #dictionary_list_lengths(compare_tau_candidates_reference_mod_sym_dim(Candidates_for_tau,[ineq.tau for ineq in reference]))
 
