@@ -43,13 +43,13 @@ class Inequality:
         """converts a (possibly non-dominant) tau to an element of the class Inequality, that is a pair (taup,w) where w.taup=tau and w is of minimal length with this property
         
         Example:
-        >>>tau0=Tau([[4,9,6,5],[3,1,1,2],[2,2,8,2]],7)
-        >>>ineq0=Inequality.from_tau(tau0)
-        >>>ineq0
+        >>> tau0 = Tau([[4, 9, 6, 5], [3, 1, 1, 2], [2, 2, 8, 2]], 7)
+        >>> ineq0 = Inequality.from_tau(tau0)
+        >>> ineq0
         Inequality(tau  = 7 | 9 6 5 4 | 3 2 1 1 | 8 2 2 2,
                    w    =     1 2 3 0 | 0 3 1 2 | 2 0 1 3,
                    wtau = 7 | 4 9 6 5 | 3 1 1 2 | 2 2 8 2)
-        >>>[wi.is_min_rep(si) for wi,si in zip(ineq0.w,ineq0.tau.reduced.mult)]
+        >>> [wi.is_min_rep(si) for wi,si in zip(ineq0.w,ineq0.tau.reduced.mult)]
         [True, True, True]
 
         """
