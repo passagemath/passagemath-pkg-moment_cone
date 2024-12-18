@@ -3,7 +3,6 @@ import itertools
 import functools
 import operator
 import copy as cp
-from sympy.utilities.iterables import multiset_permutations
 
 __all__ = (
     "is_decreasing",
@@ -130,7 +129,7 @@ def grading_dictionary(elements: Iterable[T], fn: Callable[[T], U]) -> dict[U, l
         result.setdefault(v, []).append(e)
     return result
 
-def filter_dict_by_key(d: dict[T, U], predicate: Callable[[T], bool]) -> dict[T, U]:
+def filter_dict_by_key(d: Mapping[T, U], predicate: Callable[[T], bool]) -> dict[T, U]:
     """
     Filter a dictionary using a predicate on its keys
     Example:
@@ -147,7 +146,7 @@ def filter_dict_by_key(d: dict[T, U], predicate: Callable[[T], bool]) -> dict[T,
     """
     return {k: v for k, v in d.items() if predicate(k)}
 
-def extend_with_repetitions(seq:Sequence[T], l: int) -> Iterable[tuple[T, ...]]:
+def extend_with_repetitions(seq: Sequence[T], l: int) -> Iterable[tuple[T, ...]]:
     """
     From a sequence seq of length <= l with no repetition, returns the list of all expanded sequences of length l obtained from seq by repetitions of some elements.
 
@@ -174,7 +173,7 @@ def extend_with_repetitions(seq:Sequence[T], l: int) -> Iterable[tuple[T, ...]]:
             for tail in extend_with_repetitions(seq[1:], l - i - 1):
                 yield (i + 1) * (seq[0],) + tail
     
-def flatten_dictionary(dic: dict[U, Iterable[T]]) -> list[T]:
+def flatten_dictionary(dic: Mapping[U, Iterable[T]]) -> list[T]:
     """
     Returns the concatenation of all list stored as values in a dict.
     
@@ -186,7 +185,7 @@ def flatten_dictionary(dic: dict[U, Iterable[T]]) -> list[T]:
     # TODO: can we return the iterable directly?
     return list(itertools.chain.from_iterable(dic.values()))
    
-def dictionary_list_lengths(dic: dict[U, Sequence[T]]) -> dict[U, int]:
+def dictionary_list_lengths(dic: Mapping[U, Sequence[T]]) -> dict[U, int]:
     """
     From a dictionary of list, returns the dictionary of the length of each list.
 
