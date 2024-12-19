@@ -126,7 +126,6 @@ def rank_RC(M: Matrix) -> int:
     return N.change_ring(M.base_ring().fraction_field()).rank()
 
 
-# FIXME: we get d from tau but in the current code, it will leads to recreate the rings for each tau.
 # TODO: verify example (and maybe add one better)
 def dim_of_stabilizer_in_K_tau(tau: Tau, method: Method) -> int:
     """
@@ -144,7 +143,7 @@ def dim_of_stabilizer_in_K_tau(tau: Tau, method: Method) -> int:
     >>> dim_of_stabilizer_in_K_tau(tau, "symbolic")
     11
     """
-    d = tau.d # FIXME: Here, d is recreated from scratch, without rings. Should we ensure the uniqueness of the instance of d?
+    d = tau.d
 
     # Ring depending on the computational method
     if method == "probabilistic":
@@ -172,7 +171,7 @@ def dim_of_stabilizer_in_K_tau(tau: Tau, method: Method) -> int:
     # Second block
     for j, root in enumerate(roots_K_tau):
         tv_pos = action_op_el(root, v, d)
-        tv_neg = action_op_el(root.opposite, v, d) # FIXME: root.transpose?
+        tv_neg = action_op_el(root.opposite, v, d)
         tv_k1 = tv_pos - tv_neg
         tv_k2 = I * (tv_pos + tv_neg)
         for i, chi in enumerate(weights_K_tau):
