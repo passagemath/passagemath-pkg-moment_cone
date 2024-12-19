@@ -9,7 +9,7 @@ from cone.ramification import *
 from cone.Normaliz2python import *
 
 ####
-d0=Dimension([4,4,4])
+d0=Dimension([5,4,4])
 #stabilizer_method='symbolic'
 stabilizer_method='probabilistic'
 tpi_method='symbolic'
@@ -127,9 +127,6 @@ print('Step 7, checking birationality (ramification divisor contracted) of the m
 Birational_Ineq=[ineq for ineq in Dominant_Ineq if Is_Ram_contracted(ineq,ram_schub_method,ram0_method)]
 print(len(Birational_Ineq), ' inequalities selected in Step 7')
 
-#path="/home/bm29130h/Documents/Recherche/Ressources_autres/GDT/Machine Learning/calculs Kron/2 oct/"
-#reference=[Inequality.from_tau(tau) for tau in convert_file_Nout2pyth(path,d0)]
-#dictionary_list_lengths(compare_ineq_candidates_reference_mod_sym_dim(Birational_Ineq,reference))
 
 #test fails following fusion 17dec 12h11
 
@@ -143,4 +140,9 @@ for ineq in Birational_Ineq :
 task.stop()
 
 print(task)
+
+#path="./src/cone/References/"
+path="./cone/References/"
+reference=[Inequality.from_tau(tau) for tau in convert_file_Nout2pyth(path,d0)]
+dictionary_list_lengths(compare_ineq_candidates_reference_mod_sym_dim(Birational_Ineq,reference))
 
