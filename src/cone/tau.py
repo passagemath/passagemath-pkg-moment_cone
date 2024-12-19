@@ -589,7 +589,7 @@ def unique_modulo_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> set[Tau]:
     """
     return {tau.end0_representative.sort_mod_sym_dim for tau in seq_tau}
 
-def full_under_symmetry_list_of_tau(seq_tau: Sequence[Tau]) -> Iterable[Tau]:
+def full_under_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> Iterable[Tau]:
     """ TODO """
     return itertools.chain.from_iterable(tau.orbit_symmetries() for tau in seq_tau)
 
@@ -614,7 +614,6 @@ def find_1PS_reg_mod_sym_dim(d: Dimension, u: int) -> Iterable[Tau]:
     """
     from .hyperplane_candidates import find_hyperplanes_reg_mod_sym_dim
     list_hr = find_hyperplanes_reg_mod_sym_dim(d, u)
-    print(list_hr)
     list_1PS = unique_modulo_symmetry_list_of_tau(Tau.from_zero_weights(h, d) for h in list_hr)
     list_1PS_sign = (t for tau in list_1PS for t in (tau, tau.opposite))
     return filter(lambda tau: tau.is_dom_reg, list_1PS_sign)
