@@ -57,7 +57,7 @@ def compare_ineq_candidates_reference_mod_sym_dim(Candidates:Sequence[Inequality
     l1f=set(full_under_symmetry_list_of_tau(l1)) #we will need to compare elements of l2 to possibly permuted elements of l1
     l2=list(unique_modulo_symmetry_list_of_tau([ineq.wtau.sl_representative for ineq in unique_modulo_symmetry_list_of_ineq(Reference)]))
     l2f=set(full_under_symmetry_list_of_tau(l2))
-    print(len(l1),len(l2),l1[55] in l1, l1[55] in l1f)
+    #print(len(l1),len(l2),l1[55] in l1, l1[55] in l1f)
     res = {key: [] for key in ["candidates_only","reference_only","both"]}
     #print(len(list(l1)),len(list(l1f)),len(list(l2)),len(list(l2f)))
     for wtau in list(set(l1+l2)):
