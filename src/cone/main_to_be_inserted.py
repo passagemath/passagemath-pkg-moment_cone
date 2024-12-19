@@ -7,7 +7,7 @@ from cone.inequality import *
 from cone.tau import *
 from cone.ramification import *
 from cone.Normaliz2python import *
-from cone.dim_stabilizer_k import *
+from cone.dim_stabilizer_K import *
 
 import sys
 
