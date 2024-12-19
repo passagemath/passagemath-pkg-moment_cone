@@ -19,10 +19,10 @@ __all__ = (
 )
 
 def main(d: Iterable[int] | Dimension,
-         tpi_method: str | Method,
-         ram_schub_method: str | Method,
-         ram0_method: str | Method,
-         ):
+         tpi_method: str | Method = "probabilistic",
+         ram_schub_method: str | Method = "probabilistic",
+         ram0_method: str | Method = "probabilistic",
+         ) -> list[Inequality]:
     """ Main entrance of the algorithm """
     if not isinstance(d, Dimension):
         d = Dimension(d)
@@ -139,6 +139,8 @@ def main(d: Iterable[int] | Dimension,
     print("Summary of the tasks:")
     Task.print_all(disp_interlude=False)
 
+    return Birational_Ineq
+
 def to_method(method: str) -> Method:
     """ Return full name of a method by looking only to the first letter """
     if method.startswith("p"):
@@ -148,7 +150,7 @@ def to_method(method: str) -> Method:
     else:
         raise ValueError(f"Unknown method {method}")
 
-def main_from_input():
+def main_from_input() -> list[Inequality]:
     """ Main entrance from user inputs """
     print('This software compute a redundant list of inequalities for the cone Kron(d1, d2, ..., ds) with d1 >= d2 >= d3 ...')
 
@@ -162,13 +164,13 @@ def main_from_input():
     ram_schub_method = to_method(input("\tFor checking if the Bruhat ramification divisors are contracted: "))
     ram0_method = to_method(input("\tFor checking if R0 is contracted: "))
 
-    main(d,
+    return main(d,
          tpi_method=tpi_method,
          ram_schub_method=ram_schub_method,
          ram0_method=ram0_method
     )
 
-def main_from_cmd():
+def main_from_cmd() -> None:
     """ Main entrance from command-line """
     import argparse
     parser = argparse.ArgumentParser(
