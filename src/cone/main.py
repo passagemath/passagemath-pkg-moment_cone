@@ -35,6 +35,9 @@ def main(d: Iterable[int] | Dimension,
     print("ram_schub_method =", ram_schub_method)
     print("ram0_method =", ram0_method)
 
+    # Reset task history
+    Task.reset_all()
+
     ## Checking if the cone has the expected dimension
     print()
     with Task("Step 0: checking cone dimension"):
