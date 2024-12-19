@@ -30,6 +30,7 @@ class Task(contextlib.AbstractContextManager):
 
     all_tasks: list["Task"] = [] # All created tasks (static)
     all_start: tuple[int, int] = (time.perf_counter_ns(), time.process_time_ns())
+    quiet: bool = False
 
     @staticmethod
     def is_clear(task: "Task") -> TypeGuard["ClearTask"]:
@@ -123,13 +124,15 @@ class Task(contextlib.AbstractContextManager):
     def __enter__(self):
         """ Entering context """
         self.start()
-        print(self, end='\r')
+        if not self.quiet:
+            print(self, end='\r')
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """ Leaving context """
         self.stop()
-        print(self)
+        if not self.quiet:
+            print(self)
 
     def start(self) -> None:
         assert Task.is_clear(self)

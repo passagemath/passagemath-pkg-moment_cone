@@ -1,5 +1,6 @@
 from .typing import *
 from .dimension import Dimension
+from .task import Task
 
 def main(d: Iterable[int] | Dimension,
          stabilizer_method: str | Method,
@@ -21,7 +22,8 @@ def main(d: Iterable[int] | Dimension,
     print("ram_schub_method =", ram_schub_method)
     print("ram0_method =", ram0_method)
 
-    pass # TODO
+    with Task("Dummy step"):
+        pass
 
 def to_method(method: str) -> Method:
     """ Return full name of a method by looking only to the first letter """
@@ -72,8 +74,11 @@ This software compute a redundant list of inequalities for the cone Kron(d1, d2,
     parser.add_argument("--tpi", type=to_method, choices=method_choices, default="p", help="Method for the surjectivity of Tpi (p for probabilistic, s for symbolic)")
     parser.add_argument("--ram_schub", type=to_method, choices=method_choices, default="p", help="Method for checking if the Bruhat ramification divisors are contracted (p for probabilistic, s for symbolic)")
     parser.add_argument("--ram0", type=to_method, choices=method_choices, default="p", help="Method for checking if R0 is contracted (p for probabilistic, s for symbolic)")
+    parser.add_argument("--quiet", action="store_true", help="Removing output during computation")
 
     config = parser.parse_args()
+
+    Task.quiet = config.quiet
 
     main(Dimension(config.d),
          stabilizer_method=config.stabilizer,
