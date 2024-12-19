@@ -2,14 +2,13 @@ from .dimension import *
 from .weight import *
 from .root import *
 from .tau import *
-from sage.all import matrix,QQ,I,real,imag,vector,randint # FIXME: use .rings instead
+from .rings import matrix, Matrix, vector, QQ, I, real_part, imag_part
+from random import randint
 
-import itertools
-
-def mat_C_to_R(M : matrix) -> matrix :
+def mat_C_to_R(M : Matrix) -> Matrix :
     "M is a matrix with complex coefficients. Replace each coefficient coefficien a+bI by a 2x2-matrix [a,-b,b,a]"
-    A = M.apply_map(real)
-    B = M.apply_map(imag)
+    A = real_part(M)
+    B = imag_part(M)
     p = M.nrows()
     q = M.ncols() 
     R = matrix(QQ,2*p,2*q)
@@ -21,7 +20,7 @@ def mat_C_to_R(M : matrix) -> matrix :
             R[2*i,2*j+1]=-B[i,j]
     return(R)
 
-def Lie_action_as_matrices_V(d : Dimension): # Remplace t-on par une méthode de d ?
+def Lie_action_as_matrices_V(d : Dimension) -> list[Matrix]: # Remplace t-on par une méthode de d ?
     D=d.dimV 
     BaseK=Root.all_of_K(d)
     L=[]
@@ -29,7 +28,7 @@ def Lie_action_as_matrices_V(d : Dimension): # Remplace t-on par une méthode de
         k,i,j = beta.k,beta.i,beta.j
         # Matrix of the element [k,i,j] of the bases of Lie(K)
         M = matrix(QQ[I],D,D)
-        d1=d[:k]+d[k+1:]
+        d1 = Dimension(d[:k] + d[k+1:])
         for w in Weight.all(d1) : #list(itertools.product(*(range(di) for di in d1))):
             wj = list(w[:k])+[j]+list(w[k:])
             idj=Weight(wj).index_in(d)
@@ -47,7 +46,7 @@ def Lie_action_as_matrices_V(d : Dimension): # Remplace t-on par une méthode de
         L.append(M)    
     return(L)
 
-def Lie_action_as_matrices_Vtau(tau : Tau,matrices): # matrices is a list of matrices
+def Lie_action_as_matrices_Vtau(tau : Tau,matrices) -> list[Matrix]: # matrices is a list of matrices
     d=tau.d
     Indices_V_tau=[chi.index_in(d) for chi in tau.orthogonal_weights]
     n=len(Indices_V_tau)
@@ -60,7 +59,7 @@ def Lie_action_as_matrices_Vtau(tau : Tau,matrices): # matrices is a list of mat
 
 
 # Rename, like dim_of_stabilizer_in_K
-def dim_gen_stab_of_K(matrices)->int:
+def dim_gen_stab_of_K(matrices) -> int:
     """
     Recursive function associating an integer to a list of matrices.
 
