@@ -102,11 +102,12 @@ class Task(contextlib.AbstractContextManager):
                 print(t1)
                 duration = t1.duration
                 total_tasks = total_tasks[0] + duration[0], total_tasks[1] + duration[1]
-            if disp_interlude:
-                interlude = Task.interlude(t1, t2)
-                if interlude is not None:
+
+            interlude = Task.interlude(t1, t2)
+            if interlude is not None:
+                if disp_interlude:
                     print(f"\tinterlude ({Task.format_wall_cpu(interlude)})")
-                    total_interludes = total_interludes[0] + interlude[0], total_interludes[1] + interlude[1]
+                total_interludes = total_interludes[0] + interlude[0], total_interludes[1] + interlude[1]
 
         print()
         print(f"Total of {len(cls.all_tasks)} tasks: {Task.format_wall_cpu(total_tasks)}")
