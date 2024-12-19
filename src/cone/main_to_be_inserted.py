@@ -7,6 +7,9 @@ from cone.inequality import *
 from cone.tau import *
 from cone.ramification import *
 from cone.Normaliz2python import *
+from cone.dim_stabilizer_k import *
+
+import sys
 
 ####
 d0=Dimension([4,4,4])
