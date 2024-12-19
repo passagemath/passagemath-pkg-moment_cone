@@ -2,7 +2,7 @@ from cone.typing import *
 from cone.dimension import *
 from cone.vector_chooser import *
 from cone.hyperplane_candidates import *
-from cone.listW_temp import *
+from cone.list_of_W import *
 from cone.inequality import *
 from cone.tau import *
 from cone.ramification import *

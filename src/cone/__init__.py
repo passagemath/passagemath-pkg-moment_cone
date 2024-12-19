@@ -15,7 +15,7 @@ from .inequality import *
 from .permutation import *
 from .hyperplane_candidates import *
 from .rings import *
-from .listW_temp import *
+from .list_of_W import *
 from .ramification import *
 from .Normaliz2python import *
 from .dim_stabilizer_k import *
