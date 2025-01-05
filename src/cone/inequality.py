@@ -1,10 +1,9 @@
-from cone.typing import *
-from cone.tau import Tau
-from cone.permutation import Permutation
-from cone.blocks import Blocks
-from cone.root import Root
-from sage.all import QQ,vector
-
+from .typing import *
+from .tau import Tau
+from .permutation import Permutation
+from .blocks import Blocks
+from .root import Root
+from .rings import QQ, vector, Vector
 
 from functools import cached_property
 import itertools
@@ -133,19 +132,29 @@ class Inequality:
 
 
     @property
-    def weight_det(self) -> vector:
+    def weight_det(self) -> Vector:
         """
         Weight chi_det of Theorem BKR
+
+        >>> from cone import *
+        >>> d = Dimension((2, 2, 2, 3))
+        >>> tau = Tau.from_flatten([1, 6, 2, 1, 4, 1, 4, 5, 3, 1], d)
+        >>> w = Permutation((0, 1)), Permutation((1, 0)), Permutation((0, 1)), Permutation((2, 0, 1))
+        >>> ineq = Inequality(tau, w)
+        >>> ineq.weight_det
+        (24, 12, 12, 11, 13, 12, 12, 6, 9, 9)
         """
-        tau=self.tau
-        d=tau.d
-        listp=[]
-        for ll in list(tau.positive_weights.values()):
-            listp+=ll
-        if listp == [] and list(self.inversions)==[]:
-            return(vector(QQ,sum(d)+1))
-        else :
-            return(sum([chi.to_vector(d) for chi in listp])-sum([root.to_vector(d) for root in self.inversions]))
+        tau = self.tau
+        d = tau.d
+        listp = list(itertools.chain.from_iterable(tau.positive_weights.values()))
+        inversions = list(self.inversions)
+        if len(listp) == 0 and len(inversions) == 0:
+            return vector(QQ, d.sum + 1)
+        else:
+            return (
+                sum(chi.to_vector(d) for chi in listp)
+                - sum(root.to_vector(d) for root in self.inversions)
+            )
 
 def unique_modulo_symmetry_list_of_ineq(seq_ineq: Iterable[Inequality]) -> set[Inequality]:
     """
