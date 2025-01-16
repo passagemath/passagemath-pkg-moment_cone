@@ -1,6 +1,6 @@
 from typing import NewType, TypeVar, TypeGuard, Generic, Optional
 from typing import cast, overload
-from typing import Any, Self, Literal, TYPE_CHECKING
+from typing import Any, Self, Literal, TYPE_CHECKING, Concatenate
 from collections.abc import Iterable, Iterator, Generator, Mapping
 from collections.abc import Sequence, MutableSequence, Sized, Callable
 
