@@ -1,5 +1,7 @@
-from .typing import *
-
+from collections.abc import Iterable, Sequence, Callable, Sized
+from typing import Generic,TypeVar, Mapping, Generator, Callable, cast
+T=TypeVar('T')
+U=TypeVar('U')
 import itertools
 import functools
 import operator
@@ -17,10 +19,13 @@ __all__ = (
     "extend_with_repetitions",
     "flatten_dictionary",
     "grading_dictionary",
+    "compare_C_Mod",
     "Are_Isom_Mod",
     "Is_Sub_Mod",
     "quotient_C_Mod",
     "dictionary_list_lengths",
+    "symmetries",
+    "orbit_symmetries",
     
 )
 
@@ -79,7 +84,7 @@ def prod(values: Iterable[int]) -> int:
     >>> prod([1, 2, 3, 0, 5])
     0
     """
-    return functools.reduce(operator.mul, values)
+    return functools.reduce(operator.mul, values,1)
 
 def short_prod(values: Iterable[int]) -> int:
     """
@@ -200,7 +205,10 @@ def dictionary_list_lengths(dic: Mapping[U, Sequence[T]]) -> dict[U, int]:
     (2, 3)
     """
     return {key: len(value) for key, value in dic.items()}
-   
+
+def compare_C_Mod(M1: dict[int, int], M2: dict[int, int], relation: Callable[[int, int], bool]) -> bool :
+    return all(relation(M1.get(key, 0),M2.get(key, 0)) for key in set(M1) | set(M2))
+    
 def Is_Sub_Mod(M1: dict[int, int], M2: dict[int, int]) -> bool:
     """
     Kind of order on dictionary of int -> int.
@@ -262,17 +270,11 @@ def quotient_C_Mod(M1 : dict[int, int], M2 : dict[int, int]) -> dict[int, int]:
     >>> quotient_C_Mod(d1, d5)
     {}
     """
-    # TODO: lowercase name, move to more specific file?
-    M: dict[int, int] = {}
-    for p in M1.keys():
-        # Default value for M2[p] : 0
-        difference = M1[p] - M2.get(p, 0)
-        # Add only non-zero differences
-        if difference != 0:
-            M[p] = difference
-    return M
+    return {key: M1[key] - M2.get(key, 0)
+     for key in M1.keys()  
+     if M1[key] != M2.get(key, 0)}
 
-def multiset_permutations(m: Iterable[T]) -> Generator[list[T]]:
+def multiset_permutations(m: Iterable[T]) -> Generator[list[T],None,None]:
     """
     Returns the unique permutations of the given multiset m
     
@@ -280,9 +282,9 @@ def multiset_permutations(m: Iterable[T]) -> Generator[list[T]]:
     so that to get the correct return type.
     """
     from sympy.utilities.iterables import multiset_permutations as mp
-    return cast(Generator[list[T]], mp(m))
+    return cast(Generator[list[T],None,None], mp(m))
 
-def orbit_symmetries(flatten: Iterable[T], symmetries: Iterable[int]) -> Generator[Iterable[T]]:
+def orbit_symmetries(flatten: Iterable[T], symmetries: Iterable[int]) -> Generator[Iterable[T],None,None]:
     """
     Permutation inside each block of given sizes
 

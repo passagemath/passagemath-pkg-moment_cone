@@ -1,9 +1,12 @@
-from .typing import *
-from .dimension import Dimension
-from .rings import QQ, vector, Vector
-
+from sage.all import QQ,vector
 from dataclasses import dataclass
+
 import itertools
+#from collections.abc import Iterable, Sequence, Callable
+
+from .group import *
+from .typing import *
+
 
 __all__ = (
     "Root",
@@ -16,17 +19,10 @@ class Root:
     i: int
     j: int
 
-    
     @property
     def is_in_U(self) -> bool:
         """ Check if this root is in U """
         return self.i < self.j
-    
-    
-    @property
-    def short_repr(self) -> Iterable[int]:
-        """  returns a short representation for our root """
-        return [self.k,self.i,self.j]
     
     @property
     def opposite(self) -> "Root":
@@ -34,26 +30,19 @@ class Root:
         return Root(self.k, self.j, self.i)
 
     
-    def to_vector(self, d: Dimension) -> Vector:
+    def to_vector(self, G: LinGroup) -> vector:
         """
-        Returns self as a vector in Z**(sum(d) + 1.
+        Returns self as a vector in Z**(G.rank). A kind of flatten.
         
-        A kind of flatten.
-
-        Example:
-        >>> d = Dimension((2, 3))
-        >>> root = Root(1, 0, 2)
-        >>> root.to_vector(d)
-        (0, 0, 0, 1, 0, -1)
         """
-        v = vector(QQ, d.sum + 1)
-        shift = 1+sum(d[:self.k]) # 1 because the fist term is for C^* and has not root
-        v[shift + self.i] = 1
-        v[shift + self.j] = -1
-        return v
+        v=vector(QQ,G.rank)
+        shift=sum(G[:self.k])
+        v[shift+self.i]=1
+        v[shift+self.j]=-1
+        return(v)
     
     @staticmethod
-    def all_of_U(d: Dimension) -> Iterable["Root"]:
+    def all_of_U(G: LinGroup) -> Iterable["Root"]:
         """
         Returns all possible root from U for given dimensions
         
@@ -66,21 +55,40 @@ class Root:
         Root(k=1, i=0, j=2)
         Root(k=1, i=1, j=2)
         """
-        for k, dk in enumerate(d):
+        for k, dk in enumerate(G):
             for i, j in itertools.combinations(range(dk), 2):
                 yield Root(k, i, j)
+
+    @staticmethod
+    def all_of_B(G: LinGroup) -> Iterable["Root"]:
+        """
+        Returns all possible root from B for a given group
+        
+        Example:
+        >>> d = Dimension((2, 3))
+        >>> for root in Root.all_of_B(G):
+        ...     print(root)
+        Root(k=0, i=0, j=1)
+        Root(k=1, i=0, j=1)
+        Root(k=1, i=0, j=2)
+        Root(k=1, i=1, j=2)
+        """
+        for k, dk in enumerate(G):
+            for i in range(dk):
+                for j in range(i,dk):
+                    yield Root(k, i, j)
                 
     @staticmethod
-    def all_of_K(d: Dimension) -> Iterable["Root"]:
+    def all_of_K(G: LinGroup) -> Iterable["Root"]:
         """
         Returns all possible roots for Lie(K) for given dimensions. Root(k,i,i) allowed corresponding to diagonal matrices. 
         We get a set indexing a bases of Lie(K)
         """
-        for k,e in enumerate(d):
+        for k,e in enumerate(G):
             for i,j in itertools.product(range(e), repeat=2):
                 yield Root(k,i,j) 
 
-    def index_in_all_of_K(self, d: Dimension, use_internal_index: bool = True) -> int:
+    def index_in_all_of_K(self, G:LinGroup, use_internal_index: bool = True) -> int:
         """
         Returns index of this weight in the lexicographical order for given dimensions (see `all_of_K` method)
         
@@ -89,17 +97,17 @@ class Root:
         of the index for the given dimension. In that case, the internal index will be updated for later reuse.
         """
 
-        tot=sum(x**2 for x in d[:self.k])
-        return tot+d[self.k]*self.i+self.j
+        tot=sum(x**2 for x in G[:self.k])
+        return tot+G[self.k]*self.i+self.j
     
     @staticmethod
-    def all(d: Dimension) -> Iterable["Root"]:
+    def all(G: LinGroup) -> Iterable["Root"]:
         """
         Returns all possible roots from G (i != j) for given dimensions
         
         Example:
-        >>> d = Dimension((2, 3))
-        >>> for root in Root.all(d):
+        >>> G = LinGroup((2, 3))
+        >>> for root in Root.all(G):
         ...     print(root)
         Root(k=0, i=0, j=1)
         Root(k=0, i=1, j=0)
@@ -110,21 +118,21 @@ class Root:
         Root(k=1, i=1, j=2)
         Root(k=1, i=2, j=1)
         """
-        for k, dk in enumerate(d):
+        for k, dk in enumerate(G):
             for i, j in itertools.combinations(range(dk), 2):
                 yield Root(k, i, j)
                 yield Root(k, j, i)
 
 
     @staticmethod
-    def all_of_T(d: Dimension) -> Iterable["Root"]:
+    def all_of_T(G: LinGroup) -> Iterable["Root"]:
         """
         Returns all possible roots from T (i == j) for given dimensions
         
         
         Example:
-        >>> d = Dimension((2, 3))
-        >>> for root in Root.all_of_T(d):
+        >>> G = LinRep((2, 3))
+        >>> for root in Root.all_of_T(G):
         ...     print(root)
         Root(k=0, i=0, j=0)
         Root(k=0, i=1, j=1)
@@ -132,7 +140,7 @@ class Root:
         Root(k=1, i=1, j=1)
         Root(k=1, i=2, j=2)
         """
-        for k, dk in enumerate(d):
+        for k, dk in enumerate(G):
             for i in range(dk):
                 yield Root(k, i, i)            
 

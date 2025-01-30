@@ -1,16 +1,17 @@
+from sage.all import QQ,vector
+from functools import cached_property
+
+import itertools
+
 from .typing import *
 from .tau import Tau
 from .permutation import Permutation
 from .blocks import Blocks
 from .root import Root
-from .rings import QQ, vector, Vector
-
-from functools import cached_property
-import itertools
+from .rep import *
 
 __all__ = (
     "Inequality",
-    "unique_modulo_symmetry_list_of_ineq",
 )
 
 class Inequality:
@@ -37,8 +38,8 @@ class Inequality:
     def __init__(self, tau: Tau, w: Iterable[Permutation]):
         self.tau = tau
         self.w = tuple(w)
-        assert len(tau.d) == len(self.w)
-        self.wtau = Tau(tuple(wk.inverse(ck) for wk, ck in zip(self.w, tau.components)), tau.ccomponent)
+        assert len(tau.G) == len(self.w)
+        self.wtau = Tau(tuple(wk.inverse(ck) for wk, ck in zip(self.w, tau.components)),tau.G)
     
     @staticmethod
     def from_tau(tau: Tau) -> "Inequality":
@@ -64,9 +65,8 @@ class Inequality:
         ]
 
         taup = Tau(
-            Blocks.from_blocks([[t for t, i in taub] for taub in tau_pairs]),
-            tau.ccomponent
-        )
+            Blocks.from_blocks([[t for t, i in taub] for taub in tau_pairs],tau.G)
+            )
         w = (Permutation([i for t, i in taub]) for taub in tau_pairs)
         return Inequality(taup, w)
     
@@ -105,9 +105,9 @@ class Inequality:
                    wtau = 1 | 1 4 | 4 1 | 6 2 | 3 1 5)
         """
         pairs = tuple(zip(self.tau.components, self.w))
-        blocks = (sorted(b) for b in Blocks(pairs, self.tau.d.symmetries))
+        blocks = (sorted(b) for b in Blocks(pairs, self.tau.G.outer))
         tau_components, w = zip(*itertools.chain.from_iterable(blocks))
-        tau = Tau(tau_components, self.tau.ccomponent)
+        tau = Tau(tau_components,self.tau.G)
         return Inequality(tau, w)
 
     @property
@@ -131,67 +131,18 @@ class Inequality:
                 yield Root(k, i, j)
 
 
-    @property
-    def weight_det(self) -> Vector:
+    
+    def weight_det(self,V: Representation) -> vector:
         """
         Weight chi_det of Theorem BKR
-
-        >>> from cone import *
-        >>> d = Dimension((2, 2, 2, 3))
-        >>> tau = Tau.from_flatten([1, 6, 2, 1, 4, 1, 4, 5, 3, 1], d)
-        >>> w = Permutation((0, 1)), Permutation((1, 0)), Permutation((0, 1)), Permutation((2, 0, 1))
-        >>> ineq = Inequality(tau, w)
-        >>> ineq.weight_det
-        (24, 12, 12, 11, 13, 12, 12, 6, 9, 9)
         """
-        tau = self.tau
-        d = tau.d
-        listp = list(itertools.chain.from_iterable(tau.positive_weights.values()))
-        inversions = list(self.inversions)
-        if len(listp) == 0 and len(inversions) == 0:
-            return vector(QQ, d.sum + 1)
-        else:
-            return (
-                sum(chi.to_vector(d) for chi in listp)
-                - sum(root.to_vector(d) for root in self.inversions)
-            )
-
-def unique_modulo_symmetry_list_of_ineq(seq_ineq: Iterable[Inequality]) -> set[Inequality]:
-    """
-    Unique sequence of tau modulo the it's symmetries
-
-    Example:
-    >>> from cone import *
-    >>> d = Dimension((2, 2, 2, 3))
-    >>> tau = Tau.from_flatten([1, 6, 2, 1, 4, 1, 4, 5, 3, 1], d)
-    >>> w = Permutation((0, 1)), Permutation((1, 0)), Permutation((0, 1)), Permutation((2, 0, 1))
-    >>> ineq1 = Inequality(tau, w)
-    >>> ineq2 = ineq1.sort_mod_sym_dim
-    >>> ineq3 = Inequality(ineq1.wtau, w)
-    >>> for ineq in unique_modulo_symmetry_list_of_ineq((ineq1, ineq2, ineq3)):
-    ...     print(ineq)
-    Inequality(tau  = 1 | 1 4 | 4 1 | 6 2 | 3 1 5,
-               w    =     0 1 | 1 0 | 0 1 | 2 0 1,
-               wtau = 1 | 1 4 | 1 4 | 6 2 | 1 5 3)
-    Inequality(tau  = 1 | 1 4 | 1 4 | 6 2 | 5 3 1,
-               w    =     0 1 | 1 0 | 0 1 | 2 0 1,
-               wtau = 1 | 1 4 | 4 1 | 6 2 | 3 1 5)
-
-    Another example:
-    >>> d = Dimension((2, 2, 2))
-    >>> ineq1 = Inequality(Tau.from_flatten((-1, 0, 0, 1, 0, 1, 0), d), (Permutation((0, 1)), Permutation((1, 0)), Permutation((1, 0))))
-    >>> ineq2 = Inequality(Tau.from_flatten((-2, 1, 0, 1, 0, 1, 0), d), (Permutation((0, 1)), Permutation((0, 1)), Permutation((1, 0))))
-    >>> ineq3 = Inequality(Tau.from_flatten((-2, 1, 0, 1, 0, 1, 0), d), (Permutation((0, 1)), Permutation((1, 0)), Permutation((0, 1))))
-    >>> ineq4 = Inequality(Tau.from_flatten((-2, 1, 0, 1, 0, 1, 0), d), (Permutation((1, 0)), Permutation((0, 1)), Permutation((0, 1))))
-    >>> for ineq in unique_modulo_symmetry_list_of_ineq((ineq1, ineq2, ineq3, ineq4)):
-    ...     print(ineq)
-    Inequality(tau  = -2 | 1 0 | 1 0 | 1 0,
-               w    =     0 1 | 0 1 | 1 0,
-               wtau = -2 | 1 0 | 1 0 | 0 1)
-    Inequality(tau  = -1 | 0 0 | 1 0 | 1 0,
-               w    =     0 1 | 1 0 | 1 0,
-               wtau = -1 | 0 0 | 0 1 | 0 1)
-    """
-    return set(ineq.sort_mod_sym_dim for ineq in seq_ineq)
-
+        tau=self.tau
+        G=tau.G
+        listp=[]
+        for ll in list(tau.positive_weights(V).values()):
+            listp+=ll
+        if listp == [] and list(self.inversions)==[]:
+            return(vector(QQ,sum(d)+1))
+        else :
+            return(sum([chi.as_vector for chi in listp])-sum([root.to_vector(V.G) for root in self.inversions]))
 

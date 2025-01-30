@@ -1,5 +1,7 @@
-from .typing import *
-
+from collections.abc import Iterable, Sequence, Callable
+from typing import Generic,TypeVar, Mapping, Generator
+T=TypeVar('T')
+U=TypeVar('U')
 import itertools
 import functools
 import operator
@@ -272,7 +274,7 @@ def quotient_C_Mod(M1 : dict[int, int], M2 : dict[int, int]) -> dict[int, int]:
             M[p] = difference
     return M
 
-def multiset_permutations(m: Iterable[T]) -> Generator[list[T]]:
+def multiset_permutations(m: Iterable[T]) -> Generator[list[T],None,None]:
     """
     Returns the unique permutations of the given multiset m
     
@@ -280,9 +282,9 @@ def multiset_permutations(m: Iterable[T]) -> Generator[list[T]]:
     so that to get the correct return type.
     """
     from sympy.utilities.iterables import multiset_permutations as mp
-    return cast(Generator[list[T]], mp(m))
+    return cast(Generator[list[T],None,None], mp(m))
 
-def orbit_symmetries(flatten: Iterable[T], symmetries: Iterable[int]) -> Generator[Iterable[T]]:
+def orbit_symmetries(flatten: Iterable[T], symmetries: Iterable[int]) -> Generator[Iterable[T],None,None]:
     """
     Permutation inside each block of given sizes
 
