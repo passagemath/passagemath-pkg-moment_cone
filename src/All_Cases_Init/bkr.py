@@ -1,7 +1,7 @@
 import numpy as np
 import itertools
 
-from sage.all import SymmetricFunctions,ZZ,QQ,vector,matrix,Polyhedron,Partitions
+from sage.all import SymmetricFunctions,ZZ,QQ,vector,matrix,Polyhedron,Partitions as SagePartitions
 import sage.libs.lrcalc.lrcalc as lr
 
 from .typing import *
@@ -16,10 +16,10 @@ from .inequality import *
 sym_f = SymmetricFunctions(QQ).s()
 
 
-def ListNonZeroLR(nu : OurPartition,delta : list[int],l:int):  
+def ListNonZeroLR(nu : Partition,delta : list[int],l:int):  
     s=len(delta)
-    if not isinstance(nu, OurPartition):
-        nu=OurPartition(nu)
+    if not isinstance(nu, Partition):
+        nu=Partition(nu)
     if s==1 :
         return([ListPartPlus([nu],1)])
     if s==2 :
@@ -28,18 +28,18 @@ def ListNonZeroLR(nu : OurPartition,delta : list[int],l:int):
         nuc=nu.lambda_check(l).lambda_red(l)
         shift_max = delta[0]//l
         for a in range(shift_max+1):
-            for lar in Partitions(delta[0]-a*l, max_length=l-1):
+            for lar in SagePartitions(delta[0]-a*l, max_length=l-1):
                 #print('lambda reduit',lar)
                 prod=lr.mult(nuc,lar)
-                larn=OurPartition(lar)
-                lamb1=OurPartition([larn[i]+a for i in range(l)])
+                larn=Partition(lar)
+                lamb1=Partition([larn[i]+a for i in range(l)])
                 for mu in prod.keys():
                     if mu.length() <= l :
-                        muc=OurPartition(mu).lambda_check(l)
+                        muc=Partition(mu).lambda_check(l)
                         b=(delta[1]-sum(muc))//l
                         #print(lar,lamb1,mu,muc,b)
                         if b+muc[l] >=0 :
-                            lamb2=OurPartition([muc[i]+b for i in range(l)])
+                            lamb2=Partition([muc[i]+b for i in range(l)])
                             res.append(ListPartPlus([lamb1,lamb2],prod[mu]))
                     
         return(res)
@@ -76,19 +76,19 @@ def ListNonZeroLR(nu : OurPartition,delta : list[int],l:int):
     # Création de la nouvelle liste d'objets
     return(zipped_list)
     
-def ListNonZeroLR_vtest(nu : OurPartition,delta : list[int],l:int):
+def ListNonZeroLR_vtest(nu : Partition,delta : list[int],l:int):
     s=len(delta)
     res=[]
-    for l0 in Partitions(delta[0], max_length=l):
-        for l1 in Partitions(delta[1], max_length=l):
-            for l2 in Partitions(delta[2], max_length=l):
+    for l0 in SagePartitions(delta[0], max_length=l):
+        for l1 in SagePartitions(delta[1], max_length=l):
+            for l2 in SagePartitions(delta[2], max_length=l):
                 lr=LR_multi([l0,l1,l2],nu)
                 print(lr)
                 if lr !=0:
-                     res.append(ListPartPlus([OurPartition(l0),OurPartition(l1),OurPartition(l2)],lr))
+                     res.append(ListPartPlus([Partition(l0),Partition(l1),Partition(l2)],lr))
     return(res)                 
         
-def ListNonZeroLR_vtest2(nu : OurPartition,delta : list[int],l:int):
+def ListNonZeroLR_vtest2(nu : Partition,delta : list[int],l:int):
     l=lr.coprod(nu)
     lt=[(x,l[x]) for x in l.keys() if len(x[0])<=l and len(x[1])<=l and sum(x[0])==delta[0]]
     return(lt)
@@ -110,8 +110,8 @@ def Kron_multi(L) -> int :
     #### This part is unuseful but should go slightly faster with
     if len(L)==3 : # We look for L[2] in product
         for monomial, coeff in product.monomial_coefficients().items():
-            #print('monom',monomial,type(monomial),OurPartition(monomial))
-            if OurPartition(list(monomial))==L[2]:
+            #print('monom',monomial,type(monomial),Partition(monomial))
+            if Partition(list(monomial))==L[2]:
                 return(coeff)
         return(0)    
     #### end unuseful
@@ -295,7 +295,7 @@ def Fill_Table_of_Lambdas(delta,ListP,tau : Tau,V : Representation,table): # del
     BL=[]
     for k in range(len(V.G)):
         for j in range(len(delta)):
-            table[j,k]=Partitions(delta[j],max_length=tau.components[k][ListP[j][k]]).list()
+            table[j,k]=SagePartitions(delta[j],max_length=tau.components[k][ListP[j][k]]).list()
     
 
 def Fill_Table_of_Mus(delta,ListP, mtau : list[int],V : Representation,table): # delta is a sage vector in ZZ -  output : void
@@ -307,7 +307,7 @@ def Fill_Table_of_Mus(delta,ListP, mtau : list[int],V : Representation,table): #
     for k in range(len(mtau)):
         for j in range(len(delta)):
             #print('j,k:',j,k)
-            table[j,k]=Partitions(ListP[j][k]*delta[j],max_length=mtau[k]).list()
+            table[j,k]=SagePartitions(ListP[j][k]*delta[j],max_length=mtau[k]).list()
     
 
 
@@ -432,12 +432,12 @@ def Multiplicity_SV_tau(tau : Tau,chi : vector, V : Representation, checkGreatEq
                     sumAg=0
                     I=ListP[k]
                     if V.type == 'fermion':
-                        Theta=[OurPartition(t*[1]) for t in I]
+                        Theta=[Partition(t*[1]) for t in I]
                     else :
-                        Theta=[OurPartition([t]) for t in I]
+                        Theta=[Partition([t]) for t in I]
 
                         #print('ici')    
-                    for Lambda in itertools.product(OurPartition.all_for_integer(delta[i]),repeat=s) :
+                    for Lambda in itertools.product(Partition.all_for_integer(delta[i]),repeat=s) :
                         g=Kron_multi(Lambda)
                           #if list(Lambda[0])== [5,3] and list(Lambda[1])== [4,3,1] and list(Lambda[2])== [5,3] :#TODO : A supprimer
                           #  print('Lambda cou',Lambda,g)

@@ -131,7 +131,7 @@ class Tau:
         """ Returns reduced form of tau """
         return ReducedTau(self)
     
-    def extend_from_S(self, p: OurPartition):
+    def extend_from_S(self, p: Partition):
         my_list=[]
         for i,x in zip(p,self.flattened):
             my_list+=i*[x]
@@ -637,7 +637,7 @@ def find_1PS(V: Representation, quiet: bool = False) -> Sequence["Tau"]:
     
     if V.type=='kron' :
         # List of representations corresponding to various tori S
-        sub_rep=[Representation(LinGroup(list(p)),'kron') for p in OurPartition(list(V.G)).all_subpartitions()][1:] #[1:] excludes 1... 1
+        sub_rep=[Representation(LinGroup(list(p)),'kron') for p in Partition(list(V.G)).all_subpartitions()][1:] #[1:] excludes 1... 1
         for Vred in sub_rep:
             umax=V.G.u_max(Vred.G)
             #Recover by induction all candidates 1-PS mod symmetry
@@ -667,7 +667,7 @@ def find_1PS(V: Representation, quiet: bool = False) -> Sequence["Tau"]:
                             List_1PS_Vred_extended.append(tau_ext)
             List_1PS+=unique_modulo_symmetry_list_of_tau(List_1PS_Vred_extended)
     else :
-        list_partS=[p for p in OurPartition.all_for_integer(V.G.rank)][1:] #[1:] excludes n, so S is the center of G
+        list_partS=[p for p in Partition.all_for_integer(V.G.rank)][1:] #[1:] excludes n, so S is the center of G
         for partS in list_partS :
             from math import floor
             umax=floor((V.G.dim-sum([x**2 for x in partS]))/2) # dim of P^u(tau)

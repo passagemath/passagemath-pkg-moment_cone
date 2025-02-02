@@ -4,10 +4,10 @@ from .utils import is_decreasing, trim_zeros
 import itertools
 
 __all__ = (
-    "OurPartition", "ListPartPlus",
+    "Partition", "ListPartPlus",
 )
 
-class OurPartition:
+class Partition:
     """ Decreasing sequence of positive int """
     __slots__ = "_data",
     _data: tuple[int, ...]
@@ -43,37 +43,37 @@ class OurPartition:
         return self._data + (0,) * (length - len(self._data))
 
     @staticmethod
-    def all_for_integer(n: int) -> Iterable["OurPartition"]: #TODO : est utilisé plusieurs fois pour le même n. staticmethod est adapté ?
+    def all_for_integer(n: int) -> Iterable["Partition"]: #TODO : est utilisé plusieurs fois pour le même n. staticmethod est adapté ?
         """
         Generates all partitions of an integer n >= 0.
 
         Could be optimized but it is clearly enough for the n we will consider.
         """
         if n <= 0:
-            yield OurPartition((), check=False)
+            yield Partition((), check=False)
             return
     
         for head in range(n, 0, -1):
-            for tail in OurPartition.all_for_integer(n - head):
+            for tail in Partition.all_for_integer(n - head):
                 if len(tail) == 0 or head >= tail[0]:
-                    yield OurPartition((head,) + tail._data, check=False)
+                    yield Partition((head,) + tail._data, check=False)
 
     @staticmethod
-    def all_of_height(height: int, lambda_max: int) -> Iterable["OurPartition"]:
+    def all_of_height(height: int, lambda_max: int) -> Iterable["Partition"]:
         """
         Generates all partitions of given height and with given maximum value (included).
         """
         # Note that combinations_with_replacement keeps order of input sequence
         for w in itertools.combinations_with_replacement(reversed(range(lambda_max + 1)), height):
-            yield OurPartition(w, check=False)
+            yield Partition(w, check=False)
 
     # TODO: property? cached?
-    def all_subpartitions(self) -> Iterable["OurPartition"]:
+    def all_subpartitions(self) -> Iterable["Partition"]:
         """
         All sub-partitions of the partition
         
         Example:
-        >>> p = OurPartition((4, 2, 2, 1))
+        >>> p = Partition((4, 2, 2, 1))
         >>> for sp in p.all_subpartitions():
         ...     print(sp)
         Partition((1, 1, 1, 1))
@@ -88,26 +88,26 @@ class OurPartition:
         Partition((4, 2, 2, 1))
         """
         if len(self) == 0 :
-            yield OurPartition((), check=False)
+            yield Partition((), check=False)
 
         for x in range(self[0]):
-            tail = OurPartition([min(x + 1, y) for y in self._data[1:]])
+            tail = Partition([min(x + 1, y) for y in self._data[1:]])
             for tail_sp in tail.all_subpartitions():
-                yield OurPartition((x + 1, *tail_sp), check=False)
+                yield Partition((x + 1, *tail_sp), check=False)
 
-    def lambda_check(self,l : int) -> "OurPartition" :
+    def lambda_check(self,l : int) -> "Partition" :
         """
         l for GL(l). Max length of la. TODO : ajouter un assert
         """
         x = self[0]
-        return(OurPartition([x-self[i] for i in range(l-1, 0, -1)]))
+        return(Partition([x-self[i] for i in range(l-1, 0, -1)]))
 
-    def lambda_red(self,l : int) -> "OurPartition" : 
+    def lambda_red(self,l : int) -> "Partition" : 
         """
         l for GL(l). Tensor with det to reduce la. The ouput can be thought as a representation of SL(l)
         """
         x = self[l-1]
-        return(OurPartition([self[i]-x for i in range(l-1)]))
+        return(Partition([self[i]-x for i in range(l-1)]))
 
 
         
@@ -120,7 +120,7 @@ class ListPartPlus:
     - mult (an integer which is a multiplicity in representation theory.
     """
 
-    def __init__(self, L : list[OurPartition], c : int,indices : list[int]=None):
+    def __init__(self, L : list[Partition], c : int,indices : list[int]=None):
         """
         Initializes an instance of ListPartPlus.
         """
