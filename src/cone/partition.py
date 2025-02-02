@@ -43,18 +43,25 @@ class Partition:
         return self._data + (0,) * (length - len(self._data))
 
     @staticmethod
-    def all_for_integer(n: int) -> Iterable["Partition"]:
+    def all_for_integer(n: int, max_length: Optional[int] = None) -> Iterable["Partition"]:
         """
-        Generates all partitions of an integer n >= 0.
+        Generates all partitions of an integer n >= 0 with optional maximal length.
 
         Could be optimized but it is clearly enough for the n we will consider.
-        """
+        """        
         if n <= 0:
             yield Partition((), check=False)
             return
-    
+
+        if max_length is None:
+            max_length = n
+        if max_length == 0:
+            # If max_length is zero and n is still strictly greater than 0,
+            # then it means that the current branch don't lead to valid Partitions
+            return
+
         for head in range(n, 0, -1):
-            for tail in Partition.all_for_integer(n - head):
+            for tail in Partition.all_for_integer(n - head, max_length - 1):
                 if len(tail) == 0 or head >= tail[0]:
                     yield Partition((head,) + tail._data, check=False)
 
