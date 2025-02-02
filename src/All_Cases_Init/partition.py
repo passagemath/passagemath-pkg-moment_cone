@@ -12,9 +12,9 @@ class Partition:
     __slots__ = "_data",
     _data: tuple[int, ...]
 
-    def __init__(self, p: Sequence[int], check: bool = True):
+    def __init__(self, p: Iterable[int], check: bool = True):
         # Auto trim the partition
-        self._data = tuple(trim_zeros(p))
+        self._data = cast(tuple, trim_zeros(tuple(p)))
         assert not check or self.is_valid, "Invalid partition"
 
     @property
