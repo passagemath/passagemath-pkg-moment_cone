@@ -24,6 +24,11 @@ class TestPartition(unittest.TestCase):
         with self.assertRaises(Exception):
             p.pad(4)
 
+        self.assertTrue(Partition((3, 2, 1)) <= Partition((2, 2, 1)))
+        self.assertTrue(Partition((3, 2, 1)) < Partition((2, 2, 1)))
+        self.assertFalse(Partition((3, 2, 1)) >= Partition((2, 2, 1)))
+        self.assertFalse(Partition((3, 2, 1)) > Partition((2, 2, 1)))
+
     def test_non_decreasing(self):
         with self.assertRaises(Exception):
             p = Partition([4, 4, 3, 2, 3, 0])

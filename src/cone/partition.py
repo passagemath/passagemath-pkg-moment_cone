@@ -34,9 +34,37 @@ class Partition:
     def __repr__(self) -> str:
         return f"Partition({self._data})"
     
-    def __eq__(self, other) -> bool:
-        return len(self) == len(other) and self._data == other._data
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Partition):
+            return NotImplemented
+        return self._data == other._data
     
+    def __lt__(self, other: object) -> bool:
+        """ Reverse lexicographical order """
+        if not isinstance(other, Partition):
+            return NotImplemented
+        return self._data > other._data
+
+    def __le__(self, other: object) -> bool:
+        """ Reverse lexicographical order """
+        if not isinstance(other, Partition):
+            return NotImplemented
+        return self._data >= other._data
+    
+    def __add__(self, other: object) -> "Partition":
+        """ Concatenating a Partition with other iterable
+        
+        Example:
+        >>> p = Partition((3, 2))
+        >>> p + Partition((2, 1, 1))
+        Partition((3, 2, 2, 1, 1))
+        >>> p + [2, 1, 1]
+        Partition((3, 2, 2, 1, 1))
+        """
+        if not isinstance(other, Iterable):
+            return NotImplemented
+        return Partition(itertools.chain(self, other))
+       
     def pad(self, length: int) -> tuple[int, ...]:
         """ Returns a padded version of this partition """
         assert length >= len(self._data), "Padding length must be greater that Partition length"
@@ -102,4 +130,4 @@ class Partition:
             for tail_sp in tail.all_subpartitions():
                 yield Partition((x + 1, *tail_sp), check=False)
 
-    
+
