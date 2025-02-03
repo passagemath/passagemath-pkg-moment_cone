@@ -12,6 +12,7 @@ from .weight import *
 from .tau import *
 from .rep import *
 from .inequality import *
+from .kronecker import KroneckerCoefficientMLCache
 
 sym_f = SymmetricFunctions(QQ).s()
 
@@ -121,33 +122,8 @@ def ListNonZeroLR_vtest2(nu : Partition,delta : list[int],l:int): # TODO : suppr
     return(lt)
     
 
-def Kron_multi(L) -> int :
-    """
-    L is a list of partitions of the same weight, length at least 2
-    return the multiple Kronecker coeffient
-    """
-    
-    if len(L)==2:
-        if L[1]==L[0]:
-            return 1
-        else:
-            return 0
-        
-    product = sym_f(list(L[0])).kronecker_product(sym_f(list(L[1])))
-    #### This part is unuseful but should go slightly faster with
-    if len(L)==3 : # We look for L[2] in product
-        for monomial, coeff in product.monomial_coefficients().items():
-            #print('monom',monomial,type(monomial),Partition(monomial))
-            if Partition(list(monomial))==L[2]:
-                return(coeff)
-        return(0)    
-    #### end unuseful
-    
-    # recursive part
-    tot=0
-    for monomial, coeff in product.monomial_coefficients().items():
-        tot+=coeff*Kron_multi(L[2:]+[monomial])
-    return(tot)    
+# Kronecker coefficient of multiple partitions using a cache
+Kron_multi: Callable[[Sequence[Partition]], int] = KroneckerCoefficientMLCache() 
         
 
 def LR_multi(L,nu) -> int: 
