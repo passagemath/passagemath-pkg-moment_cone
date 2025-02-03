@@ -8,13 +8,29 @@ __all__ = (
 )
 
 class Partition:
-    """ Decreasing sequence of positive int """
+    """
+    Decreasing sequence of positive int
+    
+    Example:
+    >>> p = Partition((3, 2, 1))
+    >>> print(p)
+    Partition((3, 2, 1))
+
+    >>> Partition(2, 2, 2) # Also possible without inner parenthesis
+    Partition((2, 2, 2))
+    """
     __slots__ = "_data",
     _data: tuple[int, ...]
 
-    def __init__(self, p: Iterable[int], check: bool = True):
+    def __init__(self, p: int | Iterable[int], *tail: int, check: bool = True):
+        if isinstance(p, Iterable):
+            assert len(tail) == 0
+            coeffs = tuple(p)
+        else:
+            coeffs = (p,) + tail
+        
         # Auto trim the partition
-        self._data = cast(tuple, trim_zeros(tuple(p)))
+        self._data = cast(tuple, trim_zeros(coeffs))
         assert not check or self.is_valid, "Invalid partition"
 
     @property
@@ -64,7 +80,10 @@ class Partition:
         if not isinstance(other, Iterable):
             return NotImplemented
         return Partition(itertools.chain(self, other))
-       
+
+    def __hash__(self) -> int:
+        return hash(self._data)
+
     def pad(self, length: int) -> tuple[int, ...]:
         """ Returns a padded version of this partition """
         assert length >= len(self._data), "Padding length must be greater that Partition length"
