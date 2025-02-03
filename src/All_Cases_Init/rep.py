@@ -129,22 +129,22 @@ class Representation:
         
         It assumes that G is arranged so that blocks are contiguous.
         """
-        # Using OurPartition to generate all decreasing weights within a block.
+        # Using Partition to generate all decreasing weights within a block.
         # The whole weights will be defined as the Cartesian product of the weights for each block.
-        from .partition import OurPartition
+        from .partition import Partition
         from .utils import group_by_block
 
         # For fermion and boson outer is trivial
         if self.type != 'kron' :
             return self.all_weights
         
-        def pad(p: OurPartition, l: int) -> tuple[int, ...]:
+        def pad(p: Partition, l: int) -> tuple[int, ...]:
             return p.pad(l)
         
         block_weights = tuple(
             tuple( # Converting to tuple (instead of a map) seems necessary to keep the right hi (FIXME)
                 p.pad(hi) # Adding trailing zeros if necessary
-                for p in OurPartition.all_of_height(hi, di - 1)
+                for p in Partition.all_of_length(hi, di - 1)
             )
             for di, hi in group_by_block(self.G) # Compress returns (value, multiplicity) for each block of G
         )
@@ -155,7 +155,7 @@ class Representation:
                 Lw+=list(x)
             yield Weight(self.G,as_list=list(vector(sum(w, start=())))) # Summing tuples is concatenating them 
 
-    def weights_of_S(self, p : OurPartition) -> Iterable["Weight"] : # Could be improved
+    def weights_of_S(self, p : Partition) -> Iterable["Weight"] : # Could be improved
         """
         Create de the list of weights of S\subset T acting on V. With multiplicities.
         S is given by p.
