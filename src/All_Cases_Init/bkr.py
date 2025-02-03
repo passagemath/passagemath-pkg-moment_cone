@@ -1,7 +1,7 @@
 import numpy as np
 import itertools
 
-from sage.all import SymmetricFunctions,ZZ,QQ,vector,matrix,Polyhedron
+from sage.all import SymmetricFunctions,ZZ,QQ,vector,matrix,Polyhedron # type: ignore
 import sage.libs.lrcalc.lrcalc as lr
 
 from .typing import *
@@ -14,6 +14,33 @@ from .rep import *
 from .inequality import *
 
 sym_f = SymmetricFunctions(QQ).s()
+
+class ListPartPlus:
+    """
+    A list of partitions with two more properties 
+    - indices (a list of integers) and 
+    - mult (an integer which is a multiplicity in representation theory.
+    """
+
+    def __init__(self, L : list[Partition], c : int,indices : Optional[list[int]]=None):
+        """
+        Initializes an instance of ListPartPlus.
+        """
+        self.parts=L
+        self.mult=c
+        self.indices=indices
+        
+
+    def __repr__(self) -> str:
+        if self.indices != None :
+            return 'Partitions: '+str(self.parts)+', Indices: '+str(self.indices)+', Multiplicity: '+str(self.mult)
+        else :
+            return 'Partitions: '+str(self.parts)+', Multiplicity: '+ str(self.mult)
+
+    def __eq__(self,other : "ListPartPlus") -> bool:
+        if all(l==m for l,m in zip(self.parts,other.parts)) and self.mult==other.mult and self.indices==other.indices :
+            return True
+        return False
 
 
 def ListNonZeroLR(nu : Partition,delta : list[int],l:int):  
