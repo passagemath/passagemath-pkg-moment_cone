@@ -76,6 +76,7 @@ def Latex_string_of_tau(tau,lambda_notation=False, sgn=1):
                     chaine+='-'
                 chaine+='\\lambda_{'+str(i+1)+'}'
                 started=True
+        chaine+='\\geq 0'
     return chaine 
 
 def Latex_string_of_cluster_dom1PS(inequations, lambda_notation=False, sgn=1): #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
@@ -118,7 +119,7 @@ def group_by_dom1PS(inequations):
 #TODO create a file
 #TODO make a caption
 
-def export_latex(V, inequations, lambda_notation=False, sgn=1): #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
+def export_latex(V, inequations, sgn=1): #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
     """ converts a list of Inequalities associated to a given dominant 1PS to a string describing part of a latex tabular
     """
     if V.type=='kron':
@@ -129,7 +130,7 @@ def export_latex(V, inequations, lambda_notation=False, sgn=1): #sgn=1 ou -1 all
     chaine='$\\begin{array}{|c| c |c|} \n \\hline \n \\textrm{dominant 1-PS} & \\textrm{Inequality} & w \\\\ \n \\hline'
     for taudom_list in grouped_ineqs:
         print(len(taudom_list))
-        chaine+=Latex_string_of_cluster_dom1PS(taudom_list) 
+        chaine+=Latex_string_of_cluster_dom1PS(taudom_list,lambda_notation) 
     chaine+='\\end{array}$'
     return(chaine)
 

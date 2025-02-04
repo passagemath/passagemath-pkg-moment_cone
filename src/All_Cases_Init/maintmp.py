@@ -102,6 +102,10 @@ print(len(Birational_Ineq), ' inequalities selected in Step 9 in','seconds')
 from reference_datas.comparisons import compare_to_reference
 compare_to_reference(Birational_Ineq,V)
 
+#exports possibles:
+from .export import export_normaliz, export_latex
+export_normaliz(V,Birational_Ineq)
+export_latex(V,Birational_Ineq)
 
 
 
