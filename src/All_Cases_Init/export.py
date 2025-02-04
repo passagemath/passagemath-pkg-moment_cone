@@ -78,19 +78,46 @@ def Latex_string_of_tau(tau,lambda_notation=False, sgn=1):
                 started=True
     return chaine 
 
-def Latex_string_of_cluster_1PS(taudom, inequations, lambda_notation=False, sgn=1): #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
+def Latex_string_of_cluster_dom1PS(inequations, lambda_notation=False, sgn=1): #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
     """ converts a list of Inequalities (associated to a given dominant 1PS  taudom) to a string describing part of a latex tabular
     """
     n=len(inequations)
     chaine='\\multirow{'+str(n)+'}{*}{'
-    chaine+=Latex_string_of_tau(taudom, False, sgn)+' } ' 
+    chaine+=Latex_string_of_tau(inequations[0].tau, False, sgn)+' } ' 
     for ineq in inequations:
         chaine+=' & '+Latex_string_of_tau(ineq.wtau, lambda_notation, sgn)+' & '
+        s=len(ineq.w)
+        if s>1: #kron type
+           s-=1
+        chaine+=Latex_string_of_tau(Tau([tuple(wi) for wi in ineq.w[:s]],ineq.tau.G))
         chaine+='\\\\ \n \\cline{2-3} \n'
     chaine=chaine[:-15]
     chaine+='\\hline'
     return(chaine)
     
+def group_by_dom1PS(inequations):
+    """ from a list of Inequalities: groups them by same dominant 1 parameter subgroup
+    """
+    remaining_indices=[i for i in range(len(inequations))]
+    grouped_ineqs=[]
+    while remaining_indices!=[]:
+        j=0
+        taudom=inequations[remaining_indices[0]].tau
+        taudom_ineqs=[]
+        while j<len(remaining_indices):
+            if inequations[remaining_indices[j]].tau==taudom:
+                taudom_ineqs.append(inequations[remaining_indices[j]])
+                del(remaining_indices[j])
+            else:
+                j+=1
+        grouped_ineqs.append(taudom_ineqs)
+    return grouped_ineqs
+
+    
+#TODO check fermion
+#TODO create a file
+#TODO make a caption
+
 def export_latex(V, inequations, lambda_notation=False, sgn=1): #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
     """ converts a list of Inequalities associated to a given dominant 1PS to a string describing part of a latex tabular
     """
@@ -98,39 +125,13 @@ def export_latex(V, inequations, lambda_notation=False, sgn=1): #sgn=1 ou -1 all
         lambda_notation=False
     else:
         lambda_notation=True
+    grouped_ineqs=group_by_dom1PS(inequations)
     chaine='$\\begin{array}{|c| c |c|} \n \\hline \n \\textrm{dominant 1-PS} & \\textrm{Inequality} & w \\\\ \n \\hline'
-    for ineq in inequations:
-        chaine+=Latex_string_of_tau(ineq.tau) 
-        chaine+='& '+Latex_string_of_tau(ineq.wtau, lambda_notation, sgn)
-        chaine+='&'
-        chaine+='\\\\ \n \\hline \n'
+    for taudom_list in grouped_ineqs:
+        print(len(taudom_list))
+        chaine+=Latex_string_of_cluster_dom1PS(taudom_list) 
     chaine+='\\end{array}$'
     return(chaine)
 
     
-
-
-
-#example of input
-#info=info_from_GV(G,V)
-#export_normaliz(info,G.rank,[ineq.wtau.flattened for ineq in Birational_Ineq48])
-
-#TODO be more consistent with real objects in Normaliz:
-#if amb_space is 8, an inequality 2a+3b<=8 translates to 
-"""
-amb_space 2
-
-inhom_inequalities 14            
--2 -3 8
-
-#What x1 a_1+...xn a_n +k >=0 translates to (x1,...,xn, k)
-#same for equations
-
-#Another possible writing:
-"""
-amb_space 2
-
-constaints 1
-2 3 <= 8
-"""
 
