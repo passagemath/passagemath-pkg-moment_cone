@@ -114,9 +114,7 @@ def group_by_dom1PS(inequations):
         grouped_ineqs.append(taudom_ineqs)
     return grouped_ineqs
 
-    
-#TODO check fermion
-#TODO create a file
+
 #TODO make a caption
 
 def export_latex(V, inequations, sgn=1, extra_info=""): #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
@@ -129,7 +127,7 @@ def export_latex(V, inequations, sgn=1, extra_info=""): #sgn=1 ou -1 allows to c
     grouped_ineqs=group_by_dom1PS(inequations)
     chaine='$\\begin{array}{|c| c |c|} \n \\hline \n \\textrm{dominant 1-PS} & \\textrm{Inequality} & w \\\\ \n \\hline'
     for taudom_list in grouped_ineqs:
-        chaine+=Latex_string_of_cluster_dom1PS(taudom_list,lambda_notation) 
+        chaine+=Latex_string_of_cluster_dom1PS(taudom_list,lambda_notation,sgn) 
     chaine+='\\end{array}$'
     info=info_from_GV(V)+extra_info
     file0 = open('ineq_Latex-'+info+'.tex','w')
