@@ -157,7 +157,7 @@ class Representation:
 
     def weights_of_S(self, p : Partition) -> Iterable["Weight"] : # Could be improved
         """
-        Create de the list of weights of S\subset T acting on V. With multiplicities.
+        Create de the list of weights of S subset T acting on V. With multiplicities.
         S is given by p.
         Only used for V.type='fermion' or 'boson'
         """
