@@ -17,6 +17,20 @@ from .kronecker import KroneckerCoefficientMLCache
 
 sym_f = SymmetricFunctions(QQ).s()
 
+def join(L : list[Partition]) -> Partition : # TODO : deplacer dans partition.py
+    res=[]
+    lmax=max(len(p) for p in L)
+    for i in range(lmax):
+        res.append(max(p[i] for p in L))
+    return(Partition(res))    
+
+def Search_Zero_a(Mu,ListP,Lambda,List_Vanishing_a): # Check if (Mu,Lambda) contains an already computer zero plethysm coefficient
+    a,b=Mu.shape
+    for i,j in itertools.product(range(len(a)),range(b)):
+        if [Mu[i,j],Lambda[i][j],Lambda[i,j]] in List_Vanishing_a :
+            return True
+    return False    
+
 
 def ListNonZeroLR(nu : Partition,delta : list[int],l:int):
     s=len(delta)
@@ -200,7 +214,7 @@ def chi2Numat(chi, mult_tau ): # chi is a sage vector - mult_tau est un tau.redu
         for i,mult in enumerate(col):
             p=chi[shift:shift + mult]
             # Add in nu[-1] after removing tailing 0's
-            Nu[i,k]=Partition(p)
+            Nu[i,k]=Partition(list(p))
             shift += mult
             
     #print('chi',chi)
@@ -353,7 +367,17 @@ def Multiplicity_SV_tau(tau : Tau,chi : vector, V : Representation, checkGreatEq
     Delta=Enumerate_delta(ListP,w_Nu,V)
     if checkGreatEq2 and tau.is_dom_reg : # In this case we only need to check the dimension of the polyhedron of delta's
         return Delta[0]==0
-    
+    if V.type != 'kron': # In this case we compute Kron in cash
+        dict_delta_lenght={}
+        for i,p in enumerate(delta):
+            max_length=[Representation(LinGroup([tau.reduced.mult[j]]),V.type,nb_part=listP[i][j]).dim for j in range(s)].sort(reverse=True)
+            if p in dict_delta_lenght.keys():
+                dict_delta_lenght[p].append(max_lenght)
+            else :
+                dict_delta_lenght[p]=[max_lenght]
+        dict_delta_max_lenght={d: join(l) for d, l in dict_delta_lenght.items()}
+        # TODO : faire le caché pour chaque d,list(p) for d, l in dict_delta_max_lenght.items()
+            
     for delta in Delta[1]: # Run over the dela satisfying Condition 2
         #print('delta',delta)
         if V.type == 'kron' :
@@ -448,29 +472,43 @@ def Multiplicity_SV_tau(tau : Tau,chi : vector, V : Representation, checkGreatEq
                         
                 List_of_Mus_plugged.append([Mu,LR])
                 
-            for [Mu,lr] in List_of_Mus_plugged:
-                Atot=1
-                sumAg=1
-                k=0
-                while sumAg !=0 and k<len(ListP):
-                    sumAg=0
-                    I=ListP[k]
-                    if V.type == 'fermion':
-                        Theta=[Partition(t*[1]) for t in I]
-                    else :
-                        Theta=[Partition([t]) for t in I]
-
-                    for Lambda in itertools.product(*[Partition.all_for_integer(delta[k],max_length=comb(tau.reduced.mult[0][j],I[j])) for j in range(s)]) :
-                        g=Kron_multi(Lambda)
-                        if g!=0 :
-                            a = Pleth_list(Lambda,Theta,Mu[k,:])
-                            sumAg +=a*g
-                            if checkGreatEq2 and mult+lr*sumAg >1 :
-                                return(False)
-                    k+=1
-                mult+=lr*sumAg
-                if checkGreatEq2 and mult>1:
-                    return(False)
+            # Create the list of possible Lambda
+            table_Lambda=np.empty((len(ListP)), dtype=object)
+            for i,p in enumerate(delta):
+                max_length=[Representation(LinGroup([tau.reduced.mult[j]]),V.type,nb_part=listP[i][j]).dim for j in range(s)] 
+                table_Lambda[i]=ListNonZeroKron(p,max_length)
+            List_of_Lambdas=[]
+            K=1
+            for p in itertools.product(*table_Lambda.ravel()): #TODO : ravel utile ?
+                T= np.empty((len(ListP),s), dtype=object)
+                for i in range(len(ListP)):
+                    for j in range(b-s):
+                        T[i,j]=p[i*b+j] # TODO : corriger
+                        K*=p[i].mult
+                List_of_Lambdas.append([T,K])
+            # Runnig over the pairs Mu, Lambda #TODO : appelÃ©es mutilde et lambdatilde jeudi matin    
+            List_Vanishing_a=[] # To remember the computed a that are zeros
+            
+            for [Mu,lr] in List_of_Mus_plugged: # lr is the multiplicity assocated to Mu
+                for [Lambda,K] in  List_of_Lambdas: # K is the multiplicity assocated to Mu
+                    if Search_Zero_a(Mu,ListP,Lambda,List_Vanishing_a): # Check if (Mu,Lambda) contains an already computer zero plethysm coefficient. In this case, we skip this pair.
+                        break
+            A=1
+            for i,j in itertools.product(range(len(ListP)),range(s)):                                
+                if V.type == 'fermion':
+                    theta=Partition(ListP[i][j]*[1])
+                else :
+                    theta=Partition([ListP[i][j]])
+                pl=sym_f(list(Lambda[i,j])).plethysm(sym_f(list(theta))) #TODO : utiliser un cash ici.coefficient(list(n)) et Schur 
+                a = pl.coefficient(list(Mu[i,j]))
+                if a != 0 :
+                    A*=a
+                else :
+                    List_Vanishing_a.append([Mu[i,j],ListP[i][j],Lambda[i,j]])
+                    break
+            mult+=lr*A*K             
+            if checkGreatEq2 and mult>1:
+                return(False)
                 
     if checkGreatEq2:
         return(True)
