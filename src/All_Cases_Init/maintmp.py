@@ -1,10 +1,10 @@
 
 G = LinGroup([4,4,4,1])
 V = Representation(G,'kron')
-#G = LinGroup([7])
-#V = Representation(G,'fermion',nb_part=3)
-#G = LinGroup([8])
-#V = Representation(G,'fermion',nb_part=3)
+G = LinGroup([7])
+V = Representation(G,'boson',nb_part=3)
+G = LinGroup([8])
+V = Representation(G,'fermion',nb_part=3)
 
 tpi_method: Method ='symbolic'
 tpi_method='probabilistic'
@@ -80,13 +80,19 @@ print(len(Dominant_Ineq), ' inequalities selected in Step 6')
 
 # Filter 2: Linear Triangular
 print('Step 7, checking Linear Triangular')
-#for ineq in Dominant_Ineq:
-#    print(Is_Lin_Triangular(V,ineq.tau,[alpha for alpha in ineq.inversions]))
-
+Ineq_Triang=[]
+Dominant_Ineq_filteredLT=[]
+for ineq in Dominant_Ineq:
+    if Is_Lin_Triangular(V,ineq.tau,[alpha for alpha in ineq.inversions]) :
+        Ineq_Triang.append(ineq)
+    else:
+        Dominant_Ineq_filteredLT.append(ineq)
+print('There are',len(Ineq_Triang),'Linear Triangular inequalities')
+        
 # Filter 3: BKR condition
 print('Step 8, checking if BKR condition is fullfilled')
 List_BKR=[]
-for ineq in Dominant_Ineq :
+for ineq in Dominant_Ineq_filteredLT :
     #print('ineq',ineq)
     #print('pos weights:',[chi for chi in ineq.tau.positive_weights(V)])
     #print('pos roots:',[chi for chi in ineq.inversions])
@@ -96,14 +102,26 @@ for ineq in Dominant_Ineq :
     #if list(ineq.inversions)==[] or Multiplicity_SV_tau(ineq.tau,chi,V)==1:
     if list(ineq.inversions)==[] or Multiplicity_SV_tau(ineq.tau,chi,V,True):    
         List_BKR.append(ineq)
-        
+print('The BKR filter had eleminated',len(Dominant_Ineq)-len(List_BKR),'inequalities')
+
 # Filter 4: pi is birational (ramification divisor contracted)
 print('Step 9, checking birationality (ramification divisor contracted) of the map pi')
 #Birational_Ineq=[ineq for ineq in Dominant_Ineq if Is_Ram_contracted(ineq,V,ram_schub_method,ram0_method)]
-Birational_Ineq=[ineq for ineq in List_BKR if Is_Ram_contracted(ineq,V,ram_schub_method,ram0_method)]
+Birational_Ineq=[ineq for ineq in List_BKR if Is_Ram_contracted(ineq,V,ram_schub_method,ram0_method)]+Ineq_Triang
+#Birational_Ineq=[ineq for ineq in Dominant_Ineq_filteredLT if Is_Ram_contracted(ineq,V,ram_schub_method,ram0_method)]
 print(len(Birational_Ineq), ' inequalities selected in Step 9 in','seconds')
+#for ineq in Ineq_Triang :
+#    if ineq not in Birational_Ineq:
+#        print('Tri Lin pas birational:',ineq,list(ineq.inversions),ineq.tau.positive_weights(V))
+#print('Triang')
+#for ineq in Ineq_Triang :
+#    print(ineq)
 
-
+#print('Birat')
+#for ineq in Birational_Ineq :
+#    print(ineq)
+#    chi=ineq.weight_det(V)
+#    print('mult',Multiplicity_SV_tau(ineq.tau,chi,V))
 
 
 
@@ -114,22 +132,3 @@ export_latex(V,Birational_Ineq)
 
 
 
-###### TODO : TESTS A SUPPRIMMER CI-APRES #########
-
-print('Checking')
-for ineq in Birational_Ineq :
-    chi=ineq.weight_det(V)
-    #print(ineq)
-    #print([alpha for alpha in ineq.inversions])
-    #print('chi',chi)
-    print('Mult Vtau', Multiplicity_SV_tau(ineq.tau,chi,V))
-    
-#tau=Tau.from_flatten([2,1,0,2,1,0,2,1,0,0],G)
-#for chi in V.all_weights:
-#    for chi2 in V.all_weights:
-#        if chi2.leq(chi) and chi != chi2:
-#            print(tau.dot_weight(chi)-tau.dot_weight(chi2))
-#for ineq in Birational_Ineq :
-#    print(ineq.tau)
-
-#########

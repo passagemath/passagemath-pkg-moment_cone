@@ -28,8 +28,11 @@ def run_schur(commands):
         partition_expanded = re.sub(r'(\d+)\^(\d+)', lambda m: (m.group(1) + " ") * int(m.group(2)), partition).strip() # Repeat k times when ^k
         partition_list = tuple(map(int, partition_expanded.split()))
         partition_dict[partition_list]=coef
-        #TODO : gérer les nombres à deux chiffres avec ! dans Schur
-
+        # TODO : gérer les nombres à deux chiffres avec ! dans Schur. Voir le manuel ici :
+        # https://master.dl.sourceforge.net/project/schur/manual/6.07/schur_manual.pdf?viasf=1
+        # Exemple : !15!13!11 975 signifie [15,13,11,9,7,5]
+        # Exemple : !137!29!10 941 signifie [137,29,10,9,4,1] 
+        # Exemple : !12ˆ!13 !10ˆ!31 9ˆ3 21 would correspond to the partition [12]*13+[10]*31+[9]*3+[2,1].
     print(result)    
     return partition_dict  # Reformater proprement
 
