@@ -23,6 +23,7 @@ __all__ = (
     "Tau",
     "ReducedTau",
     "unique_modulo_symmetry_list_of_tau",
+    "full_under_symmetry_list_of_tau",
     "find_1PS",
 )
 
@@ -643,9 +644,10 @@ def unique_modulo_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> set[Tau]:
     """
     return {tau.end0_representative.sort_mod_sym_dim for tau in seq_tau}
 
-#def full_under_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> Iterable[Tau]:
-#    """ TODO """
-#    return itertools.chain.from_iterable(tau.orbit_symmetries() for tau in seq_tau)
+def full_under_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> Iterable[Tau]:
+    """ provides all the elements in orbits under symmetry for elements in seq_tau
+    """
+    return itertools.chain.from_iterable(tau.orbit_symmetries() for tau in seq_tau)
 
 
 def find_1PS(V: Representation, quiet: bool = False) -> Sequence["Tau"]:

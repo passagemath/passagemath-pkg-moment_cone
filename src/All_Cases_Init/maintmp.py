@@ -128,7 +128,7 @@ print(len(Birational_Ineq), ' inequalities selected in Step 9 in','seconds')
 
 
 #exports possibles:
-export_normaliz(V,Birational_Ineq,add_dominance="sym")
+export_normaliz(V,full_under_symmetry_list_of_ineq(Birational_Ineq),add_equations="all",add_dominance="all")
 export_latex(V,Birational_Ineq)
 
 

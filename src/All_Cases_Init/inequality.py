@@ -4,7 +4,7 @@ from functools import cached_property
 import itertools
 
 from .typing import *
-from .tau import Tau
+from .tau import *
 from .permutation import Permutation
 from .blocks import Blocks
 from .root import Root
@@ -12,6 +12,7 @@ from .rep import *
 
 __all__ = (
     "Inequality",
+    "full_under_symmetry_list_of_ineq",
 )
 
 class Inequality:
@@ -165,4 +166,10 @@ class Inequality:
             return(vector(QQ,sum(V.G)))
         else :
             return(sum([chi.as_vector for chi in listp])-sum([root.to_vector(V.G) for root in self.inversions]))
+            
+
+def full_under_symmetry_list_of_ineq(seq_ineq: Iterable[Inequality]) -> Iterable[Inequality] :
+    seq_tau=full_under_symmetry_list_of_tau([ineq.wtau for ineq in seq_ineq])
+    return([Inequality.from_tau(tau) for tau in seq_tau])
+
 
