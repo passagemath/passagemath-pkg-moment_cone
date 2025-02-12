@@ -149,19 +149,26 @@ def all_lambda_matrix(delta: Sequence[int], max_length: NDArray, kro: KroneckerC
 class PlethysmCache:
     """ Cache for the Plethysm product """
     _cache: dict[tuple[Partition, Partition], dict[Partition, int]]
+    _hit: int
+    _miss: int
 
     def __init__(self):
         self._cache = dict()
+        self._hit = 0
+        self._miss = 0
 
     def __sym_f(self, p: Partition) -> Any:
         return sym_f(tuple(p))
     
     def product(self, lhs: Partition, rhs: Partition) -> dict[Partition, int]:
         try:
-            return self._cache[(lhs, rhs)]
+            result = self._cache[(lhs, rhs)]
+            self._hit += 1
+            return result
         except KeyError:
             pass
 
+        self._miss += 1
         # Product using Sage
         product = self.__sym_f(lhs).plethysm(self.__sym_f(rhs))
 
@@ -175,7 +182,10 @@ class PlethysmCache:
     
     def __call__(self, a: Partition, b: Partition, c: Partition) -> int:
         return self.product(a, b).get(c, 0)
-    
+
+    def __repr__(self) -> str:
+        return f"PlethysmCache(#cache={len(self._cache)}, #hit={self._hit}, #miss={self._miss})"
+
 
 plethysm_cache = PlethysmCache()
 

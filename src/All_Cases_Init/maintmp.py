@@ -103,6 +103,8 @@ for ineq in Dominant_Ineq_filteredLT :
     if list(ineq.inversions)==[] or Multiplicity_SV_tau(ineq.tau,chi,V,True):    
         List_BKR.append(ineq)
 print('The BKR filter had eleminated',len(Dominant_Ineq)-len(List_BKR),'inequalities')
+print("Final state of the Kronecker cache:", Kron_multi)
+print("Final state of the Plethysm cache: ", plethysm_cache)
 
 # Filter 4: pi is birational (ramification divisor contracted)
 print('Step 9, checking birationality (ramification divisor contracted) of the map pi')
