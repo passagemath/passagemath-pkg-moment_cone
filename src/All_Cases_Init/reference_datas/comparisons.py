@@ -1,5 +1,6 @@
-from reference_datas.Klyachko import Klyachko_3_7, Klyachko_3_8, Klyachko_4_8
-from reference_datas.Vergne_Walter import Vergne_Walter_444
+from .Klyachko import Klyachko_3_7, Klyachko_3_8, Klyachko_4_8
+from .Vergne_Walter import Vergne_Walter_444
+from ..tau import *
 
 #TODO: remove if not used
 def Klyachkoineqs_to_ineqs(lK):

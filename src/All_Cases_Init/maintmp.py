@@ -131,5 +131,10 @@ print(len(Birational_Ineq), ' inequalities selected in Step 9 in','seconds')
 export_normaliz(V,full_under_symmetry_list_of_ineq(Birational_Ineq),add_equations="all",add_dominance="all")
 export_latex(V,Birational_Ineq)
 
+#comparaison possible:
+#from src.All_Cases_Init.reference_datas.comparisons import *
+#compare_to_reference(Birational_Ineq,V)
+
+
 
 
