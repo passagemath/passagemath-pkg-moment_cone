@@ -61,7 +61,7 @@ print(len(Candidates_for_tau2), ' dominant 1-PS satisfying the stabilizer condit
 ## Generate the list of candidates for the inequalites (pairs tau,w)
 ## Here w has to belong to P^tau and U(w) is tau-isomorphic to V(tau>0)
 
-print('Step 4, for each tau, compution the w with compatible tau-modules')
+print('Step 4, for each tau, computation the w with compatible tau-modules')
 Candidates_for_Ineq=[]
 for tau in Candidates_for_tau2 :
     Lw=ListWs_Mod(tau,V)
