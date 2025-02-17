@@ -278,27 +278,36 @@ class Representation:
                 
         else :
             # List of weights with j by inserting j from smaller
-            Vred=Representation(LinGroup([self.G[0]-1]),self.type,self.nb_part-1)
-            for w in Vred.all_weights: 
-                L1=[s for s in w.as_list_of_list[0] if s<alpha.j]
-                #posj=len(L1)
-                L2=[s+1 for s in w.as_list_of_list[0] if s>=alpha.j]
-                lj=L1+[alpha.j]+L2  # we insert j
+            if self.type == 'boson' :
+                Vred=Representation(LinGroup([self.G[0]]),self.type,self.nb_part-1)
+            else :    
+                Vred=Representation(LinGroup([self.G[0]-1]),self.type,self.nb_part-1)
+            for w in Vred.all_weights:
+                if self.type == 'boson' :
+                    lj=w.as_list_of_list[0]+[alpha.j]
+                    lj.sort()
+                else :    
+                    L1=[s for s in w.as_list_of_list[0] if s<alpha.j]
+                    #posj=len(L1)
+                    L2=[s+1 for s in w.as_list_of_list[0] if s>=alpha.j]
+                    lj=L1+[alpha.j]+L2  # we insert j
+                
                 if self.type == 'boson' or alpha.i not in lj : # Otherwise E_ij v =0
                     wj  = Weight(self.G,as_list_of_list=[lj])
-                    idj = wj.idx(self)  
-                    if alpha.i==alpha.j:
-                        M[idj,idj]=1
+                    idj = wj.idx(self)
+                    if self.type == 'boson' :
+                        li=w.as_list_of_list[0]+[alpha.i]
+                        li.sort()
                     else :    
                         li=L1+[alpha.i]+L2  # we insert i
                         li.sort()
-                        #posi=li.index(i)
-                        wi = Weight(self.G,as_list_of_list=[li])
-                        idi=wi.idx(self)
-                        if self.type == 'fermion' :
-                            vp[wi.idx(self)] = (-1)**(len(L1)-li.index(alpha.i))*v[wj.idx(self)]
-                        else :
-                            vp[wi.idx(self)] = lj.count(alpha.j)*v[wj.idx(self)]
+                    #posi=li.index(i)
+                    wi = Weight(self.G,as_list_of_list=[li])
+                    idi=wi.idx(self)
+                    if self.type == 'fermion' :
+                        vp[wi.idx(self)] = (-1)**(len(L1)-li.index(alpha.i))*v[wj.idx(self)]
+                    else :
+                        vp[wi.idx(self)] = lj.count(alpha.j)*v[wj.idx(self)]
                             
         return vp
 

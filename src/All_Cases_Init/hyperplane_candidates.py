@@ -114,6 +114,12 @@ def find_hyperplanes_reg_mod_outer(weights: list[Weight], V: Representation, u: 
     """
     exp_dim=V.dim_cone-1
     St = WeightSieve([], [], [], [], [])
+
+    ## TODO : améliorer has_too_much_geq_weights dans le cas Kronecker pour ordonner les poids de V.weights_mod_outer par #{\chi'>\chi} décroissant
+    # La fonction qui calcule ce cardinal est leq_cnt = short_prod(c + 1 for c in chi.as_list) - 1
+
+    ## TODO : pour parallelise !='kron' il suffit de faire la même boucle même si modulo outer est trivial
+    # On peut même générer les weights directement ordonnés de cette manière
     
     for chi in weights:
         if has_too_much_geq_weights(chi, weights, V, u, sym):
@@ -125,7 +131,7 @@ def find_hyperplanes_reg_mod_outer(weights: list[Weight], V: Representation, u: 
                                                  
 
     else :
-      for chi in V.weights_mod_outer:
+      for chi in V.weights_mod_outer: #TODO : paralléliser cette boucle en mettant pour le i eme poids tous les poids strictement précédents (et leur orbite par sym) dans St.excluded
         # Checking if the element is indeterminate
         
         try:

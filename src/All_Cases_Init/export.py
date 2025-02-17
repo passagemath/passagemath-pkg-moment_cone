@@ -91,7 +91,7 @@ def Latex_string_of_cluster_dom1PS(inequations, lambda_notation=False, sgn=1): #
         s=len(ineq.w)
         if s>1: #kron type
            s-=1
-        chaine+=Latex_string_of_tau(Tau([tuple(wi) for wi in ineq.w[:s]],ineq.tau.G))
+        chaine+=Latex_string_of_tau(Tau([tuple(wi) for wi in ineq.w[:s]]))
         chaine+='\\\\ \n \\cline{2-3} \n'
     chaine=chaine[:-15]
     chaine+='\\hline'

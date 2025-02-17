@@ -1,5 +1,6 @@
 import numpy as np
 import itertools
+from collections import defaultdict
 
 from numpy.typing import NDArray
 
@@ -20,7 +21,11 @@ from .kronecker import *
 
 sym_f = SymmetricFunctions(QQ).s() 
 
-def Search_Zero_a(Mu,ListP,Lambda,Vanishing_a): # Check if (Mu,Lambda) contains an already computer zero plethysm coefficient
+def Search_Zero_a(Mu,ListP,Lambda,Vanishing_a):
+    """
+    Vanishing_a is a set of tuples (Partition,int,Partition) with associated Plethysm coefficient 0 
+    Check if (Mu,Lambda) contains an already computer zero plethysm coefficient
+    """
     a,b=Mu.shape
     for i,j in itertools.product(range(a),range(b)):
         if (Mu[i,j],ListP[i][j],Lambda[i,j]) in Vanishing_a :
@@ -29,6 +34,12 @@ def Search_Zero_a(Mu,ListP,Lambda,Vanishing_a): # Check if (Mu,Lambda) contains 
 
 
 def ListNonZeroLR(nu : Partition,delta : list[int],l:int):
+    """
+    Enumerate the list of partitions such that |lambda_i|=delta_i and l(lambda_i)<=l 
+    and the multi-LR coefficient c(nu;lambda_i)!=0.
+    Compute also this LR coefficient.
+    The output is a ListPartPlus that have an attribute mult stocking the LR-coef.
+    """
     s=len(delta)
     if not isinstance(nu, Partition):
         nu=Partition(nu)
@@ -61,13 +72,14 @@ def ListNonZeroLR(nu : Partition,delta : list[int],l:int):
 
     res=[]
     L2=ListNonZeroLR(nu,[delta[0],sum(nu)-delta[0]],l)
-    # Extraction and uniquify of the mus TODO : améliorer la façon d'uniquifier
+    # Extraction and uniquify of the mus TODO : améliorer la façon d'uniquifier 
     List_mus1=[list_part_plus.parts[1] for list_part_plus in L2]
     List_mus=[]
     for mu in List_mus1 :
         if mu not in List_mus:
             List_mus.append(mu)
-            
+
+          
     for mu in List_mus :
         Ls_minus_one=ListNonZeroLR(mu,delta[1:],l)
         for list_lambda_queu in ListNonZeroLR(mu,delta[1:],l):
@@ -76,20 +88,12 @@ def ListNonZeroLR(nu : Partition,delta : list[int],l:int):
                     res.append(ListPartPlus([list_lambda_start.parts[0]]+list_lambda_queu.parts,list_lambda_start.mult*list_lambda_queu.mult))
    
     ## Fusion of res by adding multiplicities TODO : ce que j'ai fait est moche et pas efficace pour zipper
-    zipped_list=[]
+    zipped_dic=defaultdict(int)
     for obj in res:
-        new_obj=ListPartPlus(obj.parts,0)
-        if new_obj not in zipped_list :
-            zipped_list.append(new_obj)
-            
-    for obj in res:
-        for new_obj in zipped_list:
-            if new_obj.parts == obj.parts:
-                new_obj.mult+=obj.mult
-                break       
+        zipped_dic[tuple(obj.parts)]+=obj.mult
 
     # Création de la nouvelle liste d'objets
-    return(zipped_list)
+    return([ListPartPlus(list(p),m) for p,m in zipped_dic.items()])
     
 # Kronecker coefficient of n-uplet of partitions using a multi-level cache
 Kron_multi = KroneckerCoefficientMLCache()  
@@ -304,6 +308,10 @@ def Product_of_Tables(table_of_lists) : #TODO : déplacer dans utils
     return List_of_Tables
 
 def Multiplicity_SV_tau(tau : Tau,chi : vector, V : Representation, checkGreatEq2:bool=False) -> int:
+    """
+    Compute the multiplicity of G^tau-irreducible representation of highest weight chi in C[V^tau].
+    Using the description of this multiplicity as sum of products of LR, Kron and Plethysm coefficients.
+    """
     from math import comb # equivalent to sage.binomial
 
     ListP=tau.summands_Vtau(V)

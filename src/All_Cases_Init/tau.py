@@ -31,11 +31,12 @@ class Tau:
     Tuple of partition along with a coefficient
     
     Example:
-    >>> tau = Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1)), 1)
+    >>> tau = Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1)))
     >>> tau
-    1 | 3 3 2 2 | 2 2 1 | 2 2 1
-
-    >>> G = LinGroup([1,4, 3, 3])
+    3 3 2 2 | 2 2 1 | 2 2 1
+    >>> tau.G
+    GL(4)xGL(3)xGL(3)
+    >>> G = LinGroup([1, 4, 3, 3])
     >>> tau = Tau.from_flatten((1, 3, 3, 2, 2, 2, 2, 1, 2, 2, 1), G)
     >>> tau
     1 | 3 3 2 2 | 2 2 1 | 2 2 1
@@ -43,8 +44,7 @@ class Tau:
     #__slots__ =  '_components' # FIXME cached_property cannot work without __dict__ ... => self managed cache or removing __slots__
     _components: Blocks[int]
 
-    def __init__(self, components: Iterable[Sequence[int]] | Blocks[int],G : LinGroup):
-        # TODO :j'ai mis G ici. Je viens de me rendre compte que c'est superflux par rapport aux blocks. Peut-être peut-on supprimer ? 
+    def __init__(self, components: Iterable[Sequence[int]] | Blocks[int]):
         """
         Tau initialization from a sequence of sub-group or directly from a partial matrix
         
@@ -54,9 +54,7 @@ class Tau:
             self._components = components.freeze()
         else:
             self._components = Blocks.from_blocks(components)
-        if not isinstance(G, LinGroup):   
-            raise ValueError("G must be a Linear Group")
-        self.G = G
+        self.G = LinGroup([len(c) for c in components])
         
     @staticmethod
     def from_flatten(s: Iterable[int], G: LinGroup) -> "Tau":
@@ -66,7 +64,7 @@ class Tau:
             raise ValueError("Invalid number of components")
 
         # Tau will be always immutable
-        return Tau(Blocks.from_flatten(tuple(all_components),G),G)
+        return Tau(Blocks.from_flatten(tuple(all_components), G))
 
     @staticmethod
     def from_zero_weights(weights: Sequence[Weight], V: Representation) -> "Tau":
@@ -97,11 +95,11 @@ class Tau:
         """
         Returns the opposite of some tau (same orthogonal hyperplane)
 
-        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)))
         >>> tau
-        -7 | 3 2 2 | 4 2 1 | 3 2
+        3 2 2 | 4 2 1 | 3 2
         >>> tau.opposite
-        7 | -3 -2 -2 | -4 -2 -1 | -3 -2
+        -3 -2 -2 | -4 -2 -1 | -3 -2
         """
         return Tau.from_flatten(
             (-x for x in self.flattened),
@@ -128,7 +126,14 @@ class Tau:
       
     @cached_property
     def reduced(self) -> "ReducedTau":
-        """ Returns reduced form of tau """
+        """ 
+        Returns reduced form of tau
+        
+        Example:
+        >>> tau = Tau(((3, 3, 2), (4, 4, 2), (1, 1)))
+        >>> tau.reduced
+        3^2 2^1 | 4^2 2^1 | 1^2
+        """
         return ReducedTau(self)
     
     def extend_from_S(self, p: Partition):
@@ -140,27 +145,27 @@ class Tau:
     
     def m_extend_with_repetitions(self,G: LinGroup)-> Iterable["Tau"]:
         """
-        Extends self in all possible manners to a Tau of G
+        Extends self in all possible manners to a Tau of G by adding repetitions
                 
         Example:
-        >>> tau = Tau([[5, 4, 0], [4, 3, 0], [4, 2, 0]], -1)
+        >>> tau = Tau([[5, 4, 0], [4, 3, 0], [4, 2, 0]])
         >>> tau
-        -1 | 5 4 0 | 4 3 0 | 4 2 0
-        >>> for t in tau.m_extend_with_repetitions(Dimension([4, 4, 3])):
+        5 4 0 | 4 3 0 | 4 2 0
+        >>> for t in tau.m_extend_with_repetitions(LinGroup([4, 4, 3])):
         ...     print(t)
-        -1 | 5 4 0 0 | 4 3 0 0 | 4 2 0
-        -1 | 5 4 0 0 | 4 3 3 0 | 4 2 0
-        -1 | 5 4 0 0 | 4 4 3 0 | 4 2 0
-        -1 | 5 4 4 0 | 4 3 0 0 | 4 2 0
-        -1 | 5 4 4 0 | 4 3 3 0 | 4 2 0
-        -1 | 5 4 4 0 | 4 4 3 0 | 4 2 0
-        -1 | 5 5 4 0 | 4 3 0 0 | 4 2 0
-        -1 | 5 5 4 0 | 4 3 3 0 | 4 2 0
-        -1 | 5 5 4 0 | 4 4 3 0 | 4 2 0
+        5 4 0 0 | 4 3 0 0 | 4 2 0
+        5 4 0 0 | 4 3 3 0 | 4 2 0
+        5 4 0 0 | 4 4 3 0 | 4 2 0
+        5 4 4 0 | 4 3 0 0 | 4 2 0
+        5 4 4 0 | 4 3 3 0 | 4 2 0
+        5 4 4 0 | 4 4 3 0 | 4 2 0
+        5 5 4 0 | 4 3 0 0 | 4 2 0
+        5 5 4 0 | 4 3 3 0 | 4 2 0
+        5 5 4 0 | 4 4 3 0 | 4 2 0
         """
         extend_each_comp=[extend_with_repetitions(x,G[i]) for i,x in enumerate(self.components)]
         for ext in itertools.product(*extend_each_comp):
-            yield Tau(ext,G)
+            yield Tau(ext)
 
     def __repr__(self) -> str:
         return repr(self._components)
@@ -187,18 +192,42 @@ class Tau:
         return sum([x*y for x,y in zip(self.flattened,chi.as_vector)])
     
     def dot_root(self, root: Root) -> int:
-        """ Scalar product of tau with a root of U """
+        """ 
+        Scalar product of tau with a root of self.G
+        
+        Example:
+        >>> tau = Tau([[5, 4, 0], [4, 3, 0], [4, 2, 0]])
+        >>> tau.dot_root(Root(1,0,2))
+        4
+        """
         c = self.components[root.k]
         return c[root.i] - c[root.j]
 
     @cached_property
     def is_dom_reg(self) -> bool:
-        """ Check if tau is dominant and regular """
+        """ 
+        Check if tau is dominant and regular 
+        Examples:
+        >>> tau=Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1)))
+        >>> tau.is_dom_reg
+        False
+        >>> tau=Tau(((3, 2, 1), (2,  1), (2, 1)))
+        >>> tau.is_dom_reg
+        True
+
+        """
         return all(all(a > b for a, b in itertools.pairwise(c)) for c in self.components)
 
     @cached_property
     def is_dominant(self) -> bool:
-        """ Check if tau is dominant """
+        """ 
+        Check if tau is dominant 
+        
+        Example:
+        >>> tau=Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1)))
+        >>> tau.is_dominant
+        True
+        """
         return all(all(a >= b for a, b in itertools.pairwise(c)) for c in self.components)
     
 
@@ -216,10 +245,11 @@ class Tau:
         
         For each key p, the weights in the entry p correspond to a basis of the eigen space
         
-        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2),(1,)))
         >>> tau
-        -7 | 3 2 2 | 4 2 1 | 3 2
-        >>> gw = tau.grading_weights
+        3 2 2 | 4 2 1 | 3 2 | 1
+        >>> V=Reprensentation(tau.G,'kron')
+        >>> gw = tau.grading_weights(V)
         >>> for k in sorted(gw.keys()):
         ...     print(f"{k}:", gw[k])
         -2: [Weight((1, 2, 1), idx: 11), Weight((2, 2, 1), idx: 17)]
@@ -324,9 +354,9 @@ class Tau:
         """
         Basis of the eigen space for positive eigen values for the action of tau on U.
 
-        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2),(-7,)))
         >>> tau
-        -7 | 3 2 2 | 4 2 1 | 3 2
+        3 2 2 | 4 2 1 | 3 2 | -7
         >>> gr = tau.positive_roots
         >>> for k in sorted(gr.keys()):
         ...     print(f"{k}:", gr[k])
@@ -413,7 +443,7 @@ class Tau:
         1 | 1 4 | 1 4 | 6 2 | 1 | 3 | 5
         """
         blocks = (sorted(b) for b in Blocks(self.components, self.G.outer))
-        return Tau(itertools.chain.from_iterable(blocks),self.G)
+        return Tau(itertools.chain.from_iterable(blocks))
         
     def orbit_symmetries(self) -> Iterable["Tau"]:
         """
@@ -434,7 +464,7 @@ class Tau:
         1 | 6 2 | 1 4 | 1 4 | 5 | 3
         """
         for sym_comp in orbit_symmetries(self._components, self.G.outer):
-            yield Tau(sym_comp,self.G)
+            yield Tau(sym_comp)
 
     #@staticmethod
     def is_sub_module(self,V: Representation) -> bool :
@@ -462,25 +492,36 @@ class Tau:
         Dimension of Pu
         
         Example:
-        >>> tau = Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1)), 1)
+        >>> tau = Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1),(1,)))
         >>> tau
-        1 | 3 3 2 2 | 2 2 1 | 2 2 1
+        3 3 2 2 | 2 2 1 | 2 2 1 | 1
         >>> tau.dim_Pu
         8
         >>> sum(len(roots) for roots in tau.positive_roots.values())
         8
         """
-        sum_di2 = sum(di**2 for di in self.G)
+        sum_di2 = self.G.dim
         sum_mi2 = sum(mi**2 for mi in self.reduced.mult.flatten)
         return (sum_di2 - sum_mi2) // 2
 
     @cached_property
     def end0_representative(self) -> "Tau":
-        """ Returns representative of tau in ??? space (final value of each block is zero) """
+        """ 
+        Returns representative of tau in X*(T/Z)  with final value of each block is zero.
+        Since Z is trivial when len(G)==1 return self.
+
+        Examples:
+        >>> tau = Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1),(1,)))
+        >>> tau.end0_representative
+        1 1 0 0 | 1 1 0 | 1 1 0 | 5
+        >>> tau = Tau(((3, 3, 2, 2),))
+        >>> tau.end0_representative
+        3 3 2 2
+        """
 
         # Return self if not kron
         if len(self.G)==1:
-            return selft
+            return self
 
         from sage.all import gcd
         total_shift = 0
@@ -496,9 +537,20 @@ class Tau:
     
     @cached_property
     def sl_representative(self) -> "Tau":
-        """ Returns representative of tau in C^* x (SLn)^3 """
+        """ 
+        Returns representative of tau in X*(T/Z)  in product of SL.
+        Since Z is trivial when len(G)==1 return self.
+
+        Examples:
+        >>> tau = Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1),(1,)))
+        >>> tau.sl_representative
+        3 3 -3 -3 | 2 2 -4 | 2 2 -4 | 41
+        >>> tau = Tau(((3, 3, 2, 2),))
+        >>> tau.sl_representative
+        3 3 2 2
+        """
         if len(self.G)==1:
-            return selft
+            return self
         from math import lcm, gcd
         #flat_non_zero=[x for x in self.flattened if x!=0]
         d=(len(v) for v in self.components)
@@ -513,21 +565,9 @@ class Tau:
             ccomponent += shift
         res_gcd = gcd(ccomponent, *itertools.chain.from_iterable(columns))
         return Tau(
-            tuple(tuple(v // res_gcd for v in cj) for cj in columns) +((ccomponent // res_gcd,),),self.G
+            tuple(tuple(v // res_gcd for v in cj) for cj in columns) +((ccomponent // res_gcd,),)
         )
 
-    
-    @cached_property
-    def indices_in_tau_red_that_sum_to_zero(self)  -> list[list[int]] : #TODO : supprimer cette propriété
-        """
-        Create the list of lists L=[i_0, i_2, ..., i_{s-1}] such that  sum_k tau_red[k][i_k] = 0
-        """
-        tau_red=Tau(self.reduced.values)
-        result = []
-        for idx in itertools.product(*(range(di) for di in tau_red.G)): # Choice of one index in each component of tau ie a row in each column of the partial matrix
-            if sum(tau_red.components[j][i] for j,i in enumerate(idx))  == 0:
-                result.append(idx)
-        return result
 
     def summands_Vtau(self,V : Representation)  -> list[list[int]] : 
         """
@@ -535,7 +575,8 @@ class Tau:
         For Kron : Create the list of lists L=[i_0, i_2, ..., i_{s-1}] such that  sum_k tau_red[k][i_k] = 0
         For Fermion or Boson : s=len(tau_red.values). Create the list of lists L=[i_0, i_2, ..., i_{s-1}] such that  sum_k i_k * tau_red[k] = 0
         """
-        tau_red=Tau(self.reduced.values,LinGroup([len(x) for x in self.reduced.values]))
+        #tau_red=Tau(self.reduced.values,LinGroup([len(x) for x in self.reduced.values]))
+        tau_red=Tau(self.reduced.values)
         result = []
         if V.type == 'kron':
             for idx in itertools.product(*(range(di) for di in tau_red.G)): # Choice of one index in each component of tau ie a row in each column of the partial matrix
@@ -561,16 +602,16 @@ class ReducedTau:
     Tau in a reduction form
     
     Example:
-    >>> tau = Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1)), 1)
+    >>> tau = Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1),(1,)))
     >>> tau
-    1 | 3 3 2 2 | 2 2 1 | 2 2 1
+    3 3 2 2 | 2 2 1 | 2 2 1 | 1
     >>> rtau = tau.reduced
     >>> rtau
-    1 | 3^2 2^2 | 2^2 1^1 | 2^2 1^1
+    3^2 2^2 | 2^2 1^1 | 2^2 1^1 | 1^1
     >>> rtau.values
-    3 2 | 2 1 | 2 1
+    3 2 | 2 1 | 2 1 | 1
     >>> rtau.mult
-    2 2 | 2 1 | 2 1
+    2 2 | 2 1 | 2 1 | 1
     """
     __slots__ = 'values', 'mult'
     values: Blocks[int]
@@ -614,23 +655,13 @@ class ReducedTau:
         """ Hash consistent with equality so that to be safely used in a set or a dict """
         return hash((self.values, self.mult))
 
-    # FIXME: returns an generator and not a sequence. Is it adapted to a property (or a cached_property?)
-    # TODO: it will be used many time => returns a sequence and @cached_property
-    # TODO: remove? information already contained in orthogonal weight like subsequent function.
-    @property
-    def Pzero(self) -> Iterable[Weight]:
-        """ Search for weights w of V so that C_component + sum_k tau_red[w_k, k] = 0 """
-        as_tau = Tau(self.values) # We use the scalar product of Tau
-        for weight in Weight.all(self.small_d):
-            if as_tau.dot_weight(weight) == 0:
-                yield weight
-
+    
 def unique_modulo_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> set[Tau]:
     """
     Unique sequence of tau modulo the it's symmetries
 
     Example:
-    >>> G = LinGroup([2, 2, 2, 1, 1])
+    >>> G = LinGroup([2, 2, 2, 1, 1,1])
     >>> t1 = Tau.from_flatten([1, 6, 2, 1, 5, 1, 4, 5, 3], G)
     >>> t2 = t1.end0_representative
     >>> t3 = t2.sort_mod_sym_dim
@@ -638,14 +669,10 @@ def unique_modulo_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> set[Tau]:
     >>> t5 = Tau.from_flatten([2, 6, 2, 1, 5, 1, 4, 5, 3], G)
     >>> for tau in unique_modulo_symmetry_list_of_tau((t1, t2, t3, t4, t5)):
     ...     print(tau)
-    21 | -4 0 | -3 0 | 4 0 | 0 | 0
-    20 | -4 0 | -3 0 | 4 0 | 0 | 0
+    -4 0 | -3 0 | 4 0 | 0 | 0 | 21
+    -4 0 | -3 0 | 4 0 | 0 | 0 | 20
     """
     return {tau.end0_representative.sort_mod_sym_dim for tau in seq_tau}
-
-#def full_under_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> Iterable[Tau]:
-#    """ TODO """
-#    return itertools.chain.from_iterable(tau.orbit_symmetries() for tau in seq_tau)
 
 
 def find_1PS(V: Representation, quiet: bool = False) -> Sequence["Tau"]:
@@ -653,8 +680,7 @@ def find_1PS(V: Representation, quiet: bool = False) -> Sequence["Tau"]:
     Same as find_1PS_reg_mod_sym_dim without regularity condition
     Computed by 
     """
-    #tautracked2=Tau.from_flatten([3,2,1,0,3,2,1,0,3,2,1,0,-6],V.G)
-    #Lz=list(tautracked2.orthogonal_weights(V))
+    
     # Initialisation with regular 1-PS
     List_1PS = []
     
@@ -683,12 +709,13 @@ def find_1PS(V: Representation, quiet: bool = False) -> Sequence["Tau"]:
             List_1PS_Vred_extended=[]
             for permut in Permutation.embeddings_mod_sym(V.G, Vred.G):
                 for tau in List_1PS_Vred_reg:
-                    tau_twist=Tau([tau.components[i] for i in permut],tau.G)
+                    tau_twist=Tau([tau.components[i] for i in permut])
                     list_tau_extended=tau_twist.m_extend_with_repetitions(V.G)
                     for tau_ext in list_tau_extended:
                         if len(flatten_dictionary(tau_ext.positive_weights(V)))<=tau_ext.dim_Pu:
                             List_1PS_Vred_extended.append(tau_ext)
             List_1PS+=unique_modulo_symmetry_list_of_tau(List_1PS_Vred_extended)
+            tau_ext=List_1PS[0]
     else :
         list_partS=[p for p in Partition.all_for_integer(V.G.rank)][1:] #[1:] excludes n, so S is the center of G
         for partS in list_partS :

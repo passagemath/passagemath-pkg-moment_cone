@@ -1,11 +1,12 @@
 
-G = LinGroup([4,4,4,1])
+G = LinGroup([3,3,3,1])
 V = Representation(G,'kron')
-G = LinGroup([7])
-V = Representation(G,'boson',nb_part=3)
-G = LinGroup([4])
-V = Representation(G,'boson',nb_part=2)
+#G = LinGroup([7])
+#V = Representation(G,'boson',nb_part=3)
+#G = LinGroup([7])
+#V = Representation(G,'fermion',nb_part=3)
 
+print("We are computing the inequalities for the moment cone of",V)
 tpi_method: Method ='symbolic'
 tpi_method='probabilistic'
 ram_schub_method: Method = 'symbolic'
@@ -32,7 +33,6 @@ print('Step 1, looking for a first list of dominant 1-PS whose kernel is support
 
 Candidates_for_tau = find_1PS(V)
 
-#print(Candidates_for_tau)
 print(len(Candidates_for_tau), ' dominant 1-PS with hyperplane spanned by weights or no too many positive weights')
 
 
@@ -58,7 +58,7 @@ for tau in Candidates_for_tau1:
             Candidates_for_tau2.append(tau)    
 print(len(Candidates_for_tau2), ' dominant 1-PS satisfying the stabilizer condition')
 
-print(Candidates_for_tau2)
+#print(Candidates_for_tau2)
 
 ## Generate the list of candidates for the inequalites (pairs tau,w)
 ## Here w has to belong to P^tau and U(w) is tau-isomorphic to V(tau>0)
@@ -71,6 +71,10 @@ for tau in Candidates_for_tau2 :
 print(len(Candidates_for_Ineq), ' inequalities selected in Step 4')
 
 print('Step 5, Reduction modulo symmetries of the dimension vector')
+#for ineq in Candidates_for_Ineq:
+#    print('ineq',ineq)
+#    print('sorted',ineq.sort_mod_sym_dim)
+    
 Candidates_for_Ineq1=list(set(ineq.sort_mod_sym_dim for ineq in Candidates_for_Ineq))
 #unique_modulo_symmetry_list_of_ineq()
 print(len(Candidates_for_Ineq1), ' inequalities selected in Step 5')
@@ -94,19 +98,15 @@ print('There are',len(Ineq_Triang),'Linear Triangular inequalities')
 # Filter 3: BKR condition
 print('Step 8, checking if BKR condition is fullfilled')
 List_BKR=[]
+#List_BKR=Dominant_Ineq_filteredLT
 for ineq in Dominant_Ineq_filteredLT :
-    #print('ineq',ineq)
-    #print('pos weights:',[chi for chi in ineq.tau.positive_weights(V)])
-    #print('pos roots:',[chi for chi in ineq.inversions])
     chi=ineq.weight_det(V)
-    #print('chi',ineq,chi)
-    #print('Mult Vtau', Multiplicity_SV_tau(ineq.tau,chi,V)) 
-    #if list(ineq.inversions)==[] or Multiplicity_SV_tau(ineq.tau,chi,V)==1:
     if list(ineq.inversions)==[] or Multiplicity_SV_tau(ineq.tau,chi,V,True):    
         List_BKR.append(ineq)
+        
 print('The BKR filter had eleminated',len(Dominant_Ineq)-len(List_BKR),'inequalities')
 print("Final state of the Kronecker cache:", Kron_multi)
-print("Final state of the Plethysm cache: ", plethysm_cache)
+#print("Final state of the Plethysm cache: ", plethysm_cache)
 
 # Filter 4: pi is birational (ramification divisor contracted)
 print('Step 9, checking birationality (ramification divisor contracted) of the map pi')
@@ -121,9 +121,11 @@ print(len(Birational_Ineq), ' inequalities selected in Step 9 in','seconds')
 #for ineq in Ineq_Triang :
 #    print(ineq)
 
-#print('Birat')
-for ineq in Birational_Ineq :
-    print(ineq)
+#print('Reg not Birat')
+#for ineq in List_BKR :
+#    if ineq not in Birational_Ineq and ineq.tau.is_dom_reg :
+#        print(ineq)
+#        print(ineq.tau.orthogonal_weights(V))
 #    chi=ineq.weight_det(V)
 #    print('mult',Multiplicity_SV_tau(ineq.tau,chi,V))
 
