@@ -1,10 +1,11 @@
 
-G = LinGroup([3,3,3,1])
-V = Representation(G,'kron')
+
+#G = LinGroup([3,3,3,1])
+#V = Representation(G,'kron')
 #G = LinGroup([7])
-#V = Representation(G,'boson',nb_part=3)
-#G = LinGroup([4])
-#V = Representation(G,'boson',nb_part=2)
+#V = Representation(G,'fermion',nb_part=3)
+G = LinGroup([4])
+V = Representation(G,'boson',nb_part=2)
 
 tpi_method: Method ='symbolic'
 tpi_method='probabilistic'
@@ -148,7 +149,9 @@ for ineq in Birational_Ineq :
 
 #exports possibles:
 export_normaliz(V,full_under_symmetry_list_of_ineq(Birational_Ineq),add_equations="all",add_dominance="all")
-export_latex(V,Birational_Ineq)
+export_latex(V,Birational_Ineq,sgn=-1)
+export_python(V,Birational_Ineq)
+
 
 #comparaison possible:
 #from src.All_Cases_Init.reference_datas.comparisons import *

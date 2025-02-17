@@ -4,6 +4,11 @@
 from .tau import Tau
 from .inequality import Inequality
 
+#######################################################################
+#I. Normaliz export
+#######################################################################
+
+
 def Liste_to_Normaliz_string(liste,sgn=1): #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
     """ converts a list of list of numbers to a string with
     *newline characters at the end of each sublist
@@ -66,6 +71,9 @@ def export_normaliz(V, inequations, r=None, equations=[], extra_info="", add_dom
     fileO.write(Liste_to_Normaliz_string(True_inequations,-1)) #Our conventions so far work with inequalities of the form \sum a_i\lambda_i<=0 whil Normaliz standard is ">=0"
     fileO.close()
 
+#######################################################################
+#II. Latex export
+#######################################################################
 
 def Latex_string_of_tau(tau,lambda_notation=False, sgn=1):
     chaine=''
@@ -136,10 +144,20 @@ def group_by_dom1PS(inequations):
 def export_latex(V, inequations, sgn=1, extra_info=""): #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
     """ converts a list of Inequalities associated to a given dominant 1PS to a string describing part of a latex tabular
     """
+    caption=""
     if V.type=='kron':
         lambda_notation=False
+        caption="Kronecker case in dimension $("
+        for dk in V.G[:-1]:
+            caption+=str(dk)+","
+        caption=caption[:-1]
+        caption+=")$"
     else:
         lambda_notation=True
+        if V.type=='fermion':
+            caption="Ferminonic case $\\wedge^{"+str(V.nb_part)+"}\\mathbb{C}^{"+str(V.G[0])+"}$"
+        if V.type=='boson':
+            caption="Bosonic case $S^{"+str(V.nb_part)+"}\\mathbb{C}^{"+str(V.G[0])+"}$"
     grouped_ineqs=group_by_dom1PS(inequations)
     chaine='$\\begin{array}{|c| c |c|} \n \\hline \n \\textrm{dominant 1-PS} & \\textrm{Inequality} & w \\\\ \n \\hline'
     for taudom_list in grouped_ineqs:
@@ -147,10 +165,35 @@ def export_latex(V, inequations, sgn=1, extra_info=""): #sgn=1 ou -1 allows to c
     chaine+='\\end{array}$'
     info=info_from_GV(V)+extra_info
     file0 = open('ineq_Latex-'+info+'.tex','w')
-    file0.write("\\documentclass[12pt]{article} \n \\usepackage{amsmath} \n \\usepackage{multirow} \n \\usepackage{graphicx} \n \n  \\begin{document}\n \n")
+    
+    file0.write("\\documentclass[12pt]{article} \n \\usepackage{amsmath,amssymb} \n \\usepackage{multirow} \n \\usepackage{graphicx} \n \n  \\begin{document}\n \n \\begin{table}\n \\caption{"+ caption+"}\n")
     file0.write(chaine)
-    file0.write("\n \n \\end{document}")
+    file0.write("\n \n \\end{table} \n \\end{document}")
     file0.close()
 
-    
+#######################################################################
+#III. Python export
+#######################################################################
+
+def export_python(V, inequations, extra_info=""):
+    info=info_from_GV(V)+extra_info
+    file0 = open('ineq_Python-'+info+'.py','w')
+    file0.write("#Inequalities selected for V of "+V.type+" type with dimensions "+str(list(V.G)))
+    if V.type in ['boson','fermion']:
+       file0.write("with number of particules = "+str(V.nb_part))
+    file0.write("\n \nG=LinGroup("+str(list(V.G))+") \n")
+    chain="V = Representation(G,\'"+str(V.type)+"\'"
+    if V.type in ['boson','fermion']:
+       chain+=", "+str(V.nb_part)
+    file0.write(chain+" )")
+    file0.write("\n \nbrut_inequations=[")
+    chain=""
+    for ineq in inequations:
+        chain+=str(ineq.wtau.flattened)+", \n"
+    chain=chain[:-2]+" \n ] \n\n"   
+    file0.write(chain)
+    file0.write("#inequalities our formated type Inequality \n")
+    file0.write("inequalities=[Inequality.from_tau(Tau.from_flatten(brut_ineq,G)) for brut_ineq in brut_inequations] \n \n ")
+    file0.close()
+        
 
