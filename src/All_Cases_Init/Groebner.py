@@ -184,7 +184,7 @@ def long_calculation(Liste, function, lim, extra_arguments):
        signal.alarm(lim)
        succ=True
        try:
-           print('starting calculation..', i)
+           print('starting calculation ', i,' over',len(Liste)) 
            resl=function(l,*extra_arguments)
        except:
            print('did not complete! in ', lim, ' seconds')
@@ -200,7 +200,7 @@ def long_calculation(Liste, function, lim, extra_arguments):
           print(i, "fail")
     print(len(Res), " over ", len(Liste), " computations finished")
     if len(Res)>0 and type(Res[0][-1])==bool:
-       print(len([m for m in Res if m[-1]]), "True results")
+       print(len([m for m in Res if m[-1]]), "results with output True")
     return(Res)
 
 
