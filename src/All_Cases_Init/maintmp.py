@@ -127,6 +127,10 @@ for ineq in Birational_Ineq :
 #    chi=ineq.weight_det(V)
 #    print('mult',Multiplicity_SV_tau(ineq.tau,chi,V))
 
+#for ineq in List_BKR:
+#     with timeout(3):
+#         print(is_fiber_singleton(V,ineq,"probabilistic"))
+
 
 
 
