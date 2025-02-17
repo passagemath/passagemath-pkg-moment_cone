@@ -1,10 +1,10 @@
 
-G = LinGroup([4,4,4,1])
+G = LinGroup([3,3,3,1])
 V = Representation(G,'kron')
-G = LinGroup([7])
-V = Representation(G,'boson',nb_part=3)
-G = LinGroup([4])
-V = Representation(G,'boson',nb_part=2)
+#G = LinGroup([7])
+#V = Representation(G,'boson',nb_part=3)
+#G = LinGroup([4])
+#V = Representation(G,'boson',nb_part=2)
 
 tpi_method: Method ='symbolic'
 tpi_method='probabilistic'
@@ -13,8 +13,8 @@ ram_schub_method: Method = 'probabilistic'
 ram0_method: Method = 'probabilistic'
 grobner_method: Method = 'symbolic'
 grobner_lim=3 #limit of time for each Grobner computation
-#grobner_method: Method = 'probabilistic'
-#grobner_lim=1
+grobner_method: Method = 'probabilistic'
+grobner_lim=1
 
 ## Checking if the cone has the expected dimension
 
@@ -132,7 +132,8 @@ print(len(True_Ineq), 'true inequalities after Grobner; presumably the only ones
 #for ineq in Ineq_Triang :
 #    print(ineq)
 
-#print('Birat')
+print('Birational_Ineq')
+
 for ineq in Birational_Ineq :
     print(ineq)
 #    chi=ineq.weight_det(V)
