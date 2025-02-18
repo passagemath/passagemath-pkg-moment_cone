@@ -84,7 +84,7 @@ class Representation:
             return binomial(self.G.rank+self.nb_part-1,self.G.rank-1)
         
     @cached_property    
-    def all_weights(self) -> list["Weight"] : # TODO : j'ai du remplacer itérable ar liste car iterable ne marche qu'une fois ?
+    def all_weights(self) -> list["Weight"] : # TODO : j'ai du remplacer itérable par liste car iterable ne marche qu'une fois ?
         """
         Create de the list of weights of T acting on V. 
 
@@ -157,6 +157,7 @@ class Representation:
 
     def weights_of_S(self, p : Partition) -> Iterable["Weight"] : # Could be improved
         """
+
         Create de the list of weights of S subset T acting on V. With multiplicities.
         S is given by p.
         Only used for V.type='fermion' or 'boson'
@@ -175,7 +176,6 @@ class Representation:
             chi.mult=prod([binomial(chiTot.as_vector[i],chi.as_vector[i]) for i in range(len(p))])
             yield chi
 
-
     #@staticmethod         
     def rhoEij(self,alpha : Root) -> matrix:
         """
@@ -184,6 +184,7 @@ class Representation:
         """
         M = matrix(QQ[I],self.dim,self.dim)
         if self.type == 'kron' : 
+            # Generate the weights with alpha.i and alpha.j in position alpha.k
             Gred=LinGroup(self.G[:alpha.k]+self.G[alpha.k+1:])
             Vred=Representation(Gred,'kron')
             for w in Vred.all_weights:
@@ -241,10 +242,15 @@ class Representation:
                 L[beta.opposite]=I*(A+B)
         return(L)
 
+    #TODO: unify rhoEij and action_op_el (should be done with sparse matrix since otherwise, much more time of computation, e.g. \times 3-4 for kron 4 4 4)
     def action_op_el(self,alpha: Root, v: Vector) -> Vector:
         """
         Action of E_alpha on the Vector v in V
         The basis of V where v is expressed is indexed by V.all_weights
+        This could be written as a 2-line programm         
+        M=self.rhoEij(alpha)
+        return M*v
+        but computing M*v is heavy and we get much faster result by modifying v directly (M is a sparse matrix)
 
         Examples: TODO
         >>> from cone import *
@@ -265,6 +271,8 @@ class Representation:
         (9, 10, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 21, 22, 23, 24, 0, 0, 0, 0, 0, 0, 0, 0)
         """
         assert len(v) == self.dim
+        #M=self.rhoEij(alpha)
+        #return M*v
         from .rings import vector
         vp = vector(v.base_ring(),self.dim)
         if self.type == 'kron' :
@@ -277,38 +285,31 @@ class Representation:
                 vp[wi.idx(self)] = v[wj.idx(self)]
                 
         else :
-            # List of weights with j by inserting j from smaller
-            if self.type == 'boson' :
-                Vred=Representation(LinGroup([self.G[0]]),self.type,self.nb_part-1)
-            else :    
-                Vred=Representation(LinGroup([self.G[0]-1]),self.type,self.nb_part-1)
-            for w in Vred.all_weights:
-                if self.type == 'boson' :
-                    lj=w.as_list_of_list[0]+[alpha.j]
-                    lj.sort()
-                else :    
-                    L1=[s for s in w.as_list_of_list[0] if s<alpha.j]
-                    #posj=len(L1)
-                    L2=[s+1 for s in w.as_list_of_list[0] if s>=alpha.j]
-                    lj=L1+[alpha.j]+L2  # we insert j
-                
-                if self.type == 'boson' or alpha.i not in lj : # Otherwise E_ij v =0
-                    wj  = Weight(self.G,as_list_of_list=[lj])
-                    idj = wj.idx(self)
-                    if self.type == 'boson' :
-                        li=w.as_list_of_list[0]+[alpha.i]
-                        li.sort()
-                    else :    
+            # List of weights with j by inserting j from smaller weight
+            if self.type == 'fermion' :
+                shiftrank=1 #no repetition in the wedge product, so we look for weights to be chosen in a smaller subset
+            else :
+                shiftrank=0
+            Vred=Representation(LinGroup([self.G[0]-shiftrank]),self.type,self.nb_part-1)
+            for w in Vred.all_weights: 
+                L1=[s for s in w.as_list_of_list[0] if s<alpha.j]
+                L2=[s+shiftrank for s in w.as_list_of_list[0] if s>=alpha.j]
+                lj=L1+[alpha.j]+L2  # we insert j*
+                wj  = Weight(self.G,as_list_of_list=[lj])
+                idj = wj.idx(self)            
+                if alpha.i==alpha.j:
+                    vp[wi.idx(self)] = v[wj.idx(self)]
+                else :
+                    if self.type == 'boson' or alpha.i not in lj : # Otherwise E_ij v =0
                         li=L1+[alpha.i]+L2  # we insert i
                         li.sort()
-                    #posi=li.index(i)
-                    wi = Weight(self.G,as_list_of_list=[li])
-                    idi=wi.idx(self)
-                    if self.type == 'fermion' :
-                        vp[wi.idx(self)] = (-1)**(len(L1)-li.index(alpha.i))*v[wj.idx(self)]
-                    else :
-                        vp[wi.idx(self)] = lj.count(alpha.j)*v[wj.idx(self)]
-                            
+                        #posi=li.index(i)
+                        wi = Weight(self.G,as_list_of_list=[li])
+                        idi=wi.idx(self)
+                        if self.type == 'fermion' :
+                            vp[wi.idx(self)] = (-1)**(len(L1)-li.index(alpha.i))*v[wj.idx(self)]
+                        else :
+                            vp[wi.idx(self)] = lj.count(alpha.j)*v[wj.idx(self)]
         return vp
 
 
@@ -395,7 +396,10 @@ class Representation:
             weights=self.all_weights,
             seed=('vr', 'vi')
         )
-
+    
+    @cached_property
+    def QU_QV(self) -> "PolynomialRingForWeights":
+        return (self.G).QU((self.QV.sage_ring).fraction_field())
 
 
 

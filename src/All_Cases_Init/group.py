@@ -94,7 +94,22 @@ class LinGroup(tuple[int, ...]):
         """
         from math import floor
         return sum(floor(d * d / 2 * (1 - 1 / e)) for d, e in zip(self, Gred))
+    
+    def QU(self, base_ring=None) -> "PolynomialRingForWeights":
+        from .rings import PolynomialRingForWeights, QQ
+        from .root import Root
+        if base_ring==None:
+            base_ring=QQ
+        return PolynomialRingForWeights(base_ring,
+            weights=Root.all_of_U(self),
+            seed=('u'),
+        )
+    
+    @cached_property
+    def QU_Q(self) -> "PolynomialRingForWeights":
+        return self.QU()
         
+    
 
         
 
