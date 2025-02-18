@@ -192,7 +192,7 @@ def export_python(V, inequations, extra_info=""):
         chain+=str(ineq.wtau.flattened)+", \n"
     chain=chain[:-2]+" \n ] \n\n"   
     file0.write(chain)
-    file0.write("#inequalities our formated type Inequality \n")
+    file0.write("#inequalities in our formated type Inequality \n")
     file0.write("inequalities=[Inequality.from_tau(Tau.from_flatten(brut_ineq,G)) for brut_ineq in brut_inequations] \n \n ")
     file0.close()
         
