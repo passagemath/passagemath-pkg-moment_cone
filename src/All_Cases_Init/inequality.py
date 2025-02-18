@@ -68,6 +68,7 @@ class Inequality:
         w = (Permutation([i for t, i in taub]) for taub in tau_pairs)
         return Inequality(taup, w)
     
+    @staticmethod
     def dominance(V: Representation, symmetry=False) -> Iterable["Inequality"]:
         """
         Computes the dominant inequalities 
@@ -77,7 +78,7 @@ class Inequality:
         for k,dk in enumerate(V.G):
             for i in range(dk-1):
                 component=i*[0]+[-1,1]+(dk-i-2)*[0]
-                tau=Tau([dj*[0] for dj in V.G[:k]]+[component]+[dj*[0] for dj in V.G[k+1:]],V.G)
+                tau=Tau([dj*[0] for dj in V.G[:k]]+[component]+[dj*[0] for dj in V.G[k+1:]])
                 Res.append(Inequality.from_tau(tau))
             #if V.type=='kron' and k!=len(V.G)-1:
             #    component=(dk-1)*[0]+[-1]
