@@ -523,15 +523,15 @@ class Tau:
         if len(self.G)==1:
             return self
 
-        from sage.all import gcd
+        from math import gcd
         total_shift = 0
-        columns = []
+        columns: list[int] = []
         for cj in self.components[:-1]: # Components excepted that of the last GL(1)
             columns+=[cji - cj[-1] for cji in cj]
             total_shift += cj[-1]
         last_component = self.flattened[-1] + total_shift
         columns.append(last_component)
-        res_gcd = gcd(columns)
+        res_gcd = gcd(*columns)
         
         return Tau.from_flatten([x // res_gcd for x in columns], self.G)
     
@@ -577,11 +577,12 @@ class Tau:
         """
         #tau_red=Tau(self.reduced.values,LinGroup([len(x) for x in self.reduced.values]))
         tau_red=Tau(self.reduced.values)
-        result = []
+        result: list[list[int]] = []
+
         if isinstance(V, KroneckerRepresentation):
             for idx in itertools.product(*(range(di) for di in tau_red.G)): # Choice of one index in each component of tau ie a row in each column of the partial matrix
                 if sum(tau_red.components[j][i] for j,i in enumerate(idx))  == 0:
-                    result.append(idx)
+                    result.append(list(idx))
             return result
         
         assert(isinstance(V, ParticleRepresentation))
@@ -690,7 +691,8 @@ def find_1PS(V: Representation, quiet: bool = False) -> Sequence["Tau"]:
     from .utils import symmetries
 
     # Initialisation with regular 1-PS
-    List_1PS = []
+    List_1PS: list[Tau] = []
+    Vred: Representation
     
     if isinstance(V, KroneckerRepresentation):
         # List of representations corresponding to various tori S

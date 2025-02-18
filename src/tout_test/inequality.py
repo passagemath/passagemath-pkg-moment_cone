@@ -1,6 +1,9 @@
-from sage.all import QQ,vector
-from functools import cached_property
+__all__ = (
+    "Inequality",
+    "full_under_symmetry_list_of_ineq",
+)
 
+from functools import cached_property
 import itertools
 
 from .typing import *
@@ -9,11 +12,7 @@ from .permutation import Permutation
 from .blocks import Blocks
 from .root import Root
 from .representation import *
-
-__all__ = (
-    "Inequality",
-    "full_under_symmetry_list_of_ineq",
-)
+from .rings import QQ, vector, Vector
 
 class Inequality:
     """
@@ -152,7 +151,7 @@ class Inequality:
 
 
     
-    def weight_det(self,V: Representation) -> vector:
+    def weight_det(self,V: Representation) -> Vector:
         """
         Weight chi_det of Theorem BKR
         """

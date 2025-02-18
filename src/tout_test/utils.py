@@ -282,7 +282,7 @@ def orbit_symmetries(flatten: Iterable[T], symmetries: Iterable[int]) -> Generat
   
 
 # TODO: type annotation
-def unique_combinations(mylist, k):
+def unique_combinations(mylist: Sequence[int], k: int) -> list[tuple[int, ...]]:
     """
     The list is sorted.
     The list is viewed as a multiset. 
@@ -304,6 +304,6 @@ def unique_combinations(mylist, k):
             backtrack(i + 1, current)
             current.pop()
 
-    result = []
+    result: list[tuple[int, ...]] = []
     backtrack(0, [])
     return result

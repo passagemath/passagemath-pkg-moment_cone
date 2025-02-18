@@ -26,7 +26,6 @@ def is_linear_triangular(V: Representation, tau: Tau, Invs: list[Root]) -> bool:
         listnp+=ll    
     Indices_neg_weights=[V.index_of_weight(chi) for chi in listnp]  
     nb_lin_eq=0
-    List_inv=[]
     listp: list[Weight] = []
     for ll in list(tau.positive_weights(V).values()):
         listp+=ll
