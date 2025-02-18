@@ -7,6 +7,9 @@ from functools import cached_property
 from .utils import symmetries
 from .typing import *
 
+if TYPE_CHECKING:
+    from .rings import Ring, PolynomialRingForWeights
+
 class LinearGroup(tuple[int, ...]):
     """
     Product of Linear Groups GL(d_i)
@@ -84,4 +87,20 @@ class LinearGroup(tuple[int, ...]):
         from math import floor
         return sum(floor(d * d / 2 * (1 - 1 / e)) for d, e in zip(self, Gred))        
 
-# FIXME: complete the class
+    def QU(self, base_ring: Optional["Ring"] = None) -> "PolynomialRingForWeights":
+        from .rings import PolynomialRingForWeights, QQ
+        from .root import Root
+        if base_ring is None:
+            base_ring = QQ
+
+        # FIXME: type ignore
+        return PolynomialRingForWeights(
+            base_ring,
+            weights=Root.all_of_U(self), # type: ignore
+            seed=('u'),
+        )
+    
+    @cached_property
+    def QU_Q(self) -> "PolynomialRingForWeights":
+        return self.QU()
+        

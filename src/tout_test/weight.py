@@ -18,12 +18,14 @@ class Weight:
     """ A weight on which tau can be applied """
     G: LinearGroup
     index: Optional[int] # Index for an optional generation order
-    
+    mult: int # Multiplicity of this weight
+
     def __init__(self,
                  G: LinearGroup,
                  *,
                  as_vector: "Optional[Vector]" = None,
-                 index: Optional[int] = None):
+                 index: Optional[int] = None,
+                 mult: int = 1):
         self.G = G
         if as_vector is not None:
             assert len(as_vector) == G.rank
