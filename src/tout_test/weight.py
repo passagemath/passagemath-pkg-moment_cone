@@ -208,7 +208,13 @@ class WeightAsList(Weight):
     
     def __iter__(self) -> Iterator[int]:
         return iter(self.as_list)
-    
+
+    def orbit_symmetries(self, S: Iterable[int]) -> Iterable["Weight"]:
+        from .utils import orbit_symmetries
+        orbit = orbit_symmetries(self.as_list, S)
+        for sym_w in orbit:
+            yield WeightAsList(self.G, as_list=sym_w)
+
 
 class WeightAsListOfList(Weight):
     """
