@@ -9,7 +9,7 @@ def Klyachkoineqs_to_ineqs(lK):
     n=len(lK[0])
     list_ineq=[]
     for v in lK:
-        list_ineq.append(Inequality.from_tau( Tau((v,), LinGroup([n]))))
+        list_ineq.append(Inequality.from_tau( Tau((v,))))
     return list_ineq
 
 #TODO check unitary tests
