@@ -1,5 +1,6 @@
 __all__ = (
     "Partition",
+    "EnhancedPartitionList",
 )
 
 import itertools
@@ -186,3 +187,42 @@ class Partition:
         return Partition(
             map(max, itertools.zip_longest(*partitions, fillvalue=0))
         )
+
+
+class EnhancedPartitionList:
+    """
+    A list of partitions additional properties.
+    
+    - indices (a list of integers) and 
+    - mult (an integer which is a multiplicity in representation theory.
+    """
+    partitions: list[Partition]
+    mult: int
+    indices: Optional[list[int]]
+
+    def __init__(
+            self,
+            partitions: Iterable[Partition],
+            mult: int,
+            indices: Optional[Iterable[int]] = None):
+        """
+        Initializes an instance of ListPartPlus.
+        """
+        self.partitions = list(partitions)
+        self.mult = mult
+        if indices is None:
+            self.indices = None
+        else:
+            self.indices = list(indices)        
+
+    def __repr__(self) -> str:
+        if self.indices != None :
+            return 'Partitions: '+str(self.partitions)+', Indices: '+str(self.indices)+', Multiplicity: '+str(self.mult)
+        else :
+            return 'Partitions: '+str(self.partitions)+', Multiplicity: '+ str(self.mult)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, EnhancedPartitionList):
+            return NotImplemented
+        
+        return self.partitions == other.partitions and self.mult==other.mult and self.indices==other.indices

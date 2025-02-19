@@ -2,6 +2,8 @@ __all__ = (
     "Representation",
     "KroneckerRepresentation",
     "ParticleRepresentation",
+    "BosonRepresentation",
+    "FermionRepresentation",
 )
 
 from abc import ABC, abstractmethod
