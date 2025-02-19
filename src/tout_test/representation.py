@@ -10,8 +10,11 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 import itertools
 
+<<<<<<< HEAD
 from .weight import Weight as WeightBase
 
+=======
+>>>>>>> e797185ef7f71561a53b5cd08be67fa99bd98d99
 from .typing import *
 from .linear_group import LinearGroup
 from .weight import Weight as WeightBase, WeightAsList, WeightAsListOfList
@@ -332,7 +335,6 @@ class ParticleRepresentation(Representation):
         ...
 
     @property
-    @abstractmethod
     def weights_mod_outer(self) -> Iterable[WeightAsListOfList]:
         return self.all_weights
         
@@ -352,7 +354,7 @@ class ParticleRepresentation(Representation):
         
         chiTot = WeightAsListOfList(GS, as_list_of_list=[List_indices])
         for i,l in enumerate(unique_combinations(List_indices, self.particle_cnt)):
-            chi = WeightAsListOfList(GS, as_list_of_list=[l],idx=i)
+            chi = WeightAsListOfList(GS, as_list_of_list=[l], index=i)
             chi.mult = prod([
                 comb(chiTot.as_vector[i], chi.as_vector[i])
                 for i in range(len(p))
@@ -396,6 +398,8 @@ class ParticleRepresentation(Representation):
                     M[idi,idj]=(-1)**(len(L1)-li.index(alpha.i))
                 else :
                     M[idi,idj]=lj.count(alpha.j)
+        
+        return M
 
     def action_op_el(self, alpha: Root, v: Vector) -> Vector:
         assert len(v) == self.dim
@@ -502,8 +506,14 @@ class FermionRepresentation(ParticleRepresentation):
             raise ValueError("Invalid weight representation")
         
         if not use_internal_index or chi.index is None:
-            raise NotImplementedError() # TODO
-        
+            from math import comb
+            S = chi.as_list_of_list[0]
+            k = self.particle_cnt
+            id=sum([comb(self.G.rank-j-1,k-1) for j in range(S[0])])# Subset with smaller first element
+            for i,p in enumerate(itertools.pairwise(S)):
+                id+=sum([comb(self.G.rank-j-1,k-i-2) for j in range(p[0]+1,p[1])]) # With j in position i+1 and equal for smaller indices       
+            chi.index = id
+
         return chi.index
 
 
@@ -543,4 +553,18 @@ class BosonRepresentation(ParticleRepresentation):
                 index=i
             ))
         return L
+<<<<<<< HEAD
             
+=======
+
+    def index_of_weight(self, chi: WeightBase, use_internal_index: bool = True) -> int:
+        if not isinstance(chi, WeightAsListOfList):
+            raise ValueError("Invalid weight representation")
+        
+        if not use_internal_index or chi.index is None:
+            for i, chi2 in enumerate(self.all_weights):
+                if chi2.as_vector == chi.as_vector :
+                    chi.index = i
+                    break
+        return chi.index
+>>>>>>> e797185ef7f71561a53b5cd08be67fa99bd98d99
