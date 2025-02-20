@@ -20,13 +20,13 @@ V = FermionRepresentation(G, particle_cnt=4)
 #V = BosonRepresentation(G, particle_cnt=2)
 
 print("We are computing the inequalities for the moment cone of",V)
-tpi_method: Method ='symbolic'
-tpi_method='probabilistic'
-ram_schub_method: Method = 'symbolic'
+#tpi_method: Method ='symbolic'
+tpi_method: Method ='probabilistic'
+#ram_schub_method: Method = 'symbolic'
 ram_schub_method: Method = 'probabilistic'
 ram0_method: Method = 'probabilistic'
-grobner_method: Method = 'symbolic'
-grobner_lim=3 #limit of time for each Grobner computation
+#grobner_method: Method = 'symbolic'
+#grobner_lim=3 #limit of time for each Grobner computation
 grobner_method: Method = 'probabilistic'
 grobner_lim=1
 
