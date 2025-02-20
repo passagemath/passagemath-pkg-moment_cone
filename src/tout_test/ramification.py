@@ -13,11 +13,11 @@ from .tau import Tau
 from .root import Root
 from .weight import Weight
 from .representation import *
-from .vector_chooser import point_vect, vector, matrix
+from .vector_chooser import point_vect, vector, matrix, Matrix
 from .inequality import *
 from .permutation import *
 from .kx_mod import *
-from .rings import PolynomialRing
+from .rings import PolynomialRing, Polynomial, Variable
 
     
 # FIXME: we get d from tau but in the current code, it will leads to recreate the rings for each tau.
@@ -67,28 +67,26 @@ def is_not_contracted(inversions_v: Iterable[Root], tau: Tau, V: Representation,
     #print('pos weights', positive_weights)
     #print('A',A)        
 
-    rank_A = A.change_ring(ring.fraction_field()).rank()
+    rank_A: int = A.change_ring(ring.fraction_field()).rank()
     return rank_A == len(list_inversions_v)
 
-def Normalization_Factorized_Polynomial(Jb) :
-    d={}
+def Normalization_Factorized_Polynomial(Jb: dict[Polynomial, int]) -> dict[Polynomial, int]:
+    d: dict[Polynomial, int] = {}
     for P in Jb.keys():
-        a=P.monomial_coefficient(P.monomials()[0])
+        a: int = P.monomial_coefficient(P.monomials()[0])
         new_key=P/a
         d[new_key]=Jb[P]
-    return(d)
+    return d
 
-def Compute_JA(ineq: Inequality, V: Representation) : # Return a dictionnary polynom :  int
+def Compute_JA(ineq: Inequality, V: Representation) -> dict[Polynomial, int]:
     tau=ineq.tau
     ring = V.QV
     # a generic vector in VV^tau
     zero_weights = tau.orthogonal_weights(V)
     v = point_vect(zero_weights, V, ring, bounds=(-100, 100)) # bounds unuseful here
-    # inversions of w
-    Inv_w=ineq.inversions
     #gr = grading_dictionary(ineq.inversions, tau.dot_root)
     gr = tau.grading_roots_in(ineq.inversions)
-    J: dict[Any, Any] = {} # FIXME type
+    J: dict[Polynomial, int] = {}
     for x in sorted(gr.keys(),reverse=True): # Choose a diagonal block of Tpi that is a weight of tau        
         M=matrix(ring,len(gr[x]))
         for col,root in enumerate(gr[x]): # List of roots such that tau.scalar(root)=x
@@ -96,16 +94,16 @@ def Compute_JA(ineq: Inequality, V: Representation) : # Return a dictionnary pol
             for row, chi in enumerate(tau.positive_weights(V)[x]): # List of weights such that tau.scalar(chi)=x 
                 M[row,col]=uv[V.index_of_weight(chi)]
         #print('M',M)
-        Jb=dict(M.det().factor())
+        Jb: dict[Polynomial, int] = dict(M.det().factor())
         Jbn=Normalization_Factorized_Polynomial(Jb)
         for F in Jbn.keys(): # We could make a function add_dictionaries
             if F in J.keys():
                 J[F]+=Jbn[F]
             else:
                 J[F]=Jbn[F]
-    return(J)
+    return J
 
-def Smith_n_1(A):
+def Smith_n_1(A: Matrix) -> Any:
     "Compute the gcd of the minors of A of size n-1"
     combinaisons = list(itertools.combinations(range(A.nrows()),A.nrows()-1))
     ring=A.base_ring()
@@ -171,12 +169,11 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
     Jf=Compute_JA(ineq,V) # The Jacobian factorized as a dictionnary
     #print('Jf',Jf)
     
-    J_square_free: Any = 1 # FIXME: type?
+    J_square_free: Polynomial = 1
     for pol in Jf.keys():
         J_square_free*=pol # todo : prod(list(Jf.keys())) ne semble pas fonctionner
 
-    # FIXME: type ignore
-    if len(Jf.keys())!=len(dict(J_square_free.factor()).keys()): # type: ignore
+    if len(Jf.keys()) != len(dict(J_square_free.factor()).keys()):
         print('Error in factor with:',Jf,J_square_free)
  
     # Generic point v of V(tau<=0) and matrix of Tpi at (e,v)
@@ -201,13 +198,14 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
         L0[0,col]=J_square_free.derivative(V.QV.variable(chi))
 
     # Dictionnary for substitution    
-    subs_dict = {}    
+    subs_dict: dict[Variable, Variable] = {}    
     for chi in Neg0_Weights_sorted:
         if method_R0 == "probabilistic":
             subs_dict[V.QV.variable(chi)]= randint(-500,500)*V.QZ('z')+randint(-500,500)# TODO :Tester l'effet du changement de 500. Math : Doit-on mettre du I ? 
         else:
             va, vb = V.QV2.variable(chi) 
             subs_dict[V.QV.variable(chi)]= va*ring_R0('z')+vb # type: ignore
+
     # Substitutions
     Az=A.subs(subs_dict)
    
@@ -220,7 +218,7 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
     # Computation of reduced delta as factorized polynomial
     Smith_n_un=Smith_n_1(Az)
     # FIXME: type ignore
-    s=Jz.degree()-Smith_n_un.degree() # type: ignore
+    s: int = Jz.degree() - Smith_n_un.degree()
     exponent=max(s-1,1)
     pgcd=Jz.gcd(Smith_n_un**exponent)
     
@@ -239,6 +237,6 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
     check=L0z*B0z*noyau
     check=ring_R0(check[0])
     quo, rem = check.quo_rem(delta)
-    return(rem==0)
+    return cast(bool, rem == 0)
    
 

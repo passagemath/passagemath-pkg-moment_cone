@@ -44,7 +44,7 @@ def Lie_action_as_matrices_Vtau(tau : Tau, matrices: dict[Root, Matrix], V: Repr
     return(res)
 
 # Rename, like dim_of_stabilizer_in_K
-def dim_gen_stab_of_K(matrices) -> int:
+def dim_gen_stab_of_K(matrices: Sequence[Matrix]) -> int:
     """
     Recursive function associating an integer to a list of matrices.
 
@@ -60,7 +60,7 @@ def dim_gen_stab_of_K(matrices) -> int:
     if all(A.is_zero() for A in matrices):
         return dk
 
-    n = matrices[0].nrows()  # Size of the square matrices
+    n: int = matrices[0].nrows()  # Size of the square matrices
     # Create the vector v in the representation
     v = vector(QQ, [randint(-3,3) for i in range(n)])
     # Construct the matrix M

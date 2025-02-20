@@ -17,12 +17,17 @@ from .permutation import Permutation
 from .kronecker import *
 from .permutation import *
 from .array import *
-from .rings import Vector
+from .rings import Vector, Matrix
 from .blocks import Blocks
 
 sym_f = SymmetricFunctions(QQ).s() 
 
-def Search_Zero_a(Mu,ListP,Lambda,Vanishing_a):
+def Search_Zero_a(
+        Mu: OptionalArray2D[Partition],
+        ListP: list[list[int]],
+        Lambda: Array2D[Partition],
+        Vanishing_a:  set[tuple[Optional[Partition], int, Partition]],
+        ) -> bool:
     """
     Vanishing_a is a set of tuples (Partition,int,Partition) with associated Plethysm coefficient 0 
     Check if (Mu,Lambda) contains an already computer zero plethysm coefficient
@@ -156,7 +161,7 @@ class PlethysmCache:
     _hit: int
     _miss: int
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._cache = dict()
         self._hit = 0
         self._miss = 0
@@ -194,7 +199,7 @@ class PlethysmCache:
 plethysm_cache = PlethysmCache()
 
             
-def fct_weights_of_Nu(Nu) -> matrix : # Nu is a partial matrix with Partitions as entries
+def fct_weights_of_Nu(Nu: Array2D[Partition]) -> Matrix: # Nu is a partial matrix with Partitions as entries
     """ 
         Nu is a partial matrix (as a list of columns) with Partitions as entries.
         This function replace each partition p by its weight, that is sum(p)
@@ -233,7 +238,7 @@ def chi2Numat(chi: Vector, mult_tau: Blocks[int]) -> Array2D[Partition]:
 
     return Nu
 
-def ineqs_in_Nl(l:int) : # the output is a list of inequalities for a Sagemath polytope in Z^l
+def ineqs_in_Nl(l: int) -> list[tuple[int, ...]]:
   """
   Create the list of inequalities (tuples) saying that the polyhedron is contained in N^l. Namely
   0 1 0 0 0 ...
@@ -241,8 +246,11 @@ def ineqs_in_Nl(l:int) : # the output is a list of inequalities for a Sagemath p
   0 0 0 1 0 ...
   0 0 0 0 1 ...
   ...
+
+  
+  The output is a list of inequalities for a Sagemath polytope in Z^l
   """
-  ineqs=[]
+  ineqs: list[tuple[int, ...]] = []
   v=[0]*(l+1)
   for i in range(l):
     v[i+1]=1
@@ -251,22 +259,29 @@ def ineqs_in_Nl(l:int) : # the output is a list of inequalities for a Sagemath p
   return ineqs
 
 
-def Enumerate_delta(ListP : list[list[int]],sizenu,V : Representation,delta : int=0) : # output : of list of integer vectors. sizenu a partial matrix of int as list of columns. ListP ??
+def Enumerate_delta(
+        ListP: list[list[int]],
+        sizenu: Matrix,
+        V : Representation,
+        delta: int = 0
+        ) -> tuple[int, tuple[Vector, ...]]:
     """ 
     return the list of possible weight vectors delta. That is satisfying condition 2 of Proposition prop:multCVtau.
     delta is a vector of nonnegative integers of size len(ListP).
+
+    output : of list of integer vectors. sizenu a partial matrix of int as list of columns. ListP ??
     """
     # Polyhedron in Z^l
     l=len(ListP)
     # Polyhedron in N^l
     ineqs=ineqs_in_Nl(l)
-    eqs=[]
+    eqs: list[tuple[int, ...]] = []
     if isinstance(V, KroneckerRepresentation): 
         # equalities corresponding to conditions 2
         for k in range(sizenu.ncols()): # Run over columns of Nu
             for i in range(sizenu.nrows()): # Run over the rows of the column
                 if sizenu[i,k]>=0:
-                    v=[-sizenu[i,k]]
+                    v: list[int] = [-sizenu[i,k]]
                     for j in range(l):
                         if ListP[j][k]==i:
                             v.append(1)
@@ -281,7 +296,7 @@ def Enumerate_delta(ListP : list[list[int]],sizenu,V : Representation,delta : in
     PP=Polyhedron(ieqs=ineqs,eqns=eqs)
 
     #Return the integral points
-    return [PP.dim(),PP.integral_points()]
+    return PP.dim(), PP.integral_points()
 
 
 #TODO : déplacer dans utils

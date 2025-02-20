@@ -18,7 +18,7 @@ from .utils import *
 
 
 
-def ListW_Mod(tau : Tau, pos : int, C_mod : dict[int, int],relation) -> list[Permutation]:
+def ListW_Mod(tau : Tau, pos : int, C_mod : dict[int, int], relation: Callable[[Any, Any], bool]) -> list[Permutation]:
     """
     List of permutations w in W^{P(tau[pos])} such that tau.Scalar(Inv(w) in position pos) satisfies relation (leq or eq) 
     with the C^*-module whose dimension of eigenspaces is encoded by C_mod.
