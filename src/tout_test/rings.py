@@ -24,6 +24,7 @@ from .weight import *
 
 __all__ = (
     'VariableName',
+    'Polynomial',
     'PolynomialRingForWeights',
     'PolynomialRing', 'Ring',
     'real_part', 'imag_part',
@@ -170,15 +171,15 @@ class PolynomialRingForWeights:
     def __repr__(self) -> str:
         return repr(self.sage_ring)
     
-    def __call__(self, *args, **kwargs) -> Any:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """ Forward call to the internal Sage ring """
         return self.sage_ring(*args, **kwargs)
     
-    def __getattr__(self, name) -> Any:
+    def __getattr__(self, name: str) -> Any:
         """ Forward access to missing attributes & methods to the internal Sage ring """
         return getattr(self.sage_ring, name)
     
-    def __getitem__(self, idx) -> Any:
+    def __getitem__(self, idx: Any) -> Any:
         """ Forward item reading to the internal Sage ring """
         return self.sage_ring[idx]
 

@@ -52,7 +52,7 @@ class Blocks(Generic[T]):
         assert self._indexes[-1] == len(self.flatten), "Invalid sizes"
 
     @staticmethod
-    def from_flatten(flatten: Sequence[T], sizes: Iterable[int]) -> "Blocks":
+    def from_flatten(flatten: Sequence[T], sizes: Iterable[int]) -> "Blocks[T]":
         """
         Initialization from a flattened sequence and block sizes (same as __init__)
         
@@ -61,7 +61,7 @@ class Blocks(Generic[T]):
         return Blocks(flatten, sizes)
     
     @staticmethod
-    def from_blocks(blocks: Iterable[Sequence[T]]) -> "Blocks":
+    def from_blocks(blocks: Iterable[Sequence[T]]) -> "Blocks[T]":
         """ Initialization from multiple blocks (immutable) """
         blocks1, blocks2 = itertools.tee(blocks, 2) # To allow multiple reads of a generator
         return Blocks.from_flatten(
@@ -74,7 +74,7 @@ class Blocks(Generic[T]):
         """ Return True if this instance is immutable """
         return not isinstance(self.flatten, MutableSequence)
     
-    def freeze(self) -> "Blocks":
+    def freeze(self) -> "Blocks[T]":
         """ Return a freezed (immutable) version of this Blocks """
         if self.is_frozen:
             return self

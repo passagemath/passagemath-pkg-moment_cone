@@ -135,7 +135,7 @@ class Tau:
         """
         return ReducedTau(self)
     
-    def extend_from_S(self, p: Partition):
+    def extend_from_S(self, p: Partition) -> "Tau":
         my_list=[]
         for i,x in zip(p,self.flattened):
             my_list+=i*[x]
@@ -622,8 +622,8 @@ class ReducedTau:
 
     def __init__(self, tau: Tau):
         from .utils import group_by_block
-        values = Blocks.from_flatten([], (0,) * len(tau.G))
-        mult = Blocks.from_flatten([], (0,) * len(tau.G))
+        values: Blocks[int] = Blocks.from_flatten([], (0,) * len(tau.G))
+        mult: Blocks[int] = Blocks.from_flatten([], (0,) * len(tau.G))
 
         for j, component in enumerate(tau.components):
             values[j], mult[j] = zip(*group_by_block(component))

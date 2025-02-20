@@ -68,7 +68,7 @@ class Inequality:
         return Inequality(taup, w)
     
     @staticmethod
-    def dominance(V: Representation, symmetry=False) -> Iterable["Inequality"]:
+    def dominance(V: Representation, symmetry: bool = False) -> Iterable["Inequality"]:
         """
         Computes the dominant inequalities 
         if symmetry=True, only inequalities up to symmetries of G are computed.

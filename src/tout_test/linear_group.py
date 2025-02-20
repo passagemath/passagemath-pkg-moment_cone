@@ -35,7 +35,7 @@ class LinearGroup(tuple[int, ...]):
     """
     all_instances: ClassVar[dict["LinearGroup", "LinearGroup"]] = {}
 
-    def __new__(cls, dimensions: Iterable[int] ):
+    def __new__(cls, dimensions: Iterable[int] ) -> "LinearGroup":
         """ Construction with reusing of already computed LinearGroupe instance """
         d = super().__new__(cls, dimensions)
         return cls.all_instances.setdefault(d, d)

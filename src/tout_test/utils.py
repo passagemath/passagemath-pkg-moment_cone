@@ -249,7 +249,7 @@ def multiset_permutations(m: Iterable[T]) -> Generator[list[T]]:
     so that to get the correct return type.
     """
     from sympy.utilities.iterables import multiset_permutations as mp
-    return cast(Generator[list[T]], mp(m))
+    return cast(Generator[list[T]], mp(m)) # type: ignore
 
 def orbit_symmetries(flatten: Iterable[T], symmetries: Iterable[int]) -> Generator[Iterable[T]]:
     """
@@ -292,7 +292,7 @@ def unique_combinations(mylist: Sequence[int], k: int) -> list[tuple[int, ...]]:
     >>> unique_combinations([3,3,3,2,2,1],3)
     [(3, 3, 3), (3, 3, 2), (3, 3, 1), (3, 2, 2), (3, 2, 1), (2, 2, 1)]
     """
-    def backtrack(start, current):
+    def backtrack(start: int, current: list[int]) -> None:
         if len(current) == k:
             result.append(tuple(current))
             return

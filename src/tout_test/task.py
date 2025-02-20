@@ -11,7 +11,7 @@ __all__ = (
     "timeout",
 )
 
-class Task(contextlib.AbstractContextManager):
+class Task(contextlib.AbstractContextManager["Task"]):
     """
     Context manager to measure and log task durations
 
@@ -121,14 +121,14 @@ class Task(contextlib.AbstractContextManager):
         if auto_start:
             self.start()
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         """ Entering context """
         self.start()
         if not self.quiet:
             print(self, end='\r')
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         """ Leaving context """
         self.stop()
         if not self.quiet:
@@ -191,7 +191,7 @@ class TimeOutException(Exception):
 
 
 @contextmanager
-def timeout(t: int, no_raise: bool = True):
+def timeout(t: int, no_raise: bool = True) -> Generator[None]:
     """
     Decorator and context manager to limit wall execution time of a code
     

@@ -26,7 +26,7 @@ class Representation(ABC):
     def __init__(self, G: LinearGroup):
         self.G = G
 
-    def weight(self, *args, **kwargs) -> WeightBase:
+    def weight(self, *args: Any, **kwargs: Any) -> WeightBase:
         """ Creates a weight for the given representation """
         return self.Weight(self.G, *args, **kwargs)
     
@@ -420,7 +420,7 @@ class ParticleRepresentation(Representation):
             wj  = WeightAsListOfList(self.G, as_list_of_list=[lj])
             idj = self.index_of_weight(wj)
             if alpha.i == alpha.j:
-                vp[self.index_of_weight(wj)] = v[self.index_of_weight(wj)] # type: ignore
+                vp[self.index_of_weight(wj)] = v[self.index_of_weight(wj)]
             else :
                 if isinstance(self, BosonRepresentation) or alpha.i not in lj : # Otherwise E_ij v =0
                     li=L1+[alpha.i]+L2  # we insert i

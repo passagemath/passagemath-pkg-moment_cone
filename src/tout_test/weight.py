@@ -155,7 +155,7 @@ class WeightAsList(Weight):
     """
     as_list: tuple[int, ...]
 
-    def __init__(self, G: LinearGroup, as_list: Iterable[int], **kwargs):
+    def __init__(self, G: LinearGroup, as_list: Iterable[int], **kwargs: Any):
         super().__init__(G, **kwargs)
         self.as_list = tuple(as_list)
         assert (
@@ -229,7 +229,7 @@ class WeightAsListOfList(Weight):
     """
     as_list_of_list: tuple[tuple[int, ...], ...]
 
-    def __init__(self, G: LinearGroup, as_list_of_list: Iterable[Iterable[int]], **kwargs):
+    def __init__(self, G: LinearGroup, as_list_of_list: Iterable[Iterable[int]], **kwargs: Any):
         super().__init__(G, **kwargs)
         self.as_list_of_list = tuple(tuple(w) for w in as_list_of_list)
         assert(

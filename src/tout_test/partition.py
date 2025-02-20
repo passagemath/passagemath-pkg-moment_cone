@@ -31,7 +31,7 @@ class Partition:
             coeffs = (p,) + tail
         
         # Auto trim the partition
-        self._data = cast(tuple, trim_zeros(coeffs))
+        self._data = cast(tuple[int, ...], trim_zeros(coeffs))
         assert not check or self.is_valid, "Invalid partition"
 
     @property
@@ -42,7 +42,7 @@ class Partition:
     def __len__(self) -> int:
         return len(self._data)
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx: int) -> int:
             return self._data[idx] if idx < len(self) else 0
         
     def __iter__(self) -> Iterator[int]:

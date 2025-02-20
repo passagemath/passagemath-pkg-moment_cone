@@ -83,7 +83,8 @@ def check_hyperplane_dim(weights: Sequence[Weight], exp_dim: int) -> bool:
 
     v=weights[0]
     M = matrix([v.as_vector.list() for v in weights])
-    return M.rank(algorithm="flint") == exp_dim # Flint algorithm is faster than the default one
+    rank: int = M.rank(algorithm="flint")
+    return rank == exp_dim # Flint algorithm is faster than the default one
 
 def has_too_much_geq_weights(chi: Weight, weights: Sequence[Weight], V: Representation, u: int, sym: Optional[Sequence[int]] = None) -> bool:
     """ 

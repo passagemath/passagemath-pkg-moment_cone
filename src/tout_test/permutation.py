@@ -322,7 +322,7 @@ class AllPermutationsByLength:
     permutations: tuple[Permutation, ...]
     indexes: tuple[int, ...]
 
-    def __new__(cls, n: int):
+    def __new__(cls, n: int) -> "AllPermutationsByLength":
         """ Construction with reusing of already computed permutations for given n """
         try:
             return cls.all_instances[n]

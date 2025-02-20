@@ -153,9 +153,9 @@ class Root:
     
     @property
     #TODO: erase this one if not used in Groebner
-    def short_rep(self):
-        return[self.k,self.i,self.j]
+    def short_rep(self) -> tuple[int, int, int]:
+        return self.k, self.i, self.j
     
     @property
-    def as_list(self):
-        return[self.k,self.i,self.j]
+    def as_list(self) -> list[int]:
+        return [self.k,self.i,self.j]
