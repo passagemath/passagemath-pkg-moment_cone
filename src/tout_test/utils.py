@@ -281,7 +281,6 @@ def orbit_symmetries(flatten: Iterable[T], symmetries: Iterable[int]) -> Generat
         yield itertools.chain.from_iterable(p)
   
 
-# TODO: type annotation
 def unique_combinations(mylist: Sequence[int], k: int) -> list[tuple[int, ...]]:
     """
     The list is sorted.
