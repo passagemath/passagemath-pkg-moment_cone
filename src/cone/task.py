@@ -1,9 +1,7 @@
 import contextlib
 import itertools
-import functools
 import time
-import signal
-from psutil import Process
+from contextlib import contextmanager
 
 from .typing import *
 
@@ -13,12 +11,9 @@ __all__ = (
     "timeout",
 )
 
-class Task(contextlib.AbstractContextManager):
+class Task(contextlib.AbstractContextManager["Task"]):
     """
     Context manager to measure and log task durations
-
-    Remark that cpu time measurement may be inconsistent if processes
-    are created or destructed during the usage of this class.
 
     Example:
     with Task("Computing stuff"):
@@ -32,23 +27,10 @@ class Task(contextlib.AbstractContextManager):
     perf_counter: tuple[Optional[int], Optional[int]]
     process_time: tuple[Optional[int], Optional[int]]
 
-    process: Process = Process()
     all_tasks: list["Task"] = [] # All created tasks (static)
-    all_start: tuple[int, int] = (0, 0)
+    all_start: tuple[int, int] = (time.perf_counter_ns(), time.process_time_ns())
     quiet: bool = False
 
-
-    @classmethod
-    def current_wall_time(cls) -> int:
-        """ Wall time in ns """
-        return time.perf_counter_ns()
-    
-    @classmethod
-    def current_process_time(cls) -> int:
-        """ Process (including childrens) CPU time (user + system) """
-        cpu_times = sum(cpu_times.user + cpu_times.system for p in cls.process.children(recursive=True) for cpu_times in (p.cpu_times(),))
-        return round(1e9 * cpu_times) + time.process_time_ns()
-    
     @staticmethod
     def is_clear(task: "Task") -> TypeGuard["ClearTask"]:
         """ Is a task clear """
@@ -81,7 +63,7 @@ class Task(contextlib.AbstractContextManager):
 
         stop: tuple[int, int]
         if t2 is None or not (Task.is_running(t2) or Task.is_finished(t2)):
-            stop = (cls.current_wall_time(), cls.current_process_time())
+            stop = (time.perf_counter_ns(), time.process_time_ns())
         else:
             stop = (t2.perf_counter[0], t2.process_time[0])
 
@@ -106,7 +88,7 @@ class Task(contextlib.AbstractContextManager):
     def reset_all(cls) -> None:
         """ Clear the task list """
         cls.all_tasks.clear()
-        cls.all_start = (cls.current_wall_time(), cls.current_process_time())
+        cls.all_start = (time.perf_counter_ns(), time.process_time_ns())
 
     @classmethod
     def print_all(cls, disp_interlude: bool = True) -> None:
@@ -139,14 +121,14 @@ class Task(contextlib.AbstractContextManager):
         if auto_start:
             self.start()
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         """ Entering context """
         self.start()
         if not self.quiet:
             print(self, end='\r')
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         """ Leaving context """
         self.stop()
         if not self.quiet:
@@ -154,13 +136,13 @@ class Task(contextlib.AbstractContextManager):
 
     def start(self) -> None:
         assert Task.is_clear(self)
-        self.perf_counter = (self.current_wall_time(), None)
-        self.process_time = (self.current_process_time(), None)
+        self.perf_counter = (time.perf_counter_ns(), None)
+        self.process_time = (time.process_time_ns(), None)
 
     def stop(self) -> None:
         assert Task.is_running(self)
-        self.perf_counter = (self.perf_counter[0], self.current_wall_time())
-        self.process_time = (self.process_time[0], self.current_process_time())
+        self.perf_counter = (self.perf_counter[0], time.perf_counter_ns())
+        self.process_time = (self.process_time[0], time.process_time_ns())
 
     @property
     def duration(self) -> tuple[int, int]:
@@ -171,8 +153,8 @@ class Task(contextlib.AbstractContextManager):
             )
         elif Task.is_running(self):
             return (
-                self.current_wall_time() - self.perf_counter[0],
-                self.current_process_time() - self.process_time[0]
+                time.perf_counter_ns() - self.perf_counter[0],
+                time.process_time_ns() - self.process_time[0]
             )
         else:
             return (0, 0)
@@ -206,13 +188,16 @@ class FinishedTask(Task):
 class TimeOutException(Exception):
     """ Exception raised when a task reach the assigned wall time """
     pass
-class timeout:
+
+
+@contextmanager
+def timeout(t: int, no_raise: bool = True) -> Generator[None]:
     """
     Decorator and context manager to limit wall execution time of a code
     
     Example of usage as a decorator:
 
-    ```
+    ```Python
     @timeout(10)
     def compute(a, b, c):
         print(a, b, c)
@@ -223,7 +208,7 @@ class timeout:
 
     Example of usage as a context manager:
 
-    ```
+    ```Python
     a, b, c = 1, 2, 3
     with timeout(10):
         print(a, b, c)
@@ -233,11 +218,10 @@ class timeout:
     ```
 
     Example of usage as a context manager with raised exception:
-
-    ```
+    ```Python
     a, b, c = 1, 2, 3
     try:
-        with timeout(10)
+        with timeout(10, no_raise=False)
             print(a, b, c)
             ... # do some stuff
             result = a * b + c
@@ -245,44 +229,12 @@ class timeout:
         # Some something when task didn't finished
     ```
     """
-    t: int
-    no_raise: bool
-
-    def __init__(self, t: int, no_raise: bool = True):
-        """ Initialization of the timeout.
-        
-        Computational time in seconds.
-        no_raise to False if you want to capture the exception (usefull in a context)
-        """
-        self.t = t
-        self.no_raise = no_raise
-
-    def handler(self, signum, frame) -> None:
-        """ Signal handler called when time is out """
-        raise TimeOutException("Time is out!")
-    
-    def __call__(self, fn: Callable) -> Callable:
-        """
-        Decorator interface
-        
-        Return value is a TimeOutException if execution didn't finished
-        before the time is out.
-        """
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            result = TimeOutException("Time is out!")
-            with self:
-                result = fn(*args, **kwargs)
-            return result
-        
-        return wrapper
-    
-    def __enter__(self):
-        """ Beginning of the context """
-        signal.signal(signal.SIGALRM, self.handler)
-        signal.alarm(self.t)
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """ End of the context """
-        signal.alarm(0)
-        return self.no_raise and exc_type == TimeOutException
+    from cysignals.alarm import alarm, AlarmInterrupt, cancel_alarm # type: ignore
+    try:
+        alarm(t)
+        yield
+    except AlarmInterrupt:
+        if not no_raise:
+            raise TimeOutException("Time is out!")
+    finally:
+        cancel_alarm()

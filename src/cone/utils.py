@@ -17,11 +17,10 @@ __all__ = (
     "extend_with_repetitions",
     "flatten_dictionary",
     "grading_dictionary",
-    "Are_Isom_Mod",
-    "Is_Sub_Mod",
+    "compare_C_Mod",
     "quotient_C_Mod",
     "dictionary_list_lengths",
-    
+    "unique_combinations",
 )
 
 def is_decreasing(l: Iterable[int]) -> bool:
@@ -201,49 +200,19 @@ def dictionary_list_lengths(dic: Mapping[U, Sequence[T]]) -> dict[U, int]:
     """
     return {key: len(value) for key, value in dic.items()}
    
-def Is_Sub_Mod(M1: dict[int, int], M2: dict[int, int]) -> bool:
-    """
-    Kind of order on dictionary of int -> int.
 
-    Examples:
-    >>> d1 = {0: 0, 1: 1, 2: 2}
-    >>> d2 = {0: 0, 2: 2}
-    >>> Is_Sub_Mod(d1, d2)
-    False
-    >>> d3 = {0: 0, 1: 1, 2: 1}
-    >>> Is_Sub_Mod(d1, d3)
-    False
-    >>> d4 = {0: 0, 1: 1, 2: 3}
-    >>> Is_Sub_Mod(d1, d4)
-    True
-    """
-    # TODO: lowercase name, move to more specific file?
-    for p in M1.keys():
-        if p not in M2.keys() or M1[p] > M2[p] :
-            return False
-    return True
+def compare_C_Mod(
+        M1: dict[int, int],
+        M2: dict[int, int],
+        relation: Callable[[int, int], bool]
+    ) -> bool :
+    # TODO: lowercase, docstring, move to list_of_W ?
+    return all(
+        relation(M1.get(key, 0), M2.get(key, 0))
+        for key in set(M1) | set(M2)
+    )
+    
 
-def Are_Isom_Mod(M1 : dict[int, int], M2 : dict[int, int]) -> bool:
-    """ Comparison of dictionary of int -> int.
-    
-    Examples:
-    >>> d1 = {0: 0, 1: 1, 2: 2}
-    >>> d2 = {0: 0, 2: 2}
-    >>> Are_Isom_Mod(d1, d2)
-    False
-    >>> d3 = {0: 0, 1: 1, 2: 1}
-    >>> Are_Isom_Mod(d1, d3)
-    False
-    >>> d4 = {0: 0, 1: 1, 2: 3}
-    >>> Are_Isom_Mod(d1, d4)
-    False
-    >>> d5 = {0: 0, 1: 1, 2: 2}
-    >>> Are_Isom_Mod(d1, d5)
-    True
-    """
-    # TODO: lowercase name, move to more specific file, probably useless since it is simply a comparison
-    return M1 == M2
-    
 def quotient_C_Mod(M1 : dict[int, int], M2 : dict[int, int]) -> dict[int, int]:
     """ Quotient of two dictionary int -> int.
 
@@ -280,7 +249,7 @@ def multiset_permutations(m: Iterable[T]) -> Generator[list[T]]:
     so that to get the correct return type.
     """
     from sympy.utilities.iterables import multiset_permutations as mp
-    return cast(Generator[list[T]], mp(m))
+    return cast(Generator[list[T]], mp(m)) # type: ignore
 
 def orbit_symmetries(flatten: Iterable[T], symmetries: Iterable[int]) -> Generator[Iterable[T]]:
     """
@@ -312,3 +281,28 @@ def orbit_symmetries(flatten: Iterable[T], symmetries: Iterable[int]) -> Generat
         yield itertools.chain.from_iterable(p)
   
 
+def unique_combinations(mylist: Sequence[int], k: int) -> list[tuple[int, ...]]:
+    """
+    The list is sorted.
+    The list is viewed as a multiset. 
+    Create the list of multisets contained in list of cardinality k
+
+    Example :
+    >>> unique_combinations([3,3,3,2,2,1],3)
+    [(3, 3, 3), (3, 3, 2), (3, 3, 1), (3, 2, 2), (3, 2, 1), (2, 2, 1)]
+    """
+    def backtrack(start: int, current: list[int]) -> None:
+        if len(current) == k:
+            result.append(tuple(current))
+            return
+        for i in range(start, len(mylist)):
+            # Éviter de répéter un élément au même niveau
+            if i > start and mylist[i] == mylist[i - 1]:
+                continue
+            current.append(mylist[i])
+            backtrack(i + 1, current)
+            current.pop()
+
+    result: list[tuple[int, ...]] = []
+    backtrack(0, [])
+    return result

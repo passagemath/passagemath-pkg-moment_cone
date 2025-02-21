@@ -1,18 +1,22 @@
 from dataclasses import dataclass
+
 import itertools
 
 from .typing import *
-from .weight import Weight
-from .dimension import Dimension
 from .utils import short_prod
+from .linear_group import *
 from .tau import *
-#from sage.all import matrix, ZZ, QQ # type: ignore
+from .weight import *
+from .representation import *
 from .rings import matrix, Matrix, ZZ
 
+
+
 __all__ = (
-    "find_hyperplanes_reg",
-    "hyperplane_matrix",
-    "find_hyperplanes_reg_mod_sym_dim",
+    "find_hyperplanes_reg_mod_outer",
+    "find_hyperplanes_reg_impl",
+    "check_hyperplane_dim",
+    "has_too_much_geq_weights",
 )
 
 
@@ -54,75 +58,54 @@ def smart_remove(l: list[T], idx: int) -> None:
 def sign_assignment(chi: Weight,
                     S_input: list[Weight],
                     S_negative: list[Weight],
-                    S_positive: list[Weight]) -> None:
+                    S_positive: list[Weight],
+                    sym : Optional[Sequence[int]]=None) -> None:
     """ Determining the sign of weight from S_input by comparing it to the curring weight chi """
     idx = 0
-    while idx < len(S_input):
+    while idx < len(S_input): # Loop on S_input with while since S_input changes
         chi2 = S_input[idx]
-        if chi2 <= chi:
+        if chi2.leq(chi,sym) : #chi2<=chi : #if : #if chi<=chi2:# TODO : switch leq
             S_negative.append(chi2)
             smart_remove(S_input, idx)
-        elif chi <= chi2:
+        elif chi.leq(chi2,sym) : #chi.leq(chi2,sym):
             S_positive.append(chi2)
             smart_remove(S_input, idx)
         else:
             idx += 1 # index incremented only when not element where removed
 
-def hyperplane_matrix(S: Sequence[Weight], d: Dimension) -> Matrix:
-    """ S is a set of weights. 
-    The coordinates of each weight in the basis of fundamental weights are in {0,1}. 
-    Each column of the returned matrix is made of the coordinates of a weight in S
-    (1st coordinate 1 for C-component, len(d) other blocks of respective size di)
-    
-    Example :
-    >>> d = Dimension((3, 3, 3))
-    >>> SW = list(Weight.all(d))[0:5]
-    >>> for chi in SW:
-    ...     print(chi)
-    Weight((0, 0, 0), idx: 0)
-    Weight((0, 0, 1), idx: 1)
-    Weight((0, 0, 2), idx: 2)
-    Weight((0, 1, 0), idx: 3)
-    Weight((0, 1, 1), idx: 4)
-    >>> hyperplane_matrix(SW, d)
-    [1 1 1 1 1]
-    [1 1 1 1 1]
-    [0 0 0 0 0]
-    [0 0 0 0 0]
-    [1 1 1 0 0]
-    [0 0 0 1 1]
-    [0 0 0 0 0]
-    [1 0 0 1 0]
-    [0 1 0 0 1]
-    [0 0 1 0 0]
+def check_hyperplane_dim(weights: Sequence[Weight], exp_dim: int) -> bool:
+    """ 
+    Check that the given sequence of weights span a linear subspace of dimension exp_dim in X^*(T)_QQ
     """
-    M = matrix(ZZ, d.sum + 1, len(S))
-    # We could use Blocks but matrix doesn't support len
-    shift = tuple(itertools.accumulate(d, initial=1))[:-1]
-    for j, chi in enumerate(S):
-        M[0, j] = 1
-        for c, s in zip(chi, shift):
-            M[s + c, j] = 1
-    return M
-
-def check_hyperplane_dim(S: Sequence[Weight], d: Dimension) -> bool:
-    """ Check that the given sequence of weight has the dimension of an hyperplane in X^*(T)"""
-    target_rank = d.sum - len(d)  #Since T lies in C^*\times product of the SL_{d_i}, it has codimension len(d) in \hat T (torus of C^*\times product of the GL_{d_i}
-    if len(S) < target_rank:
+    
+    if len(weights) < exp_dim:
         return False
-    
-    M = hyperplane_matrix(S, d)
-    return M.rank(algorithm="flint") == target_rank # Flint algorithm is faster than the default one
 
-def has_too_much_geq_weights(chi: Weight, u: int) -> bool:
-    """ True for weights with more that u weights bigger for the order leq """
-    leq_cnt = short_prod(c + 1 for c in chi) - 1
-    # FIXME: verify this function, it differ from the original version
-    return leq_cnt > u
+    v=weights[0]
+    M = matrix([v.as_vector.list() for v in weights])
+    rank: int = M.rank(algorithm="flint")
+    return rank == exp_dim # Flint algorithm is faster than the default one
 
-def find_hyperplanes_reg(d: Dimension, u: int) -> Iterable[list[Weight]]:
+def has_too_much_geq_weights(chi: Weight, weights: Sequence[Weight], V: Representation, u: int, sym: Optional[Sequence[int]] = None) -> bool:
+    """ 
+    True for weights with more that u weights bigger for the order leq 
     """
-    Returns sets of weights, each set generating an hyperplane in X^*(T) likely to be the orthogonal of a dominant 1-parameter subgroup tau, such that there is at most u weights we of V with tau(we)>0
+    if isinstance(V, KroneckerRepresentation):
+        assert(isinstance(chi, WeightAsList))
+        leq_cnt = short_prod(c + 1 for c in chi.as_list) - 1 #TODO : short est inutile ici
+        return leq_cnt > u
+    else : 
+        leq_cnt=0
+        for chi1 in weights:
+            if chi.leq(chi1,sym) : # Vérifier que l'ordre est le bon
+                leq_cnt+=chi1.mult
+        leq_cnt-=chi.mult
+        return leq_cnt > u
+        
+
+def find_hyperplanes_reg_mod_outer(weights: Sequence[Weight], V: Representation, u: int, sym: Optional[Sequence[int]] = None) -> Iterable[list[Weight]]:
+    """
+    Returns the subsets of weights, each set generating an hyperplane in X^*(T) likely to be the orthogonal of a dominant 1-parameter subgroup tau, such that there is at most u weights we of V with tau(we)>0
 
     Example:
     >>> from cone import *
@@ -131,38 +114,28 @@ def find_hyperplanes_reg(d: Dimension, u: int) -> Iterable[list[Weight]]:
     >>> print("Number of raw hyperplanes:", len(hp))
     Number of raw hyperplanes: 3622
     """
+    exp_dim=V.dim_cone-1
     St = WeightSieve([], [], [], [], [])
-    for chi in Weight.all(d):
-        if has_too_much_geq_weights(chi, u):
-            St.negative.append(chi)
-        else:
-            St.indeterminate.append(chi)
-    return find_hyperplanes_reg_impl(St, d, u)
 
-def find_hyperplanes_reg_mod_sym_dim(d: Dimension, u: int) -> Iterable[list[Weight]]:
-    """
-    Same as find_hyperplanes, with results up to the action of the symmetries of d.
+    ## TODO : améliorer has_too_much_geq_weights dans le cas Kronecker pour ordonner les poids de V.weights_mod_outer par #{\chi'>\chi} décroissant
+    # La fonction qui calcule ce cardinal est leq_cnt = short_prod(c + 1 for c in chi.as_list) - 1
+
+    ## TODO : pour parallelise !='kron' il suffit de faire la même boucle même si modulo outer est trivial
+    # On peut même générer les weights directement ordonnés de cette manière
     
-    It should be faster since less possibilities are explored.
-
-    Example:
-    >>> from cone import *
-    >>> d = Dimension((4, 4, 4))
-    >>> hp = list(find_hyperplanes_reg_mod_sym_dim(d, 4**3))
-    >>> print("Number of raw hyperplanes:", len(hp))
-    Number of raw hyperplanes: 1604
-    """
-    # Earlier filtering
-    St = WeightSieve([], [], [], [], [])
-    for chi in Weight.all(d):
-        if has_too_much_geq_weights(chi, u):
+    for chi in weights:
+        if has_too_much_geq_weights(chi, weights, V, u, sym):
             St.negative.append(chi)
         else:
             St.indeterminate.append(chi)
+    if isinstance(V, ParticleRepresentation): #Trivial outer
+        yield from find_hyperplanes_reg_impl(St, V.G, u,exp_dim,sym)
+                                                 
 
-    # Calling the recursive function modulo the symmetries of d
-    for chi in Weight.all_mod_sym_dim(d):
+    else :
+      for chi in V.weights_mod_outer: #TODO : paralléliser cette boucle en mettant pour le i eme poids tous les poids strictement précédents (et leur orbite par sym) dans St.excluded
         # Checking if the element is indeterminate
+        
         try:
             idx = St.indeterminate.index(chi)
         except ValueError:
@@ -178,41 +151,59 @@ def find_hyperplanes_reg_mod_sym_dim(d: Dimension, u: int) -> Iterable[list[Weig
         sign_assignment(chi, St2.excluded, St2.negative, St2.positive)
 
         # Further exploring the branch
-        yield from find_hyperplanes_reg_impl(St2, d, u)
+        yield from find_hyperplanes_reg_impl(St2, V.G, u,exp_dim)
 
         # Removing symmetries
-        for orbit_chi in chi.orbit_symmetries(d.symmetries):
-            St.indeterminate.remove(orbit_chi)
-            St.excluded.append(orbit_chi)
+        for chi2 in chi.orbit_symmetries(V.G.outer):
+            St.indeterminate.remove(chi2)
+            St.excluded.append(chi2)
 
-def find_hyperplanes_reg_impl(St: WeightSieve, d: Dimension, u: int) -> Iterable[list[Weight]]:
-    """ Recursive part to find the hyperplane candidates """
-    if check_hyperplane_dim(St.zero, d):
+
+def find_hyperplanes_reg_impl(St: WeightSieve, G: LinearGroup, u: int, exp_dim: int, sym: Optional[Sequence[int]] = None) -> Iterable[list[Weight]]:
+    """ 
+    Recursive part to find the hyperplane candidates.
+    u is the maximal number of positive weights
+    exp_dim is the expected dimension of the span of the weights.
+    sym is a data encoding the partial order on the weights and the definition of dominant tau.
+
+    St is a list of weights of the maximal torus of G.
+    sym determine a parabolic subgroup of the Weyl subgroup of G.
+    We consider only 1-PS strictly domninant for sym.
+    sym also determines a dominance order on the weights
+    The weights have a multiplicity.
+    """
+  
+    if check_hyperplane_dim(St.zero, exp_dim):
         # Candidate hyperplane if the dimension is appropriate
         yield St.zero
 
-    elif len(St.zero) + len(St.indeterminate) >= d.sum - len(d) and len(St.indeterminate) > 0:
+    elif len(St.zero) + len(St.indeterminate) >= exp_dim and len(St.indeterminate) > 0:
         # Next element to consider
         chi = St.indeterminate.pop()
-
+        St2 = St.copy()
+        
         # Two possible actions with this element:
 
         # 1. We explore the branch where it is excluded from the possible zero elements
+        
         St.excluded.append(chi)
-        yield from find_hyperplanes_reg_impl(St, d, u)
+        yield from find_hyperplanes_reg_impl(St, G, u,exp_dim,sym) # TODO : St n'est pas modifié par cet appel ?
         St.excluded.pop()
 
         # 2. We explore the branch where it is defined as a zero element (on the hyperplane)
-        St2 = St.copy()
+        
         St2.zero.append(chi)
 
         # 2.1 Deducing sign of lower and upper elements
-        sign_assignment(chi, St2.indeterminate, St2.negative, St2.positive)
-        sign_assignment(chi, St2.excluded, St2.negative, St2.positive)
+        sign_assignment(chi, St2.indeterminate, St2.negative, St2.positive,sym)
+        sign_assignment(chi, St2.excluded, St2.negative, St2.positive,sym)
+
+        # TODO : Est-il utile de regarder la condition tau régulier ici ??
 
         # 2.2 Continuing if there are not too much positive elements
-        if len(St2.positive) <= u:
-            yield from find_hyperplanes_reg_impl(St2, d, u)
+        
+        if sum([chi.mult for chi in St2.positive]) <= u:
+            yield from find_hyperplanes_reg_impl(St2, G, u,exp_dim,sym)
 
         # Current element back to the indeterminate
         St.indeterminate.append(chi)

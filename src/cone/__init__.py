@@ -1,39 +1,11 @@
-#from sage.all import SymmetricFunctions, QQ, Integer as SageInteger
-#sym_f = SymmetricFunctions(QQ).s()
-#import sage.libs.lrcalc.lrcalc as lr
-
-from .utils import *
 from .blocks import *
-from .partition import *
-from .dimension import *
-from .vector_chooser import *
-from .tau import *
 from .weight import *
-from .root import *
-from .task import *
-from .inequality import *
-from .permutation import *
-from .hyperplane_candidates import *
 from .rings import *
-from .list_of_W import *
-from .ramification import *
-from .Normaliz2python import *
-from .dim_stabilizer_K import *
-from .main import *
-    
+from .weight import *
+from .representation import *
+from .linear_group import *
 
-#def fct_Weights_of_Nu(nu: PartialMatrix[Partition]) -> PartialMatrix[int]:
-#    """ Constructing size_nu from nu """
-#    size_nu = PartialMatrix[int](*nu.shape)
-#
-#    for j, col in enumerate(nu.columns):
-#        size_nu.extend(j, (cast(int, sum(p)) for p in col))
-#
-#    return size_nu
+from .tau import Tau
+from .inequality import Inequality
 
-
-
-##### Pour 444, il y a un cas où on rentre dans LR_multi avec L=[] (liste vide) et nu=[].
-## Cela bugue mais je ne comprends pas si c'est normal d'avoir une telle entrée
-
-
+# FIXME: remaining default imports

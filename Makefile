@@ -7,10 +7,14 @@ unittest:
 	python3 -m unittest discover --verbose .
 
 doctest:
-	python3 -m pytest --doctest-modules --verbose --ignore=src/cone/main_to_be_inserted.py src/cone
+	python3 -m pytest --doctest-modules --verbose --ignore=src/cone/reference_datas src/cone
 
 mypy:
-	python3 -m mypy src/cone tests
+	python3 -m mypy --check-untyped-defs --exclude=src/cone/reference_datas src/cone tests
+
+mypy_strict:
+	python3 -m mypy --strict src/cone tests
+
 
 fixme:
 	grep -ir --exclude-dir=__pycache__ --color --line-number "FIXME" tests/ src/
@@ -21,6 +25,3 @@ todo:
 doc:
 	pdoc3 --html --force src/cone
 
-tout_test:
-	python -m pytest --doctest-modules --verbose --ignore=src/tout_test/reference_datas src/tout_test
-	python -m mypy --check-untyped-defs src/tout_test

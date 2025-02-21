@@ -1,7 +1,0 @@
-d=Dimension([4,4,4])
-
-find_1PS_reg_mod_sym_dim(d,d.u_max(d))
-
-find_1PS_mod_sym_dim(d)
-
-

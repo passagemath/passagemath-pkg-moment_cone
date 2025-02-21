@@ -1,7 +1,7 @@
 from .typing import *
 from .utils import count, group_by_block, expand_blocks, is_increasing, multiset_permutations
 from .blocks import Blocks
-from .dimension import Dimension
+from .linear_group import *
 
 from functools import cached_property
 import itertools
@@ -113,7 +113,7 @@ class Permutation(tuple[int, ...]): # Remark: hash of p is hash of underlying tu
         """
         # More efficient way ?
         return filter(lambda p: p.length == l, Permutation.all(n))
-
+    
     @staticmethod
     def all_min_rep(symmetries: Iterable[int]) -> Iterable["Permutation"]:
         """
@@ -169,6 +169,7 @@ class Permutation(tuple[int, ...]): # Remark: hash of p is hash of underlying tu
         for parts in all_recurs(tuple(range(n)), symmetries):
             yield Permutation(itertools.chain.from_iterable(parts))
 
+        
     @staticmethod
     def from_cycles(n: int, *cycles: Sequence[int]) -> "Permutation":
         """
@@ -185,7 +186,7 @@ class Permutation(tuple[int, ...]): # Remark: hash of p is hash of underlying tu
         return Permutation(p)
     
     @staticmethod
-    def embeddings_mod_sym(d: Dimension, e: Sequence[int])-> Iterable["Permutation"]:
+    def embeddings_mod_sym(G: LinearGroup, Gred: LinearGroup)-> Iterable["Permutation"]:
         """
         List of permutations of e that are at most d
 
@@ -212,20 +213,22 @@ class Permutation(tuple[int, ...]): # Remark: hash of p is hash of underlying tu
         (4, 1, 3, 3, 2)
         """
         # TODO: check if group_by_block and expand_blocs can be rewritten in another way
-        eg = list(group_by_block(e))
-        dg = list(group_by_block(d))
-        partial_sum_mult_d = [0] + list(itertools.accumulate([x for _,x in dg]))
+        eg = list(group_by_block(Gred))
+        dg = list(group_by_block(G))
+        partial_sum_mult_d = [0] + list(itertools.accumulate([x for _,x in dg])) #indexes of the first element in each block
         partial_sum_mult_e = [0] + list(itertools.accumulate([x for _,x in eg]))
-        indices_eg = expand_blocks([i for i, x in enumerate(eg)], [x[1] for i, x in enumerate(eg)]) # same as e, but with repetition of indices, rather than values
-        for ep in multiset_permutations(indices_eg):
-            p_i = partial_sum_mult_e[:-1]
+        indices_eg = expand_blocks([i for i, x in enumerate(eg)], [x[1] for i, x in enumerate(eg)]) # same shape as Gred, but with 0,1,2 as values exple : [4,3,3,1] --> [0,1,1,2]
+        for ep in multiset_permutations(indices_eg): # Any permutation of the list Gred
+            p_i = partial_sum_mult_e[:-1] # Same as length of Gred
 
             indices_e = []
-            for i in range(len(e)):
-                indices_e.append(p_i[ep[i]])
-                p_i[ep[i]] += 1
+            for i in range(len(ep)):
+                indices_e.append(p_i[ep[i]]) # p_i[ep[i]] index in Gred of a value of the block indexed by ep[i]
+                p_i[ep[i]] += 1 # we add 1 to take the next value the next time
 
-            if all(e[indices_e[i]] <= d[i] for i in range(len(e))) and all(is_increasing(indices_e[a:b]) for a,b in itertools.pairwise(partial_sum_mult_d)):
+            if all(Gred[indices_e[i]] <= G[i] for i in range(len(ep))) and all(is_increasing(indices_e[a:b]) for a,b in itertools.pairwise(partial_sum_mult_d)):
+                # The first all check that the permutted Gred is still at most G
+                # The second all check that in a block of G we took elements of Gred  from left to right                
                 yield Permutation(indices_e)
     
     def transpose(self, i: int, j: int) -> "Permutation":
@@ -319,7 +322,7 @@ class AllPermutationsByLength:
     permutations: tuple[Permutation, ...]
     indexes: tuple[int, ...]
 
-    def __new__(cls, n: int):
+    def __new__(cls, n: int) -> "AllPermutationsByLength":
         """ Construction with reusing of already computed permutations for given n """
         try:
             return cls.all_instances[n]
