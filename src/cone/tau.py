@@ -31,7 +31,7 @@ class Tau:
     3 3 2 2 | 2 2 1 | 2 2 1
     >>> tau.G
     GL(4)xGL(3)xGL(3)
-    >>> G = LinGroup([1, 4, 3, 3])
+    >>> G = LinearGroup([1, 4, 3, 3])
     >>> tau = Tau.from_flatten((1, 3, 3, 2, 2, 2, 2, 1, 2, 2, 1), G)
     >>> tau
     1 | 3 3 2 2 | 2 2 1 | 2 2 1
@@ -49,7 +49,7 @@ class Tau:
             self._components = components.freeze()
         else:
             self._components = Blocks.from_blocks(components)
-        #self.G = LinGroup([len(c) for c in components])
+        #self.G = LinearGroup([len(c) for c in components])
         
     @staticmethod
     def from_flatten(s: Iterable[int], G: LinearGroup) -> "Tau":
@@ -150,7 +150,7 @@ class Tau:
         >>> tau = Tau([[5, 4, 0], [4, 3, 0], [4, 2, 0]])
         >>> tau
         5 4 0 | 4 3 0 | 4 2 0
-        >>> for t in tau.m_extend_with_repetitions(LinGroup([4, 4, 3])):
+        >>> for t in tau.m_extend_with_repetitions(LinearGroup([4, 4, 3])):
         ...     print(t)
         5 4 0 0 | 4 3 0 0 | 4 2 0
         5 4 0 0 | 4 3 3 0 | 4 2 0
@@ -245,19 +245,20 @@ class Tau:
         
         For each key p, the weights in the entry p correspond to a basis of the eigen space
         
-        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2),(1,)))
+        >>> from cone import *
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2), (1,)))
         >>> tau
         3 2 2 | 4 2 1 | 3 2 | 1
-        >>> V=Reprensentation(tau.G,'kron')
+        >>> V = KroneckerRepresentation(tau.G)
         >>> gw = tau.grading_weights(V)
         >>> for k in sorted(gw.keys()):
         ...     print(f"{k}:", gw[k])
-        -2: [Weight((1, 2, 1), idx: 11), Weight((2, 2, 1), idx: 17)]
-        -1: [Weight((0, 2, 1), idx: 5), Weight((1, 1, 1), idx: 9), Weight((1, 2, 0), idx: 10), Weight((2, 1, 1), idx: 15), Weight((2, 2, 0), idx: 16)]
-        0: [Weight((0, 1, 1), idx: 3), Weight((0, 2, 0), idx: 4), Weight((1, 1, 0), idx: 8), Weight((2, 1, 0), idx: 14)]
-        1: [Weight((0, 1, 0), idx: 2), Weight((1, 0, 1), idx: 7), Weight((2, 0, 1), idx: 13)]
-        2: [Weight((0, 0, 1), idx: 1), Weight((1, 0, 0), idx: 6), Weight((2, 0, 0), idx: 12)]
-        3: [Weight((0, 0, 0), idx: 0)]
+        -2: [WeightAsList((1, 2, 1), idx: 11), WeightAsList((2, 2, 1), idx: 17)]
+        -1: [WeightAsList((0, 2, 1), idx: 5), WeightAsList((1, 1, 1), idx: 9), WeightAsList((1, 2, 0), idx: 10), WeightAsList((2, 1, 1), idx: 15), WeightAsList((2, 2, 0), idx: 16)]
+        0: [WeightAsList((0, 1, 1), idx: 3), WeightAsList((0, 2, 0), idx: 4), WeightAsList((1, 1, 0), idx: 8), WeightAsList((2, 1, 0), idx: 14)]
+        1: [WeightAsList((0, 1, 0), idx: 2), WeightAsList((1, 0, 1), idx: 7), WeightAsList((2, 0, 1), idx: 13)]
+        2: [WeightAsList((0, 0, 1), idx: 1), WeightAsList((1, 0, 0), idx: 6), WeightAsList((2, 0, 0), idx: 12)]
+        3: [WeightAsList((0, 0, 0), idx: 0)]
         """
         return self.grading_weights_in(V.all_weights)
 
@@ -276,10 +277,10 @@ class Tau:
         
         For each key p, the roots in the entry p correspond to a basis of the eigen space.
 
-        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2), (-7,)))
         >>> tau
-        -7 | 3 2 2 | 4 2 1 | 3 2
-        >>> gr = tau.grading_roots
+        3 2 2 | 4 2 1 | 3 2 | -7
+        >>> gr = tau.grading_rootsU
         >>> for k in sorted(gr.keys()):
         ...     print(f"{k}:", gr[k])
         0: [Root(k=0, i=1, j=2)]
@@ -303,9 +304,9 @@ class Tau:
         >>> gw = tau.positive_weights
         >>> for k in sorted(gw.keys()):
         ...     print(f"{k}:", gw[k])
-        1: [Weight((0, 1, 0), idx: 2), Weight((1, 0, 1), idx: 7), Weight((2, 0, 1), idx: 13)]
-        2: [Weight((0, 0, 1), idx: 1), Weight((1, 0, 0), idx: 6), Weight((2, 0, 0), idx: 12)]
-        3: [Weight((0, 0, 0), idx: 0)]
+        1: [WeightAsList((0, 1, 0), idx: 2), WeightAsList((1, 0, 1), idx: 7), WeightAsList((2, 0, 1), idx: 13)]
+        2: [WeightAsList((0, 0, 1), idx: 1), WeightAsList((1, 0, 0), idx: 6), WeightAsList((2, 0, 0), idx: 12)]
+        3: [WeightAsList((0, 0, 0), idx: 0)]
         """
         from .utils import filter_dict_by_key
         return filter_dict_by_key(self.grading_weights(V), lambda x: x > 0)
@@ -315,15 +316,17 @@ class Tau:
         """
         Basis of the eigen space for non-positive eigen values for the action of tau on V.
 
-        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> from cone import *
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2), '-7,)))
         >>> tau
-        -7 | 3 2 2 | 4 2 1 | 3 2
-        >>> gw = tau.non_positive_weights
+        3 2 2 | 4 2 1 | 3 2 | -7
+        >>> V = KroneckerRepresentation(tau.G)
+        >>> gw = tau.non_positive_weights(V)
         >>> for k in sorted(gw.keys()):
         ...     print(f"{k}:", gw[k])
-        -2: [Weight((1, 2, 1), idx: 11), Weight((2, 2, 1), idx: 17)]
-        -1: [Weight((0, 2, 1), idx: 5), Weight((1, 1, 1), idx: 9), Weight((1, 2, 0), idx: 10), Weight((2, 1, 1), idx: 15), Weight((2, 2, 0), idx: 16)]
-        0: [Weight((0, 1, 1), idx: 3), Weight((0, 2, 0), idx: 4), Weight((1, 1, 0), idx: 8), Weight((2, 1, 0), idx: 14)]
+        -2: [WeightAsList((1, 2, 1), idx: 11), WeightAsList((2, 2, 1), idx: 17)]
+        -1: [WeightAsList((0, 2, 1), idx: 5), WeightAsList((1, 1, 1), idx: 9), WeightAsList((1, 2, 0), idx: 10), WeightAsList((2, 1, 1), idx: 15), WeightAsList((2, 2, 0), idx: 16)]
+        0: [WeightAsList((0, 1, 1), idx: 3), WeightAsList((0, 2, 0), idx: 4), WeightAsList((1, 1, 0), idx: 8), WeightAsList((2, 1, 0), idx: 14)]
 
         """
         from .utils import filter_dict_by_key
@@ -335,16 +338,18 @@ class Tau:
         """
         Basis of the eigen space for non-negative eigen values for the action of tau on V.
 
-        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2)), -7)
+        >>> from cone import *
+        >>> tau = Tau(((3, 2, 2), (4, 2, 1), (3, 2), (-7,)))
         >>> tau
-        -7 | 3 2 2 | 4 2 1 | 3 2
+        3 2 2 | 4 2 1 | 3 2 | -7
+        >>> V = KroneckerRepresentation(tau.G)
         >>> gw = tau.non_negative_weights(V)
         >>> for k in sorted(gw.keys()):
         ...     print(f"{k}:", gw[k])
-        0: [Weight((0, 1, 1), idx: 3), Weight((0, 2, 0), idx: 4), Weight((1, 1, 0), idx: 8), Weight((2, 1, 0), idx: 14)]
-        1: [Weight((0, 1, 0), idx: 2), Weight((1, 0, 1), idx: 7), Weight((2, 0, 1), idx: 13)]
-        2: [Weight((0, 0, 1), idx: 1), Weight((1, 0, 0), idx: 6), Weight((2, 0, 0), idx: 12)]
-        3: [Weight((0, 0, 0), idx: 0)]
+        0: [WeightAsList((0, 1, 1), idx: 3), WeightAsList((0, 2, 0), idx: 4), WeightAsList((1, 1, 0), idx: 8), WeightAsList((2, 1, 0), idx: 14)]
+        1: [WeightAsList((0, 1, 0), idx: 2), WeightAsList((1, 0, 1), idx: 7), WeightAsList((2, 0, 1), idx: 13)]
+        2: [WeightAsList((0, 0, 1), idx: 1), WeightAsList((1, 0, 0), idx: 6), WeightAsList((2, 0, 0), idx: 12)]
+        3: [WeightAsList((0, 0, 0), idx: 0)]
         """
         from .utils import filter_dict_by_key
         return filter_dict_by_key(self.grading_weights(V), lambda x: x >= 0)
@@ -426,7 +431,7 @@ class Tau:
         >>> tau
         -7 | 3 2 2 | 4 2 1 | 3 2
         >>> tau.orthogonal_weights(V)
-        [Weight((0, 1, 1), idx: 3), Weight((0, 2, 0), idx: 4), Weight((1, 1, 0), idx: 8), Weight((2, 1, 0), idx: 14)]
+        [WeightAsList((0, 1, 1), idx: 3), WeightAsList((0, 2, 0), idx: 4), WeightAsList((1, 1, 0), idx: 8), WeightAsList((2, 1, 0), idx: 14)]
         """
         return self.grading_weights(V).get(0, [])
 
@@ -435,7 +440,7 @@ class Tau:
         """
         Sort tau by block of the dimensions
         
-        >>> G = LinGroup([2, 2, 2, 1, 1, 1])
+        >>> G = LinearGroup([2, 2, 2, 1, 1, 1])
         >>> tau = Tau.from_flatten([1, 6, 2, 1, 4, 1, 4, 5, 3, 1], G)
         >>> tau
         1 | 6 2 | 1 4 | 1 4 | 5 | 3 | 1
@@ -450,7 +455,7 @@ class Tau:
         Lists the orbit of tau under symmetries of dimensions of its components
 
         Example:
-        >>> G = LinGroup([2, 2, 2, 1, 1])
+        >>> G = LinearGroup([2, 2, 2, 1, 1])
         >>> tau = Tau.from_flatten([1, 6, 2, 1, 4, 1, 4, 5, 3], G)
         >>> tau
         1 | 6 2 | 1 4 | 1 4 | 5 | 3
@@ -498,8 +503,8 @@ class Tau:
         3 3 2 2 | 2 2 1 | 2 2 1 | 1
         >>> tau.dim_Pu
         8
-        >>> sum(len(roots) for roots in tau.positive_roots.values())
-        8
+        >>> sum(len(roots) for roots in tau.grading_rootsU.values())
+        12
         """
         sum_di2 = self.G.dim
         sum_mi2 = sum(mi**2 for mi in self.reduced.mult.flatten)
@@ -543,7 +548,7 @@ class Tau:
         Since Z is trivial when len(G)==1 return self.
 
         Examples:
-        >>> tau = Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1),(1,)))
+        >>> tau = Tau(((3, 3, 2, 2), (2, 2, 1), (2, 2, 1), (1,)))
         >>> tau.sl_representative
         3 3 -3 -3 | 2 2 -4 | 2 2 -4 | 41
         >>> tau = Tau(((3, 3, 2, 2),))
@@ -576,7 +581,7 @@ class Tau:
         For Kron : Create the list of lists L=[i_0, i_2, ..., i_{s-1}] such that  sum_k tau_red[k][i_k] = 0
         For Fermion or Boson : s=len(tau_red.values). Create the list of lists L=[i_0, i_2, ..., i_{s-1}] such that  sum_k i_k * tau_red[k] = 0
         """
-        #tau_red=Tau(self.reduced.values,LinGroup([len(x) for x in self.reduced.values]))
+        #tau_red=Tau(self.reduced.values,LinearGroup([len(x) for x in self.reduced.values]))
         tau_red=Tau(self.reduced.values)
         result: list[list[int]] = []
 
@@ -664,7 +669,7 @@ def unique_modulo_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> set[Tau]:
     Unique sequence of tau modulo the it's symmetries
 
     Example:
-    >>> G = LinGroup([2, 2, 2, 1, 1,1])
+    >>> G = LinearGroup([2, 2, 2, 1, 1,1])
     >>> t1 = Tau.from_flatten([1, 6, 2, 1, 5, 1, 4, 5, 3], G)
     >>> t2 = t1.end0_representative
     >>> t3 = t2.sort_mod_sym_dim

@@ -109,10 +109,11 @@ def find_hyperplanes_reg_mod_outer(weights: Sequence[Weight], V: Representation,
 
     Example:
     >>> from cone import *
-    >>> d = Dimension((4, 4, 4))
-    >>> hp = list(find_hyperplanes_reg(d, 4**3))
+    >>> G = LinearGroup((4, 4, 4))
+    >>> V = KroneckerRepresentation(G)
+    >>> hp = list(find_hyperplanes_reg_mod_outer(V.all_weights, V, 4**3))
     >>> print("Number of raw hyperplanes:", len(hp))
-    Number of raw hyperplanes: 3622
+    Number of raw hyperplanes: 1604
     """
     exp_dim=V.dim_cone-1
     St = WeightSieve([], [], [], [], [])

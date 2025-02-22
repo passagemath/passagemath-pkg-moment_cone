@@ -1,7 +1,7 @@
 import unittest
 
 from cone.permutation import Permutation
-from cone.dimension import Dimension
+from cone.linear_group  import LinearGroup
 
 class TestPermutation(unittest.TestCase):
     def test_interface(self) -> None:
@@ -46,10 +46,10 @@ class TestPermutation(unittest.TestCase):
     def test_others(self) -> None:
         p = Permutation((1, 2, 3, 3, 4, 2, 3, 4, 5))
         
-        d1 = Dimension((3, 2, 4))
+        d1 = LinearGroup((3, 2, 4))
         self.assertTrue(p.is_min_rep(d1))
 
-        d2 = Dimension((2, 3, 4))
+        d2 = LinearGroup((2, 3, 4))
         self.assertFalse(p.is_min_rep(d2))
 
     def test_permutationby_length(self) -> None:

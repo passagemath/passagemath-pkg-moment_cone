@@ -21,7 +21,7 @@ from .rings import PolynomialRing, Polynomial, Variable
 
     
 # FIXME: we get d from tau but in the current code, it will leads to recreate the rings for each tau.
-def is_not_contracted(inversions_v: Iterable[Root], tau: Tau, V: Representation,method: Method) -> bool:
+def is_not_contracted(inversions_v: Iterable[Root], tau: Tau, V: Representation, method: Method) -> bool:
     """
     ???
 
@@ -31,14 +31,15 @@ def is_not_contracted(inversions_v: Iterable[Root], tau: Tau, V: Representation,
 
     Example:
     >>> from cone import *
-    >>> d = Dimension((2, 3, 4))
-    >>> tau = Tau.from_flatten([1, 6, 2, 1, 4, 1, 4, 5, 3, 1], d)
+    >>> G = LinearGroup((2, 3, 4, 1))
+    >>> V = KroneckerRepresentation(G)
+    >>> tau = Tau.from_flatten([6, 2, 1, 4, 1, 4, 5, 3, 1, 1], G)
     >>> tau
-    1 | 6 2 | 1 4 1 | 4 5 3 1
-    >>> roots = list(Root.all_of_U(d))[:10]
-    >>> is_not_contracted(roots, tau, "probabilistic")
+    6 2 | 1 4 1 | 4 5 3 1 | 1
+    >>> roots = list(Root.all_of_U(G))[:10]
+    >>> is_not_contracted(roots, tau, V, "probabilistic")
     False
-    >>> is_not_contracted(roots, tau, "symbolic")
+    >>> is_not_contracted(roots, tau, V, "symbolic")
     False
     """
 

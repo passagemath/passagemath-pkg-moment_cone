@@ -27,21 +27,28 @@ from .representation import *
 def classif_roots(V: Representation, roots: Iterable[Root]) -> list[list[list[Root]]]:
     """
     Sorts the roots of list_roots in a list of list of roots. First coordinate corresponding to root.k (useful only for kron type) and second coordinate corresponding to root.j (the roots with non-trival action on a weight involving epsilon_j)
-    >>> G = LinearGroup([4,4,4,1])
+    >>> from cone import LinearGroup, KroneckerRepresentation, Root
+    >>> G = LinearGroup([4, 4, 4, 1])
     >>> V = KroneckerRepresentation(G)
-    >>> classif_roots(V,Root.all_of_U(G))
-    [[[],
-      [Root(k=0, i=0, j=1)],
-      [Root(k=0, i=0, j=2), Root(k=0, i=1, j=2)],
-      [Root(k=0, i=0, j=3), Root(k=0, i=1, j=3), Root(k=0, i=2, j=3)]],
-     [[],
-      [Root(k=1, i=0, j=1)],
-      [Root(k=1, i=0, j=2), Root(k=1, i=1, j=2)],
-      [Root(k=1, i=0, j=3), Root(k=1, i=1, j=3), Root(k=1, i=2, j=3)]],
-     [[],
-      [Root(k=2, i=0, j=1)],
-      [Root(k=2, i=0, j=2), Root(k=2, i=1, j=2)],
-      [Root(k=2, i=0, j=3), Root(k=2, i=1, j=3), Root(k=2, i=2, j=3)]]]
+    >>> for row in classif_roots(V,Root.all_of_U(G)):
+    ...     print(len(row))
+    ...     for col in row:
+    ...         print(col)
+    4
+    []
+    [Root(k=0, i=0, j=1)]
+    [Root(k=0, i=0, j=2), Root(k=0, i=1, j=2)]
+    [Root(k=0, i=0, j=3), Root(k=0, i=1, j=3), Root(k=0, i=2, j=3)]
+    4
+    []
+    [Root(k=1, i=0, j=1)]
+    [Root(k=1, i=0, j=2), Root(k=1, i=1, j=2)]
+    [Root(k=1, i=0, j=3), Root(k=1, i=1, j=3), Root(k=1, i=2, j=3)]
+    4
+    []
+    [Root(k=2, i=0, j=1)]
+    [Root(k=2, i=0, j=2), Root(k=2, i=1, j=2)]
+    [Root(k=2, i=0, j=3), Root(k=2, i=1, j=3), Root(k=2, i=2, j=3)]
     """
     Res: list[list[list[Root]]] = [[[] for j in range(V.G[k])] for k in range(len(V.G))]
     if isinstance(V, KroneckerRepresentation):

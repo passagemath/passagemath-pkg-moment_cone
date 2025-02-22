@@ -21,7 +21,8 @@ class Inequality:
     In wtau, the blocks are permuted by the **inverse** of the corresponding permutation.
     
     Example :
-    >>> G = LinGroup((4, 3, 2,1))
+    >>> from cone import *
+    >>> G = LinearGroup((4, 3, 2,1))
     >>> tau = Tau.from_flatten([6,2,1,4,1,2,5,3,1,1], G)
     >>> w = Permutation((1, 0, 3, 2)), Permutation((0, 2, 1)), Permutation((0, 1)),Permutation((0,))
     >>> ineq = Inequality(tau, w)
@@ -50,8 +51,8 @@ class Inequality:
         >>> ineq0 = Inequality.from_tau(tau0)
         >>> Inequality.from_tau(tau0)
         Inequality(tau  = 9 6 5 4 | 3 2 1 1 | 8 2 2 2 | 7,
-           w    =     1 2 3 0 | 0 3 1 2 | 2 0 1 3 | 0,
-           wtau = 4 9 6 5 | 3 1 1 2 | 2 2 8 2 | 7)
+                   w    = 1 2 3 0 | 0 3 1 2 | 2 0 1 3 | 0,
+                   wtau = 4 9 6 5 | 3 1 1 2 | 2 2 8 2 | 7)
         """
         tau_pairs = [
             sorted(
@@ -109,19 +110,19 @@ class Inequality:
         """
         Sort (tau_i, w_i)_i by block of the dimensions
 
-        >>> from All_Init import *
-        >>> G = LinGroup((2, 2, 2, 3))
+        >>> from cone import *
+        >>> G = LinearGroup((2, 2, 2, 3, 1))
         >>> tau = Tau.from_flatten([6, 2, 1, 4, 1, 4, 5, 3, 1, 1], G)
         >>> w = Permutation((0, 1)), Permutation((1, 0)), Permutation((0, 1)), Permutation((2, 0, 1)), Permutation((0,))
         >>> ineq = Inequality(tau, w)
         >>> ineq
-        Inequality(tau  = 1 | 6 2 | 1 4 | 1 4 | 5 3 1,
-                   w    =     0 1 | 1 0 | 0 1 | 2 0 1,
-                   wtau = 1 | 6 2 | 4 1 | 1 4 | 3 1 5)
+        Inequality(tau  = 6 2 | 1 4 | 1 4 | 5 3 1 | 1,
+                   w    = 0 1 | 1 0 | 0 1 | 2 0 1 | 0,
+                   wtau = 6 2 | 4 1 | 1 4 | 3 1 5 | 1)
         >>> ineq.sort_mod_sym_dim
-        Inequality(tau  = 1 | 1 4 | 1 4 | 6 2 | 5 3 1,
-                   w    =     0 1 | 1 0 | 0 1 | 2 0 1,
-                   wtau = 1 | 1 4 | 4 1 | 6 2 | 3 1 5)
+        Inequality(tau  = 1 4 | 1 4 | 6 2 | 5 3 1 | 1,
+                   w    = 0 1 | 1 0 | 0 1 | 2 0 1 | 0,
+                   wtau = 1 4 | 4 1 | 6 2 | 3 1 5 | 1)
         """
         pairs = tuple(zip(self.tau.components, self.w))
         blocks = (sorted(b) for b in Blocks(pairs, self.tau.G.outer))
@@ -135,8 +136,8 @@ class Inequality:
         Returns all possible inversions Root(k, i, j) of w
         
         >>> from cone import *
-        >>> G = LinGroup((2, 2, 2, 3,1))
-        >>> tau = Tau.from_flatten([6, 2, 1, 4, 1, 4, 5, 3, 1,1], G)
+        >>> G = LinearGroup((2, 2, 2, 3, 1))
+        >>> tau = Tau.from_flatten([6, 2, 1, 4, 1, 4, 5, 3, 1, 1], G)
         >>> w = Permutation((0, 1)), Permutation((1, 0)), Permutation((0, 1)), Permutation((2, 0, 1)),Permutation((0,))
         >>> ineq = Inequality(tau, w)
         >>> for r in ineq.inversions:

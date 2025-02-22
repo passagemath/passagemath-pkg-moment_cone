@@ -1,7 +1,7 @@
 import unittest
 
 from cone.root import Root
-from cone.dimension import Dimension
+from cone.linear_group import LinearGroup
 
 class TestRoot(unittest.TestCase):
     def test_interface(self) -> None:
@@ -16,7 +16,7 @@ class TestRoot(unittest.TestCase):
         self.assertFalse(r2.is_in_U)
 
     def test_all_of_U(self) -> None:
-        d = Dimension((2, 3, 4))
+        d = LinearGroup((2, 3, 4))
         all_r = tuple(Root.all_of_U(d))
 
         self.assertEqual(len(all_r), 10)
