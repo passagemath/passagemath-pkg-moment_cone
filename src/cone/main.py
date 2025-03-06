@@ -7,12 +7,13 @@ import typing
 
 from .typing import *
 from .representation import Representation
+from .inequality import Inequality
 from .main_steps import Dataset, InequalityFilterStr
 
 
 def cone(V: Representation,
          filters: Sequence[InequalityFilterStr] = typing.get_args(InequalityFilterStr),
-         **options: Any) -> Dataset:
+         **options: Any) -> Dataset[Inequality]:
     """ Main entrance from Python prompt
 
     For the options, see the description of each step in main_steps

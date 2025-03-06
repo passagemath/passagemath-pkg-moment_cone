@@ -6,7 +6,7 @@ from cone.representation import KroneckerRepresentation
 
 class TestWeightAsList(unittest.TestCase):
 
-    def test_interface(self):
+    def test_interface(self) -> None:
         G = LinearGroup((2, 3, 6, 1))
         wt = (1, 2, 4, 0)
         w = WeightAsList(G, wt)
@@ -15,7 +15,7 @@ class TestWeightAsList(unittest.TestCase):
         self.assertEqual(w.as_list[1], wt[1])
         self.assertEqual(tuple(w), wt)
 
-    def test_comparison(self):
+    def test_comparison(self) -> None:
         G = LinearGroup((2, 4, 6, 2))
         w1 = WeightAsList(G, [1, 2, 4, 0], index=1) # Dummy index
         w2 = WeightAsList(G, [1, 2, 5, 0], index=2) # Dummy index
@@ -40,7 +40,7 @@ class TestWeightAsList(unittest.TestCase):
         self.assertFalse(w3 >= w1)
         self.assertFalse(w3 <= w1)
 
-    def test_all_index(self):
+    def test_all_index(self) -> None:
         import functools
         import operator
         G = LinearGroup((4, 2, 3))
@@ -60,7 +60,7 @@ class TestWeightAsList(unittest.TestCase):
             self.assertEqual(i, V.index_of_weight(WeightAsList(G, list(w))))
 
     
-    def test_all_mod_sym_dim(self):
+    def test_all_mod_sym_dim(self) -> None:
         from itertools import pairwise
 
         G = LinearGroup((4, 4, 4, 2, 2))

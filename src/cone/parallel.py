@@ -4,7 +4,7 @@ import itertools
 
 from .typing import *
 
-class Parallel(contextlib.AbstractContextManager):
+class Parallel(contextlib.AbstractContextManager["Parallel"]):
     """
     Parallel computation context with some convenient algorithms (map, filter, ...)
 
@@ -52,12 +52,12 @@ class Parallel(contextlib.AbstractContextManager):
             self.pool.close()
             self.pool.terminate()
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         """ Leaving context """
         self.terminate()
 
     @staticmethod
-    def _starmap(args):
+    def _starmap(args: tuple[Callable[[Unpack[Ts]], T], Unpack[Ts]]) -> T:
         return args[0](*args[1:])
 
     def map(self, func: Callable[Concatenate[Any, ...], T], /, *iterables: Iterable[Any], chunk_size: int = 1, unordered: bool = False) -> Iterable[T]:
@@ -82,7 +82,7 @@ class Parallel(contextlib.AbstractContextManager):
             )
 
     @staticmethod
-    def _filter(args):
+    def _filter(args: tuple[Callable[[T, Unpack[Ts]], U], T, Unpack[Ts]]) -> tuple[U, T]:
         return args[0](*args[1:]), args[1]
     
     def filter(self, func: Callable[Concatenate[Any, ...], bool], iterable: Iterable[T], /, *args: Any, chunk_size: int = 1, unordered: bool = False) -> Generator[T]:

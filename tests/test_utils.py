@@ -4,7 +4,7 @@ from cone.utils import *
 
 class TestUtils(unittest.TestCase):
 
-    def test_monotonicity(self):
+    def test_monotonicity(self) -> None:
         a = (1, 2, 3, 3, 4)
         b = (4, 4, 3, 1, 1, 0)
         c = (1, 2, 3, 2, 4)
@@ -20,13 +20,13 @@ class TestUtils(unittest.TestCase):
         self.assertFalse(is_increasing(c))
         self.assertTrue(is_increasing(d))
     
-    def test_trim(self):
+    def test_trim(self) -> None:
         self.assertEqual(trim_zeros((0, 1, 2, 0, 0)), (0, 1, 2))
         self.assertEqual(trim_zeros((0, 1, 2, 0)), (0, 1, 2))
         self.assertEqual(trim_zeros((0, 1, 2)), (0, 1, 2))
         self.assertEqual(trim_zeros((0, 0, 0, 0)), ())
 
-    def test_compression(self):
+    def test_compression(self) -> None:
         s = (2, 2, 2, 3, 3, 1, 1, 1, 1, 5, 6, 6)
         
         sc = tuple(group_by_block(s))

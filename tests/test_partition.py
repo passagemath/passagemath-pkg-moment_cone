@@ -4,7 +4,7 @@ from cone.partition import Partition
 
 class TestPartition(unittest.TestCase):
 
-    def test_interface(self):
+    def test_interface(self) -> None:
         pe = Partition(())
         self.assertEqual(len(pe), 0)
         self.assertEqual(pe[3], 0)
@@ -29,15 +29,15 @@ class TestPartition(unittest.TestCase):
         self.assertFalse(Partition((3, 2, 1)) >= Partition((2, 2, 1)))
         self.assertFalse(Partition((3, 2, 1)) > Partition((2, 2, 1)))
 
-    def test_non_decreasing(self):
+    def test_non_decreasing(self) -> None:
         with self.assertRaises(Exception):
             p = Partition([4, 4, 3, 2, 3, 0])
 
-    def test_negative(self):
+    def test_negative(self) -> None:
         with self.assertRaises(Exception):
             p = Partition([4, 4, 3, 2, -1])
 
-    def test_all_of_integer(self):
+    def test_all_of_integer(self) -> None:
         partitions = Partition.all_for_integer(4)
         ref = ((4,), (3, 1), (2, 2), (2, 1, 1), (1, 1, 1, 1))
         for p, r in zip(partitions, ref):
@@ -47,7 +47,7 @@ class TestPartition(unittest.TestCase):
         partitions_len3 = list(Partition.all_for_integer(10, max_length=3))
         self.assertEqual(partitions_len3, partitions_len3_ref)
 
-    def test_all_of_length(self):
+    def test_all_of_length(self) -> None:
         partitions = Partition.all_of_length(2, 3)
         ref = ((3, 3), (3, 2), (3, 1), (3,), (2, 2), (2, 1), (2,), (1, 1), (1,), ())
         for p, r in zip(partitions, ref):

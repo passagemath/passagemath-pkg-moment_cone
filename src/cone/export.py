@@ -51,7 +51,7 @@ def info_from_GV(V: Representation) -> str:
 
 def export_normaliz(
         V: Representation,
-        inequations: Sequence[Inequality | list[int]],
+        inequations: Iterable[Inequality | list[int]],
         r: Optional[int] = None,
         #equations=[],
         extra_info: str = "",
@@ -177,7 +177,7 @@ def group_by_dom1PS(inequations: Sequence[Inequality]) -> list[list[Inequality]]
 
 def export_latex(
         V: Representation,
-        inequations: Sequence[Inequality],
+        inequations: Iterable[Inequality],
         sgn: int = 1,
         extra_info: str = ""
         ) -> None: #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
@@ -198,7 +198,7 @@ def export_latex(
             caption="Ferminonic case $\\wedge^{"+str(V.particle_cnt)+"}\\mathbb{C}^{"+str(V.G[0])+"}$"
         if isinstance(V, BosonRepresentation):
             caption="Bosonic case $S^{"+str(V.particle_cnt)+"}\\mathbb{C}^{"+str(V.G[0])+"}$"
-    grouped_ineqs=group_by_dom1PS(inequations)
+    grouped_ineqs=group_by_dom1PS(list(inequations))
     chaine='$\\begin{array}{|c| c |c|} \n \\hline \n \\textrm{dominant 1-PS} & \\textrm{Inequality} & w \\\\ \n \\hline'
     for taudom_list in grouped_ineqs:
         chaine+=Latex_string_of_cluster_dom1PS(taudom_list,lambda_notation,sgn) 
@@ -218,7 +218,7 @@ def export_latex(
 
 def export_python(
         V: Representation,
-        inequations: Sequence[Inequality],
+        inequations: Iterable[Inequality],
         extra_info: str = ""
         ) -> None:
     info=info_from_GV(V)+extra_info
@@ -244,9 +244,10 @@ def export_python(
 
 def export_terminal(
         V: Representation,
-        inequations: Sequence[Inequality],
+        inequations: Iterable[Inequality],
         extra_info: str = ""
         ) -> None:
+    inequations = list(inequations)
     print(f"Computed {len(inequations)} inequalities{' (' + extra_info + ')' if extra_info else ''}:")
     for ineq in inequations:
         print(ineq)
@@ -254,7 +255,7 @@ def export_terminal(
 
 def export_none(
         V: Representation,
-        inequations: Sequence[Inequality],
+        inequations: Iterable[Inequality],
         extra_info: str = ""
         ) -> None:
     pass
@@ -263,7 +264,7 @@ def export_none(
 def export_many(
         formats: ExportFormat | Sequence[ExportFormat],
         V: Representation,
-        inequations: Sequence[Inequality],
+        inequations: Iterable[Inequality],
         extra_info: str = "",
         ) -> None:
     """ Export inequalities in given (possible multiple) format(s) """
