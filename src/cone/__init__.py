@@ -5,8 +5,9 @@ from .weight import *
 from .representation import *
 from .linear_group import *
 from .root import *
-
 from .tau import Tau
 from .inequality import Inequality
+from .main_steps import *
+from .main import *
 
 # FIXME: remaining default imports
