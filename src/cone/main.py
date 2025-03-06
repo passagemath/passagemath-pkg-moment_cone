@@ -26,6 +26,8 @@ def cone(V: Representation,
 def cone_from_cmd() -> None:
     """ Main entrance from command-line """
     import argparse
+    from .utils import to_literal
+
     parser = argparse.ArgumentParser(
         "Redundant list of inequalities for the cone",
         description="""This software compute a irredundant list of inequalities for a cone""",
@@ -33,7 +35,7 @@ def cone_from_cmd() -> None:
     )
     parser.add_argument(
         "representation",
-        type=str.capitalize,
+        type=lambda s: to_literal(Literal["Kronecker", "Fermion", "Boson"], s),
         choices=("Kronecker", "Fermion", "Boson"),
         help="Representation type",
     )
