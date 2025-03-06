@@ -41,7 +41,7 @@ class Dataset(Generic[T], ABC):
     def validated(self) -> Iterable[T]:
         ...
 
-    def all(self) -> Iterable[T]:
+    def __iter__(self) -> Iterator[T]:
         from itertools import chain
         return chain(self.pending(), self.validated())
     
@@ -475,7 +475,7 @@ class ExportStep(FilterStep[Inequality]):
             pending=list(ineq_dataset.pending()),
             validated=list(ineq_dataset.validated())
         )
-        export_many(self.formats, self.V, list(inequations.all()))
+        export_many(self.formats, self.V, list(inequations))
         return inequations
 
     @staticmethod

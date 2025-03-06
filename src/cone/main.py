@@ -81,4 +81,4 @@ This software compute a irredundant list of inequalities for a cone""",
     Task.reset_all()
 
     # Computing the cone
-    inequalities = list(step().all())
+    inequalities = list(step())
