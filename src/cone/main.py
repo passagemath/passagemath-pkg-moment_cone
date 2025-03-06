@@ -46,6 +46,13 @@ This software compute a irredundant list of inequalities for a cone""",
     # Parsing command-line arguments
     config = parser.parse_args()
 
+    # Displaying configuration
+    if not config.quiet:
+        print("Configuration:")
+        for k, v in vars(config).items():
+            print(f"\t{k}: {v}")
+        print()
+
     # Creating the representation
     from .linear_group import LinearGroup
     from .representation import Representation
@@ -75,10 +82,3 @@ This software compute a irredundant list of inequalities for a cone""",
 
     # Computing the cone
     inequalities = list(step().all())
-
-    # Printing the inequalities
-    print(f"Computed {len(inequalities)} inequalities:")
-    for ineq in inequalities:
-        print(ineq)
-
-    #Task.print_all()

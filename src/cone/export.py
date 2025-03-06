@@ -1,15 +1,33 @@
-#Python to normaliz and Python to latex
+""" Python to normaliz and Python to latex """
 
+__all__ = (
+    "ExportFormat",
+    "export_normaliz",
+    "export_latex",
+    "export_python",
+    "export_many",
+)
+
+from .typing import *
 from .tau import Tau
 from .inequality import Inequality
 from .representation import *
+
+# Available export formats
+ExportFormat = Literal[
+    "Normaliz",
+    "LaTeX",
+    "Python",
+    "Terminal",
+    "None",
+]
+
 
 #######################################################################
 #I. Normaliz export
 #######################################################################
 
-
-def Liste_to_Normaliz_string(liste,sgn=1): #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
+def Liste_to_Normaliz_string(liste: list[list[int]], sgn: int = 1) -> str: #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
     """ converts a list of list of numbers to a string with
     *newline characters at the end of each sublist
     *a space between each number of a given sublist
@@ -19,10 +37,10 @@ def Liste_to_Normaliz_string(liste,sgn=1): #sgn=1 ou -1 allows to change the sig
         for x in l[:-1]: # no space at the end
             chaine+=str(sgn*x)+' '
         chaine+=str(sgn*l[-1])+'\n'
-    return(chaine)
+    return chaine
     
 
-def info_from_GV(V):
+def info_from_GV(V: Representation) -> str:
     """ V a representation of a LinGroup G. It returns a nomalized string encoding the main information on G and V. To be used in the names of the input files given to Normaliz"""
     G=V.G
     info=''
@@ -34,7 +52,15 @@ def info_from_GV(V):
         info+=str(V.particle_cnt)+' '
     return info
 
-def export_normaliz(V, inequations, r=None, equations=[], extra_info="", add_dominance="", add_equations=""):
+def export_normaliz(
+        V: Representation,
+        inequations: Sequence[Inequality | list[int]],
+        r: Optional[int] = None,
+        #equations=[],
+        extra_info: str = "",
+        add_dominance: str = "",
+        add_equations: str = ""
+        ) -> None:
     """ V is a representation of a LinGroup G, 
     r is the rank of G aka the dimension of the ambient space of the equations (except possible customization, if our inequations contain a second member)
     inequations is a list of inequations (either of Inequality type or a list of coefficients)
@@ -43,18 +69,20 @@ def export_normaliz(V, inequations, r=None, equations=[], extra_info="", add_dom
     add_dominance can take 2 non-trivial arguments: "all" and "sym". "all" argument adds all the inequalities expressing dominance. "sym" arguments adds the same inequalities
     add_equations can take 2 non-trivial arguments: "all" and "sym". if V is KronerckerRepresentation, it adds the equations determining the subspace in which lie the equations
     """
-    if r==None:
-        r=V.G.rank
-    if hasattr(inequations[0],"wtau"): #checks if the inequalities are in the format Inequality
-        True_inequations=[ineq.wtau.flattened for ineq in inequations]
-    else:
-        True_inequations=inequations
-    if add_dominance in ["all","sym"]:
-        if add_dominance=="all":
-            sym=False
+    if r is None:
+        r = V.G.rank
+    
+    True_inequations: list[list[int]] = []
+    for ineq in inequations:
+        if isinstance(ineq, Inequality):
+            True_inequations.append(list(ineq.wtau.flattened))
         else:
-            sym=True
-        True_inequations+=[ineq.wtau.flattened for ineq in Inequality.dominance(V,sym)]
+            True_inequations.append(ineq)
+
+    if add_dominance in ("all", "sym"):
+        sym = add_dominance != "all"
+        True_inequations += [list(ineq.wtau.flattened) for ineq in Inequality.dominance(V,sym)]
+
     info=info_from_GV(V)+extra_info
     fileO = open('ineq_Normaliz-'+info+'.in','w')
     fileO.write('amb_space '+str(r)+'\n\n')
@@ -71,13 +99,18 @@ def export_normaliz(V, inequations, r=None, equations=[], extra_info="", add_dom
     fileO.write(Liste_to_Normaliz_string(True_inequations,-1)) #Our conventions so far work with inequalities of the form \sum a_i\lambda_i<=0 whil Normaliz standard is ">=0"
     fileO.close()
 
+
 #######################################################################
 #II. Latex export
 #######################################################################
 
-def Latex_string_of_tau(tau,lambda_notation=False, sgn=1):
+def Latex_string_of_tau(
+        tau: Tau,
+        lambda_notation: bool = False,
+        sgn: int = 1
+        ) -> str:
     chaine=''
-    if not(lambda_notation):
+    if not lambda_notation:
         for taui in tau.components:
             if len(taui)>1:
                 chaine+='('
@@ -103,7 +136,11 @@ def Latex_string_of_tau(tau,lambda_notation=False, sgn=1):
         chaine+='\\geq 0'
     return chaine 
 
-def Latex_string_of_cluster_dom1PS(inequations, lambda_notation=False, sgn=1): #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
+def Latex_string_of_cluster_dom1PS(
+        inequations: Sequence[Inequality],
+        lambda_notation: bool = False,
+        sgn: int = 1
+        ) -> str: #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
     """ converts a list of Inequalities (associated to a given dominant 1PS  taudom) to a string describing part of a latex tabular
     """
     n=len(inequations)
@@ -120,15 +157,15 @@ def Latex_string_of_cluster_dom1PS(inequations, lambda_notation=False, sgn=1): #
     chaine+='\\hline'
     return(chaine)
     
-def group_by_dom1PS(inequations):
+def group_by_dom1PS(inequations: Sequence[Inequality]) -> list[list[Inequality]]:
     """ from a list of Inequalities: groups them by same dominant 1 parameter subgroup
     """
     remaining_indices=[i for i in range(len(inequations))]
-    grouped_ineqs=[]
-    while remaining_indices!=[]:
+    grouped_ineqs: list[list[Inequality]] = []
+    while remaining_indices != []:
         j=0
         taudom=inequations[remaining_indices[0]].tau
-        taudom_ineqs=[]
+        taudom_ineqs: list[Inequality] = []
         while j<len(remaining_indices):
             if inequations[remaining_indices[j]].tau==taudom:
                 taudom_ineqs.append(inequations[remaining_indices[j]])
@@ -141,7 +178,12 @@ def group_by_dom1PS(inequations):
 
 #TODO make a caption
 
-def export_latex(V, inequations, sgn=1, extra_info=""): #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
+def export_latex(
+        V: Representation,
+        inequations: Sequence[Inequality],
+        sgn: int = 1,
+        extra_info: str = ""
+        ) -> None: #sgn=1 ou -1 allows to change the sign, exchange >=0 and <=0
     """ converts a list of Inequalities associated to a given dominant 1PS to a string describing part of a latex tabular
     """
     caption=""
@@ -172,11 +214,16 @@ def export_latex(V, inequations, sgn=1, extra_info=""): #sgn=1 ou -1 allows to c
     file0.write("\n \n \\end{table} \n \\end{document}")
     file0.close()
 
+
 #######################################################################
 #III. Python export
 #######################################################################
 
-def export_python(V, inequations, extra_info=""):
+def export_python(
+        V: Representation,
+        inequations: Sequence[Inequality],
+        extra_info: str = ""
+        ) -> None:
     info=info_from_GV(V)+extra_info
     file0 = open('ineq_Python-'+info+'.py','w')
     file0.write("#Inequalities selected for V of " + type(V).__name__ + " type with dimensions "+str(list(V.G)))
@@ -196,5 +243,47 @@ def export_python(V, inequations, extra_info=""):
     file0.write("#inequalities in our formated type Inequality \n")
     file0.write("inequalities=[Inequality.from_tau(Tau.from_flatten(brut_ineq,G)) for brut_ineq in brut_inequations] \n \n ")
     file0.close()
-        
 
+
+def export_terminal(
+        V: Representation,
+        inequations: Sequence[Inequality],
+        extra_info: str = ""
+        ) -> None:
+    print(f"Computed {len(inequations)} inequalities{' (' + extra_info + ')' if extra_info else ''}:")
+    for ineq in inequations:
+        print(ineq)
+    
+
+def export_none(
+        V: Representation,
+        inequations: Sequence[Inequality],
+        extra_info: str = ""
+        ) -> None:
+    pass
+
+
+def export_many(
+        formats: ExportFormat | Sequence[ExportFormat],
+        V: Representation,
+        inequations: Sequence[Inequality],
+        extra_info: str = "",
+        ) -> None:
+    """ Export inequalities in given (possible multiple) format(s) """
+    if isinstance(formats, str):
+        formats = [formats]
+
+    from .utils import to_literal
+    for format in formats:
+        match to_literal(ExportFormat, format):
+            case "Normaliz":
+                export_normaliz(V, inequations, extra_info=extra_info)
+            case "LaTeX":
+                export_latex(V, inequations, extra_info=extra_info)
+            case "Python":
+                export_python(V, inequations, extra_info=extra_info)
+            case "Terminal":
+                export_terminal(V, inequations, extra_info=extra_info)
+            case "None":
+                export_none(V, inequations, extra_info=extra_info)
+                

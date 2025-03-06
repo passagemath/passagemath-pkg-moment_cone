@@ -10,6 +10,7 @@ __all__ = (
     "LinearTriangularStep",
     "BKRConditionStep",
     "BirationalityStep",
+    "ExportStep",
     "ConeStep",
 )
 
@@ -24,6 +25,7 @@ from .inequality import Inequality
 from .kronecker import KroneckerCoefficient, KroneckerCoefficientMLCache
 from .bkr import PlethysmCache
 from .utils import to_literal
+from .export import ExportFormat
 
 
 class Dataset(Generic[T], ABC):
@@ -453,6 +455,57 @@ class BirationalityStep(FilterStep[Inequality]):
     
 
 ###############################################################################
+class ExportStep(FilterStep[Inequality]):
+    """ Exporting inequalities """
+    formats: list[ExportFormat]
+
+    def __init__(self,
+                 V: Representation,
+                 formats: ExportFormat | Iterable[ExportFormat] = [],
+                 **kwargs: Any):
+        super().__init__(V, **kwargs)
+        if isinstance(formats, str):
+            self.formats = [formats]
+        else:
+            self.formats = list(formats)
+
+    def __call__(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
+        from .export import export_many
+        inequations = ListDataset(
+            pending=list(ineq_dataset.pending()),
+            validated=list(ineq_dataset.validated())
+        )
+        export_many(self.formats, self.V, list(inequations.all()))
+        return inequations
+
+    @staticmethod
+    def add_arguments(parent_parser: ArgumentParser, defaults: Mapping[str, Any] = {}) -> None:
+        """ Add command-line arguments specific to this step """
+        from typing import get_args
+        method_choices = get_args(Method)
+
+        group = parent_parser.add_argument_group(
+            "Exporting inequalities"
+        )
+        group.add_argument(
+            "--formats",
+            type=lambda s: to_literal(ExportFormat, s),
+            choices=get_args(ExportFormat),
+            nargs='*',
+            default=["Terminal"],
+            help="Export format",
+        )
+
+    @classmethod
+    def from_config(cls: type["Step"], V: Representation, config: Namespace) -> "ExportStep":
+        """ Build a step from the representation and the command-line arguments """
+        return ExportStep(
+            V=V,
+            formats=config.formats,
+        )
+
+
+###############################################################################
 InequalityFilterStr = Literal[
     "ModuloReduction",
     "PiDominancy",
@@ -538,6 +591,9 @@ class ConeStep(GeneratorStep[Inequality]):
                 ineq_candidates = ineq_filter_step(ineq_candidates)
                 #print(ineq_candidates)
         
+        # Exporting inequalities
+        export_step = self.__create_step(ExportStep)
+        ineq_candidates = export_step(ineq_candidates)
         return ineq_candidates
 
     @staticmethod
