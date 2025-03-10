@@ -10,6 +10,7 @@ __all__ = (
     "LinearTriangularStep",
     "BKRConditionStep",
     "BirationalityStep",
+    "GrobnerStep",
     "ExportStep",
     "ConeStep",
 )
@@ -455,6 +456,67 @@ class BirationalityStep(FilterStep[Inequality]):
     
 
 ###############################################################################
+class GrobnerStep(FilterStep[Inequality]):
+    """ Checking birationality via Grobnet """
+    method: Method
+    timeout: int
+
+    def __init__(self,
+                 V: Representation,
+                 grobner_method: Method = "probabilistic",
+                 grobner_timeout: int = 1,
+                 **kwargs: Any):
+        super().__init__(V, **kwargs)
+        self.method = grobner_method
+        self.timeout = grobner_timeout
+
+    def __call__(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
+        from .groebner import Grobner_List_Test
+        grobner_true, grobner_inconclusive = Grobner_List_Test(
+            list(ineq_dataset.pending()),
+            lim=self.timeout,
+            V=self.V,
+            method=self.method,
+        )
+        return ListDataset(
+            pending=grobner_inconclusive,
+            validated=list(ineq_dataset.validated()) + grobner_true,
+        )
+
+    @staticmethod
+    def add_arguments(parent_parser: ArgumentParser, defaults: Mapping[str, Any] = {}) -> None:
+        """ Add command-line arguments specific to this step """
+        from typing import get_args
+        method_choices = get_args(Method)
+
+        group = parent_parser.add_argument_group(
+            "Checking birationality via Grobner"
+        )
+        group.add_argument(
+            "--grobner_method",
+            type=lambda s: to_literal(Method, s),
+            choices=method_choices,
+            default="probabilistic",
+            help="Method for checking if the fiber is a single point or not (p for probabilistic, s for symbolic)"
+        )
+        group.add_argument(
+            "--grobner_timeout",
+            type=int,
+            default=1,
+            help="Maximal processing time per inequality when checking birationaly",
+        )
+        
+    @classmethod
+    def from_config(cls: type["Step"], V: Representation, config: Namespace) -> "GrobnerStep":
+        """ Build a step from the representation and the command-line arguments """
+        return GrobnerStep(
+            V=V,
+            grobner_method=config.grobner_method,
+            grobner_timeout=config.grobner_timeout,
+        )
+
+
+###############################################################################
 class ExportStep(FilterStep[Inequality]):
     """ Exporting inequalities """
     formats: list[ExportFormat]
@@ -512,6 +574,7 @@ InequalityFilterStr = Literal[
     "LinearTriangular",
     "BKRCondition",
     "Birationality",
+    "Grobner",
 ]
 
 inequalities_filter_dict: Final[dict[InequalityFilterStr, type[Step]]] = {
@@ -520,6 +583,7 @@ inequalities_filter_dict: Final[dict[InequalityFilterStr, type[Step]]] = {
     "LinearTriangular": LinearTriangularStep,
     "BKRCondition": BKRConditionStep,
     "Birationality": BirationalityStep,
+    "Grobner": GrobnerStep,
 }
 
 TStep = TypeVar("TStep", bound=Step)

@@ -8,7 +8,7 @@ from .list_of_W import *
 from .linear_triangular import *
 from .bkr import *
 from .ramification import *
-from .Groebner import *
+from .groebner import *
 from .export import *
 from .task import *
 
