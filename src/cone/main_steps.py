@@ -33,6 +33,12 @@ class Dataset(Generic[T], ABC):
     """ Catalog of pending and validated objects of type T
     
     T will be typically Tau or Inequality
+
+    Pending objects (Tau or Inequality) are those that are not excluded from
+    the process but still need to be validated by a filter.
+
+    Validated objects are those that we are sure to be valid
+    and thus should always be keeped by the filters.
     """
     @abstractmethod
     def pending(self) -> Iterable[T]:
@@ -73,8 +79,12 @@ class ListDataset(Dataset[T]):
 class Step:
     """ Represents one computational step (generation, filtering, etc)
     
-    Can add arguments to command-line interface and be construct from
+    A step is associated to a representation.
+
+    It can add arguments to command-line interface and be construct from
     the parsed command-line arguments.
+
+    Processing is done through __call__ (overload of () operator).
     """
     V: Representation
 
@@ -116,7 +126,16 @@ class GeneratorStep(Step, Generic[T]):
 
 
 class FilterStep(Step, Generic[T]):
-    """ A step that filter a given dataset """
+    """ A step that filter a given dataset
+    
+    Thus, the __call__ method get a dataset in input and output a new one
+    with the same kind of objects.
+
+    The validated objects from the input dataset should always stay in the
+    validated objects of the output dataset. Pending objects from the input
+    dataset may be definitively rejected (not included in the output dataset),
+    or remain in a pending state, or be definitively validated.
+    """
     @abstractmethod
     def __call__(self, dataset: Dataset[T]) -> Dataset[T]:
         ...
@@ -131,7 +150,13 @@ class TransformerStep(Step, Generic[T, U]):
 
 ###############################################################################
 class GeneralStabilizerDimensionCheck(Step):
-    """ Checking the dimension of the general stabilizer """
+    """ Checking the dimension of the general stabilizer
+
+    This step doesn't manage any dataset. It is just need to check that this
+    package can be used with the given representation.
+
+    It can actually be disabled using the no_dim_check option.
+    """
     no_dim_check: bool
 
     def __init__(self, V: Representation, no_dim_check: bool = False, **kwargs: Any):
@@ -176,7 +201,10 @@ class GeneralStabilizerDimensionCheck(Step):
 
 ###############################################################################
 class TauCandidatesStep(GeneratorStep[Tau]):
-    """ A first list of dominent 1-PS whose kernel is supported at hyperplanes of weights """
+    """ A first list of dominent 1-PS whose kernel is supported at hyperplanes of weights
+    
+    It generates only pending Taus.
+    """
     def __call__(self) -> ListDataset[Tau]:
         from .tau import find_1PS
         return ListDataset(
@@ -187,7 +215,11 @@ class TauCandidatesStep(GeneratorStep[Tau]):
 
 ###############################################################################
 class SubModuleConditionStep(FilterStep[Tau]):
-    """ Checking submodule condition """
+    """
+    Checking submodule condition
+    
+    It only reject pending Taus and doesn't modified the validated ones.
+    """
     def __call__(self, tau_dataset: Dataset[Tau]) -> ListDataset[Tau]:
         return ListDataset(
             pending=[tau for tau in tau_dataset.pending() if tau.is_sub_module(self.V)],
@@ -197,7 +229,11 @@ class SubModuleConditionStep(FilterStep[Tau]):
 
 ###############################################################################
 class StabilizerConditionStep(FilterStep[Tau]):
-    """ Stabilizer condition """
+    """
+    Stabilizer condition
+    
+    It only reject pending Taus and doesn't modified the validated ones.
+    """
     def __call__(self, tau_dataset: Dataset[Tau]) -> ListDataset[Tau]:
         from .stabK import Lie_action_as_matrices_Vtau, mat_C_to_R, dim_gen_stab_of_K
         Ms = self.V.actionK
@@ -220,7 +256,11 @@ class StabilizerConditionStep(FilterStep[Tau]):
 
 ###############################################################################
 class InequalityCandidatesStep(TransformerStep[Tau, Inequality]):
-    """ For each tau, computation the w with compatible tau-modules """
+    """
+    For each tau, computation the w with compatible tau-modules
+    
+    It generates only pending inequalities.
+    """
     def __call__(self, tau_dataset: Dataset[Tau]) -> ListDataset[Inequality]:
         from .list_of_W import ListWs_Mod
         ineqalities: list[Inequality] = []
@@ -237,7 +277,11 @@ class InequalityCandidatesStep(TransformerStep[Tau, Inequality]):
 
 ###############################################################################
 class ModuloReductionStep(FilterStep[Inequality]):
-    """ Reduction modulo symmetries of the dimension vector """
+    """
+    Reduction modulo symmetries of the dimension vector
+    
+    It only reject pending inequalities and doesn't modified the validated ones.
+    """
     def __call__(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
         inequalities = {
             ineq.sort_mod_sym_dim for ineq in ineq_dataset.pending()
@@ -250,7 +294,11 @@ class ModuloReductionStep(FilterStep[Inequality]):
 
 ###############################################################################
 class PiDominancyStep(FilterStep[Inequality]):
-    """ Checking dominancy of the map pi """
+    """
+    Checking dominancy of the map pi
+    
+    It only reject pending inequalities and doesn't modified the validated ones.
+    """
     tpi_method: Method
 
     def __init__(self, V: Representation, tpi_method: Method = "probabilistic", **kwargs: Any):
@@ -294,7 +342,11 @@ class PiDominancyStep(FilterStep[Inequality]):
 
 ###############################################################################
 class LinearTriangularStep(FilterStep[Inequality]):
-    """ Checking Linear Triangular inequalities """
+    """
+    Checking Linear Triangular inequalities
+    
+    This filter can reject inequalities and also definitively validate some of them.
+    """
     def __call__(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
         from .linear_triangular import is_linear_triangular
         pending: list[Inequality] = []
@@ -313,7 +365,11 @@ class LinearTriangularStep(FilterStep[Inequality]):
 
 ###############################################################################
 class BKRConditionStep(FilterStep[Inequality]):
-    """ BKR condition """
+    """
+    BKR condition
+    
+    It only reject pending inequalities and doesn't modified the validated ones.
+    """
     kronecker: KroneckerCoefficient
     plethysm: PlethysmCache
 
@@ -393,7 +449,11 @@ class BKRConditionStep(FilterStep[Inequality]):
 
 ###############################################################################
 class BirationalityStep(FilterStep[Inequality]):
-    """ Checking birationality (ramification divisor contracted) of the map pi """
+    """
+    Checking birationality (ramification divisor contracted) of the map pi
+    
+    It only reject pending inequalities and doesn't modified the validated ones.
+    """
     ram_schub_method: Method
     ram0_method: Method
 
@@ -457,7 +517,11 @@ class BirationalityStep(FilterStep[Inequality]):
 
 ###############################################################################
 class GrobnerStep(FilterStep[Inequality]):
-    """ Checking birationality via Grobnet """
+    """
+    Checking birationality via Grobner
+    
+    It only reject pending inequalities and doesn't modified the validated ones.
+    """
     method: Method
     timeout: int
 
@@ -518,7 +582,11 @@ class GrobnerStep(FilterStep[Inequality]):
 
 ###############################################################################
 class ExportStep(FilterStep[Inequality]):
-    """ Exporting inequalities """
+    """
+    Exporting inequalities
+    
+    It exports all remaining inequalities (pending and validated).
+    """
     formats: list[ExportFormat]
 
     def __init__(self,
@@ -589,7 +657,12 @@ inequalities_filter_dict: Final[dict[InequalityFilterStr, type[Step]]] = {
 TStep = TypeVar("TStep", bound=Step)
 
 class ConeStep(GeneratorStep[Inequality]):
-    """ Main step to generate inequalities of the cone """
+    """
+    Main step to generate inequalities of the cone
+    
+    It returns a dataset containing the inequalities that are definitively
+    validated and the ones whose state is still pending.
+    """
     config: Optional[Namespace]
     options: dict[str, Any]
     filters: list[InequalityFilterStr]
