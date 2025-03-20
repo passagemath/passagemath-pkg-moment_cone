@@ -1,7 +1,7 @@
 
 __all__ = (
     'is_not_contracted',
-    'Compute_JA',
+    'Compute_JA_square_free',
     'Is_Ram_contracted',
 )
 
@@ -79,15 +79,15 @@ def Normalization_Factorized_Polynomial(Jb: dict[Polynomial, int]) -> dict[Polyn
         d[new_key]=Jb[P]
     return d
 
-def Compute_JA(ineq: Inequality, V: Representation) -> dict[Polynomial, int]:
-    tau=ineq.tau
+def Compute_JA_square_free(ineq: Inequality, V: Representation) -> Polynomial:
+    tau = ineq.tau
     ring = V.QV
     # a generic vector in VV^tau
     zero_weights = tau.orthogonal_weights(V)
     v = point_vect(zero_weights, V, ring, bounds=(-100, 100)) # bounds unuseful here
     #gr = grading_dictionary(ineq.inversions, tau.dot_root)
     gr = tau.grading_roots_in(ineq.inversions)
-    J: dict[Polynomial, int] = {}
+    Jred: Polynomial = 1
     for x in sorted(gr.keys(),reverse=True): # Choose a diagonal block of Tpi that is a weight of tau        
         M=matrix(ring,len(gr[x]))
         for col,root in enumerate(gr[x]): # List of roots such that tau.scalar(root)=x
@@ -95,14 +95,26 @@ def Compute_JA(ineq: Inequality, V: Representation) -> dict[Polynomial, int]:
             for row, chi in enumerate(tau.positive_weights(V)[x]): # List of weights such that tau.scalar(chi)=x 
                 M[row,col]=uv[V.index_of_weight(chi)]
         #print('M',M)
-        Jb: dict[Polynomial, int] = dict(M.det().factor())
-        Jbn=Normalization_Factorized_Polynomial(Jb)
-        for F in Jbn.keys(): # We could make a function add_dictionaries
-            if F in J.keys():
-                J[F]+=Jbn[F]
-            else:
-                J[F]=Jbn[F]
-    return J
+        
+        Jb: Polynomial = M.det()
+        partial_derivatives: list[Polynomial] = [
+            Jb.derivative(V.QV.variable(chi))
+            for chi in zero_weights
+        ]
+        from sage.all import gcd as sage_gcd # type: ignore
+        Jbred_denom: Polynomial = sage_gcd([Jb] + partial_derivatives)
+        Jbred: Polynomial
+        remainder: Polytnomial
+        Jbred, remainder = Jb.quo_rem(Jbred_denom)
+        assert remainder == 0
+
+        #print("Jbred = ", Jbred)
+        #print("Jb factors =", dict(M.det().factor()))
+
+        Jred, remainder = (Jred * Jbred).quo_rem(sage_gcd(Jred, Jbred))
+        assert remainder == 0
+
+    return Jred
 
 def Smith_n_1(A: Matrix) -> Any:
     "Compute the gcd of the minors of A of size n-1"
@@ -167,16 +179,8 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
                     return(False)
 
     ### Divisor R_0
-    Jf=Compute_JA(ineq,V) # The Jacobian factorized as a dictionnary
-    #print('Jf',Jf)
-    
-    J_square_free: Polynomial = 1
-    for pol in Jf.keys():
-        J_square_free*=pol # todo : prod(list(Jf.keys())) ne semble pas fonctionner
+    J_square_free = Compute_JA_square_free(ineq, V) # The Jacobian and it's reduced form
 
-    if len(Jf.keys()) != len(dict(J_square_free.factor()).keys()):
-        print('Error in factor with:',Jf,J_square_free)
- 
     # Generic point v of V(tau<=0) and matrix of Tpi at (e,v)
     v = point_vect(Neg0_Weights_sorted,V,V.QV)
     A=matrix(V.QV,len(Pos_Weights_sorted),dU)
@@ -212,8 +216,7 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
    
     B0z=B0.subs(subs_dict)
     L0z=L0.subs(subs_dict)
-    # FIXME: type ignore
-    Jz=J_square_free.subs(subs_dict) # type: ignore
+    Jz=J_square_free.subs(subs_dict)
 
 
     # Computation of reduced delta as factorized polynomial
