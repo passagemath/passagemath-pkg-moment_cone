@@ -425,7 +425,7 @@ def cprofile(
         stats = Stats(prof)
 
     if file_name is not None:
-        stats.dump_stats(file_name + ".stats")
+        stats.dump_stats(file_name + ".pstats")
         from pyprof2calltree import convert
         convert(stats, file_name + ".prof")
 
