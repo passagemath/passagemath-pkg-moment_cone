@@ -29,6 +29,7 @@ __all__ = (
 
 if TYPE_CHECKING:
     from line_profiler import LineProfiler
+    import pstats
 
 
 def is_decreasing(l: Iterable[int]) -> bool:
@@ -402,6 +403,33 @@ def line_profiler(
     result: T = lp.runcall(called_fn, *args, **kwargs) # type: ignore
     return result, lp
 
+
+def cprofile(
+        called_fn: Callable[..., T],
+        *args: Any,
+        file_name: Optional[str] = None,
+        **kwargs: Any,
+        ) -> tuple[T, "pstats.Stats"]:
+    """
+    Profile calls and hierarchy of calls of the functions executed during
+    computation of given called_fn.
+    
+    Beside the result of the the called_fn, it also returns a instance
+    of pstats.Stats and can also output to Stats and kcachegrind format
+    if a file_name is given.
+    """
+    from cProfile import Profile
+    from pstats import Stats
+    with Profile() as prof:
+        result = called_fn(*args, **kwargs)
+        stats = Stats(prof)
+
+    if file_name is not None:
+        stats.dump_stats(file_name + ".stats")
+        from pyprof2calltree import convert
+        convert(stats, file_name + ".prof")
+
+    return result, stats
 
 class CachedClass:
     """ Base class that ensure instance uniqueness relatively to the construction arguments 
