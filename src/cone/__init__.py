@@ -9,5 +9,6 @@ from .tau import Tau
 from .inequality import Inequality
 from .main_steps import *
 from .main import *
+from .reference_datas.comparisons import *
 
 # FIXME: remaining default imports
