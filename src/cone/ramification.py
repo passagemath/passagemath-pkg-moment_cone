@@ -231,7 +231,7 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
             Ldelta.append(delta1)
         else :
             Ared=Az.apply_map(lambda entry: (ring_R0.quotient(delta1))(entry)) # A modulo delta1
-            if Ared.rank() == Ared.ncols() :
+            if Ared.rank() == Ared.ncols()-1 :
                 Ldelta.append(delta1)
     if Ldelta==[]:
         delta=1
