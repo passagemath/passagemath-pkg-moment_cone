@@ -41,7 +41,8 @@ def Kernel_modulo_P(
         Mreduced=M.apply_map(lambda entry: Qring[-1](entry))
         Kernel_basis=Mreduced.right_kernel().basis()
         if len(Kernel_basis)!=1:
-            return "Erreur de rang"
+            print(Mreduced,P,Kernel_basis)
+            return "Erreur de rang: noyau de dimension "+str(len(Kernel_basis))
         else:
             Vreduced.append(Kernel_basis[0])
     
