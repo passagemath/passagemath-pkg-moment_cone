@@ -68,7 +68,7 @@ class Weight:
                 if partial_sum < 0:
                     return False
             if partial_sum != 0:
-                return False # C'est quoi ce cas ?
+                return False
             shift += s
         return True
 

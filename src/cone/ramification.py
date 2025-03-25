@@ -82,7 +82,7 @@ def Normalization_Factorized_Polynomial(Jb: dict[Polynomial, int]) -> dict[Polyn
         d[new_key]=Jb[P]
     return d
 
-def Compute_JA_square_free(ineq: Inequality, V: Representation) -> (Polynomial,Polynomial,Iterable[Polynomial]):
+def Compute_JA_square_free(ineq: Inequality, V: Representation) -> tuple[Polynomial, Polynomial, list[Polynomial]]:
     tau = ineq.tau
     ring = V.QV
     # a generic vector in VV^tau
@@ -92,7 +92,7 @@ def Compute_JA_square_free(ineq: Inequality, V: Representation) -> (Polynomial,P
     gr = tau.grading_roots_in(ineq.inversions)
     Jred: Polynomial = 1
     J: Polynomial = 1
-    factors_Jred=[]
+    factors_Jred: list[Polynomial] = []
     for x in sorted(gr.keys(),reverse=True): # Choose a diagonal block of Tpi that is a weight of tau        
         M=matrix(ring,len(gr[x]))
         for col,root in enumerate(gr[x]): # List of roots such that tau.scalar(root)=x
@@ -121,7 +121,7 @@ def Compute_JA_square_free(ineq: Inequality, V: Representation) -> (Polynomial,P
         Jred=Jred_new
         assert (remainder == 0) and (remainder2==0)
 
-    return J,Jred,factors_Jred
+    return J, Jred, factors_Jred
 
 def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, method_R0: Method) -> bool :
     ws=ineq.w
