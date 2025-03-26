@@ -5,6 +5,11 @@ __all__ = (
 )
 
 import operator
+import itertools
+import numpy as np
+from typing import Tuple
+from collections import defaultdict
+
 
 from .typing import *
 from .permutation import *
@@ -16,60 +21,186 @@ from .representation import *
 from .inequality import Inequality
 from .utils import *
 
-
-
-def ListW_Mod(tau : Tau, pos : int, C_mod : dict[int, int], relation: Callable[[Any, Any], bool]) -> Iterable[Permutation]:
+def List_Inv_Ws_Mod(tau : Tau,V: Representation) -> Iterable[Dict[int->list[Root]]]:
     """
-    List of permutations w in W^{P(tau[pos])} such that tau.Scalar(Inv(w) in position pos) satisfies relation (leq or eq) 
-    with the C^*-module whose dimension of eigenspaces is encoded by C_mod.
+    Return the list (as iterable) of inversion sets compatible W^{P(tau) and with the C^*-module V^{tau>0}.
+    The output is an iterable of dictionnaries int -> list(Root)
+    This function initializes the contraints and start the recursive part.
     """
-    D=sum(C_mod.values()) # Dimension of the C^*-module
-    e=tau.G[pos] # Rank of the current GL
+    lG=tau.G.list()
+    while lG and lG[-1] == 1:
+        lG.pop()
+    s = len(lG) # Number of non-trivial symmetric groups  
+    nbs_blocks=[x-1 for x in tau.reduced.G[:s]] # list of the number of blocks on the first row 
+    max_nb_blocks = max(nbs_blocks) # max number of blocks on the first row (or equivalently last column)
     
-    # Lenghts to run over
-    if relation==operator.eq and 2*D> e*(e-1):
-        return
-
-    for w in Permutation.all_min_rep(tau.reduced.mult[pos]):
-        if relation(w.length,D): # The length makes possible the expected relation
-            List_Inv=[Root(pos, *inv) for inv in w.inversions]
-            gr=grading_dictionary(List_Inv, tau.dot_root)
-            Mw=dictionary_list_lengths(gr)
-            if compare_C_Mod(Mw,C_mod,relation):
-                yield w
-
-
-def ListWs_Mod_rec(tau: Tau, pos : int, C_mod : dict[int, int]) -> Iterable[list[Permutation]]:
-    """ 
-    List of tuples [w_pos,...,w_len(d)-1] such that U(w) isom C_mod as tau-module and w_i in W^P
-    """
+    weights_grid = np.empty((s,max_nb_blocks, max_nb_blocks), dtype=int)
+    size_grid = np.empty((s,max_nb_blocks, max_nb_blocks), dtype=[('x', int), ('y', int)])
+    inner_grid = np.empty((s,max_nb_blocks, max_nb_blocks), dtype=object)
+    outer_grid = np.empty((s,max_nb_blocks, max_nb_blocks), dtype=object)
+    init_inv = np.empty((s,max_nb_blocks, max_nb_blocks), dtype=object)
+    # List of blocks that will still contribute to the weight p
+    List_weights_next = Init_list_weights(tau) 
+    #Initialization of target_weights to len(grading_positive_weights)
+    target_weights = {key: len(value) for key, value in tau.positive_weights(V).items()}
     
-    G=tau.G
-    if pos==len(G)-1: #Only one w has to be find
-        relation = operator.eq
-        for w in ListW_Mod(tau,pos,C_mod,relation):
-            yield [w]
-        return
-    
-    Lpos=ListW_Mod(tau,pos,C_mod,operator.le) # Candidates of w_pos
-    for w in Lpos:
-        List_Inv=[Root(pos, *inv) for inv in w.inversions]
-        gr=grading_dictionary(List_Inv, tau.dot_root)
-        Mw=dictionary_list_lengths(gr)
-        new_C_mod=quotient_C_Mod(C_mod,Mw)
-        Lw=ListWs_Mod_rec(tau,pos+1,new_C_mod)
-        for l in Lw:
-            yield [w] + l
+    for k in range(s):
+        for i in range(nbs_blocks[k]):
+            for j in range(nbs_blocks[k]-i):
+                size_grid[k,i,i+j] = [tau.reduced.mult[k][i],tau.reduced.mult[k][i+j+1]]
+                weights_grid[k,i,i+j] = tau.reduced[k][i]-tau.reduced[k][j]
+                inner_grid[k,i,i+j] = Partition([0])
+                outer_grid[k,i,i+j] = Partition([nbs_blocks[j+1]]*nbs_blocks[i])
+    current_pos=(0,0,0)   # copy of GL,i,j
+    last_pos=(s-1,0,nbs_blocks[-1]-2)      
+    yeld List_Inv_W_Mod_rec(nbs_blocks,current_pos,last_pos,init_inv,weights_grid,size_grid,inner_grid,outer_grid,target_weights,Nb_weights_next)          
 
-def ListWs_Mod(tau : Tau,V: Representation) ->  Iterable[list[Permutation]]:
+def Init_list_weights(tau:Tau)->dict[int,Tuple[int]]:
+    taured=tau.reduced
+    result = defaultdict(list)
+    for k,tau1 in enumerate(taured):
+        for i,j in itertools.combinations(range(len(tau1)), 2):
+            result[tau1[i]-tau1[j]].append((k,i,j-1))
+
+def List_Inv_W_Mod_rec(nbs_blocks : list[int],current_pos : Tuple[int],last_pos : Tuple[int],current_inv,weights_grid,size_grid,inner_grid,outer_grid,target_weights,Nb_weights_next):
+    ## We first determine the possible partitions to take in position current_pos
+    # Possible lengths
+    result=[]
+    p = weights_grid[*current_pos]
+    List_weights_next[p]=List_weights_next[p][1:]
+    if Nb_weights_next[p] == 0: # On peut améliorer en tenant compte de inner et outer
+        target_lengths = [target_weights[p]]
+    else :
+        target_lengths = [l for l in range(target_weights[p]+1)]
+    # Compute the next position [s,i,j]. Unuseful if current_pos==last_pos.
+    next_pos=Next_pos(current_pos,nbs_blocks)
+    # We run over these lengths    
+    for l in target_lengths :
+        # Je crois que la ligne suivante ne marche pas car notre partition est concurrente de celle de Sage
+        current_part_list=Partitions(l, inner=inner_grid[*current_pos],outer=outer_grid[*current_pos]).list()
+        s= weights_grid.shape()[0]
+ 
+        for mu in current_part_list :
+            next_inv = current_inv.cp() # copy to avoid confusion
+            next_inv[*current_pos]=mu
+            if current_pos == last_pos :
+                # We convert next_inv in dictionary weight -> list[Root]
+                invs_dic = Table_part_2_inv_list(nbs_blocks,size_grid,weights_grid,next_inv)
+                result.append(invs_dic)
+            else :
+                # Ajust inner and outer
+                m,n = size_grid[*current_pos]
+                inner_grid_next=inner_grid.cp()
+                outer_grid_next=outer_grid.cp()
+                    ## above current_pos
+                for a in range(current_pos[1]):
+                    new_inner=[]
+                    new_outer=[]
+                    for i in range(size_grid[current_pos[0],a,current_pos[2]]): # Run over the rows of the block
+                        L_in_i=[inner_grid[current_pos[0],a,current_pos[2]][i]]
+                        L_out_i=[outer_grid[current_pos[0],a,current_pos[2]][i]]
+                        for b in range(current_pos[2]):
+                            lam_i=next_inv[current_pos[0],a,b][i]
+                            L_in_i.append(mu[m-lam_i])
+                            L_out_i.append(mu[m-lam_i-1])
+                        new_inner.append(max(L_in_i))
+                        new_outer.append(min(L_out_i))
+                        if max(L_in_i)>min(L_out_i):
+                            print('Incompatible inner and outer')
+                    inner_grid_next[size_grid[current_pos[0],a,current_pos[2]]] = new_inner
+                    outer_grid_next[size_grid[current_pos[0],a,current_pos[2]]] = new_outer
+                    ## right of current_pos
+                for b in range(current_pos[2]+1,nbs_blocks[current_pos[0]]):
+                    new_inner=[]
+                    new_outer=[]
+                    for i in range(size_grid[current_pos[0],current_pos[1],b]): # Run over the rows of the block
+                        L_in_i=[inner_grid[current_pos[0],current_pos[1],b][i]]
+                        L_out_i=[outer_grid[current_pos[0],current_pos[1],b][i]]
+                        for a in range(current_pos[1]+1,nbs_blocks[current_pos[0]]):
+                            lam=next_inv[current_pos[0],a,b]
+                            L_in_i.append(lam[m-mu[i]])
+                            L_out_i.append(lam[m-mu[i]-1])    
+                        new_inner.append(max(L_in_i))
+                        new_outer.append(min(L_out_i))
+                        if max(L_in_i)>min(L_out_i):
+                            print('Incompatible inner and outer')
+                    inner_grid_next[size_grid[current_pos[0],current_pos[1],b]] = new_inner
+                    outer_grid_next[size_grid[current_pos[0],current_pos[2],b]] = new_outer
+                # Ajust target_weights
+                target_weights_next=target_weights.cp() # copy to avoid confusion
+                target_weights_next[p]-=l
+                # Exit if not possible : inner, outer incompatible with target_weights
+                for p1 in target_weights_next.keys():
+                    MAX_mult=sum(sum(outer_grid_next[*free_pos]) for free_pos in List_weights_next[p1])
+                    MIN_mult=sum(sum(inner_grid_next[*free_pos]) for free_pos in List_weights_next[p1])
+                    if MAX_mult < target_weights_next[p1] or MIN_mult > target_weights_next[p1] :
+                        return []
+                # Recursive call
+                result+=List_Inv_W_Mod_rec(nb_blocks,next_pos,last_pos,next_inv,weights_grid,size_grid,inner_grid_next,outer_grid_next,target_weights_next,target_weights,Nb_weights_next_n)
+    yield result
+        
+def Next_pos(current_pos : Tuple[int],nbs_blocks : list[int]) -> Tuple[int]:
     """
-    Initialisation and use the recursive function
+    return the next position in the set of blocs. 
+    In a given pos we strart with the longuest diagonal and so on. 
     """
-    Poids_positive=tau.positive_weights(V)
-    C_mod: dict[int, int] = {}
-    for x in Poids_positive.keys():
-        C_mod[x]=len(Poids_positive[x])
-    return ListWs_Mod_rec(tau,0,C_mod)
+    pos,i,j=current_pos
+    if i<nbs_blocks[pos]-1 and j<nbs_blocks[pos]-1: # progress on the diagonal
+        return (pos,i+1,j+1)
+    elif j-i<nbs_blocks[pos]-1: # go to the next diagonal
+        return (pos,0,j-i+1)
+    else : # change pos
+        return (pos+1,0,0)
+
+
+
+def Table_part_2_inv_list(nbs_blocks : list[int],size_grid,weights_grid,T) -> Dict[int, List[Root]]:
+    """
+    T is a 3-dimensional table of partitions encoding a set of inversions. 
+    T[pos,i,j] (with j>=i) row i column j
+    nbs_blocks[pos] encode the size of the triangle T[pos,*,*]
+    size_grid[pos,i,j] is a pair of integers encoding the size of the block
+    weights_grid[pos,i,j] is the weight (for the action of tau) on the roots associated to bowes in the block.
+    The function return a dictionnary weight -> list of roots.
+    """
+    result = defaultdict(list)
+    s = len(nbs_blocks)
+    for pos,a in enumerate(nbs_blocks):
+        shift_i=0
+        for i in range(a):
+            shift_j=size_grid[pos,0,0][0]
+            for j in range(i,a):
+                for i1,l in enumerate(T[pos,i,j][::-1]):
+                    for j1 in range(l):
+                        result[weights_grid[pos,i,j]].append(Root(pos,shift_i+i1,shift_j+j1)) 
+                shift_j+=size_grid[pos,j,j][1]
+            shift_i+=size_grid[pos,i,i][0]
+    return result    
+
+def inversion_set_to_permutation(n, inversions):
+    """
+    Reconstructs a permutation from its inversion set.
+    
+    Parameters:
+        n (int): The size of the permutation (0 to n-1).
+        inversions (set of tuples): The set of inversions, where each inversion is a tuple (i, j) with i < j.
+    
+    Returns:
+        list: The reconstructed permutation.
+    """
+    # Initialize the inversion count for each element
+    inv_count = [0] * n
+    for i, j in inversions:
+        inv_count[j] += 1
+    
+    # Construct the permutation by placing numbers from largest to smallest
+    w = [-1] * n
+    available_positions = list(range(n))
+    for num in range(n-1, -1, -1):
+        position = available_positions.pop(inv_count[num])
+        w[position] = num
+    
+    return Permutation(w)
 
 
 def Check_Rank_Tpi(ineq : Inequality, V: Representation, method: Method) -> bool :
@@ -79,8 +210,7 @@ def Check_Rank_Tpi(ineq : Inequality, V: Representation, method: Method) -> bool
     The matrix being block trinagular, the function check successively the diagonal blocks.
     """
     tau=ineq.tau
-    G = tau.G # FIXME: Here, d is recreated from scratch, without rings. Should we ensure the uniqueness of the instance of d?
-
+    G = tau.G 
     # Ring depending on the computational method
     if method == "probabilistic":
         ring = V.QI
@@ -91,7 +221,7 @@ def Check_Rank_Tpi(ineq : Inequality, V: Representation, method: Method) -> bool
     zero_weights = tau.orthogonal_weights(V)
     v = point_vect(zero_weights, V, ring, bounds=(-100, 100))
     gw = tau.grading_weights(V)
-    gr = tau.grading_roots_in(ineq.inversions) # A vérifier
+    gr = ineq.gr_inversions 
     for x in sorted(gr.keys(),reverse=True): # Run over the possible values of tau.scalar(root) for root inversion of w
         M=matrix(ring,len(gr[x]))
         for col,root in enumerate(gr[x]): # List of roots such that tau.scalar(root)=x
@@ -104,3 +234,5 @@ def Check_Rank_Tpi(ineq : Inequality, V: Representation, method: Method) -> bool
     return(True)	       
 
 
+
+    

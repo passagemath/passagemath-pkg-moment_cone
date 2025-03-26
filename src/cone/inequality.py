@@ -17,6 +17,8 @@ from .rings import QQ, vector, Vector
 class Inequality:
     """
     An inequality composed of a Tau and a list of permutations, one from each block of Tau.
+    The list of permutation can be given as a list of permutations (w), as a list of inversions (inversions) 
+    or as a dictionnary weight -> list of inversions. 
 
     In wtau, the blocks are permuted by the **inverse** of the corresponding permutation.
     
@@ -25,8 +27,8 @@ class Inequality:
     >>> G = LinearGroup((4, 3, 2,1))
     >>> tau = Tau.from_flatten([6,2,1,4,1,2,5,3,1,1], G)
     >>> w = Permutation((1, 0, 3, 2)), Permutation((0, 2, 1)), Permutation((0, 1)),Permutation((0,))
-    >>> ineq = Inequality(tau, w)
-    >>> Inequality(tau,w)
+    >>> ineq = Inequality(tau, w=w)
+    >>> ineq
     Inequality(tau  = 6 2 1 4 | 1 2 5 | 3 1 | 1,
                w    = 1 0 3 2 | 0 2 1 | 0 1 | 0,
                wtau = 2 6 4 1 | 1 5 2 | 3 1 | 1)
@@ -35,12 +37,92 @@ class Inequality:
     w: tuple[Permutation, ...]
     wtau: Tau # each w_k applied to each column of tau
 
-    def __init__(self, tau: Tau, w: Iterable[Permutation]):
-        self.tau = tau
-        self.w = tuple(w)
-        assert len(tau.G) == len(self.w)
-        self.wtau = Tau(tuple(wk.inverse(ck) for wk, ck in zip(self.w, tau.components)))
+    def __init__(
+        self, 
+        tau: Tau, 
+        w: Optional[Iterable[Permutation]] = None,
+        inversions: Optional[List[Root]] = None 
+        gr_inversions: Optional[Dict[int, List[Root]]] = None
+    ):
+        if w is None and inversions is None and gr_inversions is None :
+            raise ValueError("At least one of w, inversions or gr_inversions, should be defined")
+        assert w is None or len(tau.G) == len(self.w)
+            
+        self._tau = tau
+        self._w = w
+        self._inversions = inversions
+        self._gr_inversions = gr_inversions
     
+    @property
+    def tau(self) -> Tau:
+        """Propriété tau, sans calcul différé."""
+        return self._tau
+    
+    @cached_property
+    def wtau(self) -> Tau:
+        return Tau(tuple(wk.inverse(ck) for wk, ck in zip(self.w, self.tau.components)))
+    
+    @cached_property
+    def w(self) -> List[Permutation]:
+        """
+        Property w computed from inversions if not given at the initialisation.
+        """
+        if self._w is None:
+            # Calcul à partir des inversions
+            self._w = self._compute_w()
+        return self._w
+
+    @cached_property
+    def inversions(self) -> Iterable[Root]:
+        """
+        Property inversions computed from gr_inversions or w if not given at the initialisation.
+        """
+        if self._inversions is None and self._gr_inversions is not None :
+            # Compute from gr_inversions
+            self._inversions = chain.from_iterable(self._gr_inversions.values())
+        elif self._inversions is None :
+            # Compute from w
+            self._inversions = self._compute_inversions_from_w()
+        return self._inversions
+    
+    @cached_property
+    def gr_inversions(self) -> Dict[int, List[Root]]:
+        """
+        Property gr_inversions computed from inversions if not given at the initialisation.
+        """
+        if self._gr_inversions is None :
+            self._inversions = self.tau.grading_roots_in(self.inversions) 
+        return self._inversions    
+
+    def _compute_w(self) -> List[Permutation]:
+        """
+        Compute w from the inversions.
+        """
+        TODO avec perm_from_inversions
+        
+        return 
+
+    def _compute_inversions_from_w(self) -> Dict[int, List[Root]]:
+        """
+        Compute the inversions from w.
+        
+        >>> from cone import *
+        >>> G = LinearGroup((2, 2, 2, 3, 1))
+        >>> tau = Tau.from_flatten([6, 2, 1, 4, 1, 4, 5, 3, 1, 1], G)
+        >>> w = Permutation((0, 1)), Permutation((1, 0)), Permutation((0, 1)), Permutation((2, 0, 1)),Permutation((0,))
+        >>> ineq = Inequality(tau, w=w)
+        >>> for r in ineq.inversions:
+        ...     print(r)
+        Root(k=1, i=0, j=1)
+        Root(k=3, i=0, j=1)
+        Root(k=3, i=0, j=2)
+        """
+        for k, p in enumerate(self.w):
+            for i, j in p.inversions:
+                yield Root(k, i, j)
+        
+    
+
     @staticmethod
     def from_tau(tau: Tau) -> "Inequality":
         """ Converts a (possibly non-dominant) tau to an element of the class Inequality,
@@ -66,7 +148,7 @@ class Inequality:
             Blocks.from_blocks([[t for t, i in taub] for taub in tau_pairs])
         )
         w = (Permutation([i for t, i in taub]) for taub in tau_pairs)
-        return Inequality(taup, w)
+        return Inequality(taup, w=w)
     
     @staticmethod
     def dominance(V: Representation, symmetry: bool = False) -> Iterable["Inequality"]:
@@ -114,7 +196,7 @@ class Inequality:
         >>> G = LinearGroup((2, 2, 2, 3, 1))
         >>> tau = Tau.from_flatten([6, 2, 1, 4, 1, 4, 5, 3, 1, 1], G)
         >>> w = Permutation((0, 1)), Permutation((1, 0)), Permutation((0, 1)), Permutation((2, 0, 1)), Permutation((0,))
-        >>> ineq = Inequality(tau, w)
+        >>> ineq = Inequality(tau, w=w)
         >>> ineq
         Inequality(tau  = 6 2 | 1 4 | 1 4 | 5 3 1 | 1,
                    w    = 0 1 | 1 0 | 0 1 | 2 0 1 | 0,
@@ -124,31 +206,24 @@ class Inequality:
                    w    = 0 1 | 1 0 | 0 1 | 2 0 1 | 0,
                    wtau = 1 4 | 4 1 | 6 2 | 3 1 5 | 1)
         """
-        pairs = tuple(zip(self.tau.components, self.w))
-        blocks = (sorted(b) for b in Blocks(pairs, self.tau.G.outer))
-        tau_components, w = zip(*itertools.chain.from_iterable(blocks))
-        tau = Tau(tau_components)
-        return Inequality(tau, w)
-
-    @property
-    def inversions(self) -> Iterable[Root]:
-        """
-        Returns all possible inversions Root(k, i, j) of w
-        
-        >>> from cone import *
-        >>> G = LinearGroup((2, 2, 2, 3, 1))
-        >>> tau = Tau.from_flatten([6, 2, 1, 4, 1, 4, 5, 3, 1, 1], G)
-        >>> w = Permutation((0, 1)), Permutation((1, 0)), Permutation((0, 1)), Permutation((2, 0, 1)),Permutation((0,))
-        >>> ineq = Inequality(tau, w)
-        >>> for r in ineq.inversions:
-        ...     print(r)
-        Root(k=1, i=0, j=1)
-        Root(k=3, i=0, j=1)
-        Root(k=3, i=0, j=2)
-        """
-        for k, p in enumerate(self.w):
-            for i, j in p.inversions:
-                yield Root(k, i, j)
+        if self._w is not None :
+            pairs = tuple(zip(self.tau.components, self.w))
+            blocks = (sorted(b) for b in Blocks(pairs, self.tau.G.outer))
+            tau_components, w = zip(*itertools.chain.from_iterable(blocks))
+            tau = Tau(tau_components)
+            return Inequality(tau, w=w)
+        elif self._inversions is not None :
+            pairs = tuple(zip(self.tau.components, self.inversions))
+            blocks = (sorted(b) for b in Blocks(pairs, self.tau.G.outer))
+            tau_components, invs = zip(*itertools.chain.from_iterable(blocks))
+            tau = Tau(tau_components)
+            return Inequality(tau, inversions=invs)
+        else :
+            pairs = tuple(zip(self.tau.components, self.gr_inversions))
+            blocks = (sorted(b) for b in Blocks(pairs, self.tau.G.outer))
+            tau_components, gr_invs = zip(*itertools.chain.from_iterable(blocks))
+            tau = Tau(tau_components)
+            return Inequality(tau, gr_inversions=gr_invs)
 
 
     

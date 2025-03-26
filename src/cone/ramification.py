@@ -24,7 +24,7 @@ from .utils import prod
 
     
 # FIXME: we get d from tau but in the current code, it will leads to recreate the rings for each tau.
-def is_not_contracted(inversions_v: Iterable[Root], tau: Tau, V: Representation, method: Method) -> bool:
+def is_not_contracted(inversions_v: Iterable[Root], tau: Tau, V: Representation, method: Method,non_positive_weights:List[Weights],positive_weights:List[Weights]) -> bool:
     """
     ???
 
@@ -56,9 +56,9 @@ def is_not_contracted(inversions_v: Iterable[Root], tau: Tau, V: Representation,
     
     # FIXME: do we stay we list conversion at each call?
     # Maybe grading root and weight should be implemented using a more convenient class?
-    from itertools import chain
-    non_positive_weights = list(chain.from_iterable(tau.non_positive_weights(V).values())) # todo : Cela est aussi fait avant l'appel à la fonction.
-    positive_weights = list(chain.from_iterable(tau.positive_weights(V).values())) # todo : Cela est aussi fait avant l'appel à la fonction.
+    #from itertools import chain
+    #non_positive_weights = list(chain.from_iterable(tau.non_positive_weights(V).values())) # todo : Cela est aussi fait avant l'appel à la fonction.
+    #positive_weights = list(chain.from_iterable(tau.positive_weights(V).values())) # todo : Cela est aussi fait avant l'appel à la fonction.
 
     v = point_vect(non_positive_weights, V, ring, bounds=(-1000, 1000))
     list_inversions_v = list(inversions_v)
@@ -66,10 +66,7 @@ def is_not_contracted(inversions_v: Iterable[Root], tau: Tau, V: Representation,
     for j, root in enumerate(list_inversions_v):
         uv = V.action_op_el(root, v)
         for i, chi in enumerate(positive_weights):
-            A[i, j] = uv[V.index_of_weight(chi)]
-    #print('inv',list_inversions_v)
-    #print('pos weights', positive_weights)
-    #print('A',A)        
+            A[i, j] = uv[V.index_of_weight(chi)]   
 
     rank_A: int = A.change_ring(ring.fraction_field()).rank()
     return rank_A == len(list_inversions_v)
@@ -99,7 +96,6 @@ def Compute_JA_square_free(ineq: Inequality, V: Representation) -> tuple[Polynom
             uv=V.action_op_el(root, v)
             for row, chi in enumerate(tau.positive_weights(V)[x]): # List of weights such that tau.scalar(chi)=x 
                 M[row,col]=uv[V.index_of_weight(chi)]
-        #print('M',M)
         
         Jb: Polynomial = M.det()
         partial_derivatives: list[Polynomial] = [
@@ -140,16 +136,15 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
 
     tau=ineq.tau
     
-    # Creation of sorted lists of weights todo: modifier en utilisant mieux la classe tau
-    # TODO : ici on ordonne les clés et crée une liste. Peut-être on peut faire plus simple et dans utils
-    Neg0_Weights_dic=tau.non_positive_weights(V) 
-    Neg0_Weights_sorted=[]
-    for x in sorted(Neg0_Weights_dic.keys(),reverse=True):
-        Neg0_Weights_sorted+=Neg0_Weights_dic[x]
-    Pos_Weights_dic=tau.positive_weights(V)
-    Pos_Weights_sorted=[]
-    for x in sorted(Pos_Weights_dic.keys(),reverse=True):
-        Pos_Weights_sorted+=Pos_Weights_dic[x]
+    # Creation of sorted lists of weights 
+    #Neg0_Weights_dic=tau.non_positive_weights(V) 
+    Neg0_Weights_sorted=list(chain.from_iterable(tau.non_positive_weights(V)[k] for k in sorted(tau.non_positive_weights(V))))
+    #for x in sorted(Neg0_Weights_dic.keys(),reverse=True):
+    #    Neg0_Weights_sorted+=Neg0_Weights_dic[x]
+    #Pos_Weights_dic=tau.positive_weights(V)
+    Pos_Weights_sorted=list(chain.from_iterable(tau.positive_weights(V)[k] for k in sorted(tau.positive_weights(V))))
+    #for x in sorted(Pos_Weights_dic.keys(),reverse=True):
+    #    Pos_Weights_sorted+=Pos_Weights_dic[x]
     
 
     ### Divisors of the boudary
@@ -159,7 +154,7 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
                 vs = list(ws[:k]) + [v] + list(ws[k+1:])
                 #print('Schub Div',vs)
                 ineqv = Inequality(tau,vs)
-                if is_not_contracted(ineqv.inversions,tau,V,method_S) :
+                if is_not_contracted(ineqv.inversions,tau,V,method_S,Neg0_Weights_sorted,Pos_Weights_sorted) :
                     return(False)
 
     ### Divisor R_0
@@ -202,10 +197,6 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
     L0z=L0.subs(subs_dict)
     Jz=J.subs(subs_dict)
     factors_J_sqf_z = sum([list(dict(Poly.subs(subs_dict).factor()).keys()) for Poly in factors_J_sqf],[])
-    #print(factors_J_sqf_z)
-    #print(list(dict(J_sqf_z.factor()).keys()))
-    #J_sqf_z=J_square_free.subs(subs_dict)
-    #factors_J_sqf_z=list(dict(J_sqf_z.factor()).keys())
     Ldelta=[]
     for delta1 in factors_J_sqf_z:
         quo, rem = Jz.quo_rem(delta1**2)
