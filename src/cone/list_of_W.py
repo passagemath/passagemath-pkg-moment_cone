@@ -29,7 +29,7 @@ def List_Inv_Ws_Mod(tau : Tau,V: Representation) -> Iterable[dict[int,list[Root]
     The output is an iterable of dictionnaries int -> list(Root)
     This function initializes the contraints and start the recursive part.
     """
-    print("llllllllllllllllllllllll",tau,"ttt",tau.reduced)
+    print(" tau=",tau,"tau reduced=",tau.reduced)
     lG=list(tau.G)
     while lG and lG[-1] == 1:
         lG.pop()
@@ -58,7 +58,7 @@ def List_Inv_Ws_Mod(tau : Tau,V: Representation) -> Iterable[dict[int,list[Root]
                 outer_grid[k,i,j] = [tau.reduced.mult[k][j+1]]*(tau.reduced.mult[k][i])
     #print("tttt",inner_grid,outer_grid,target_weights)
     result= List_Inv_W_Mod_rec(nbs_blocks,init_inv,weights_grid,size_grid,inner_grid,outer_grid,target_weights,List_redroots_next,Dic_tau_redroots)
-    print("ssssssssssssssssssss",result)
+    print("result global function_List_Inv_WS_Mod",result)
     return result
 
 def Init_pos_redroots(tau:Tau)->(Iterable[Tuple[int]],dict[int,Iterable[Tuple[int]]]):
@@ -101,13 +101,13 @@ def List_Inv_W_Mod_rec(nbs_blocks : list[int],current_inv,weights_grid,size_grid
     #print("ggg", current_pos, weights_grid)
     Dic_tau_redroots[p]=Dic_tau_redroots[p][1:]
     List_redroots_next=List_redroots_next[1:]
-    if len(Dic_tau_redroots[p]) == 0: # On peut améliorer en tenant compte de inner et outer
-        if p in target_weights.keys():
+    if p in target_weights.keys():
+        if len(Dic_tau_redroots[p]) == 0: # On peut améliorer en tenant compte de inner et outer
             target_lengths = [target_weights[p]]
-        else:
-            target_lengths=[0]
-    else :
-        target_lengths = [l for l in range(target_weights[p]+1)]
+        else :
+            target_lengths = [l for l in range(target_weights[p]+1)]
+    else:
+        target_lengths=[0]
     # We run over these lengths
     if nbs_blocks[k]==0:
         return  List_Inv_W_Mod_rec(nbs_blocks, current_inv, weights_grid, size_grid, inner_grid, outer_grid, target_weights, List_redroots_next,Dic_tau_redroots)
@@ -128,7 +128,7 @@ def List_Inv_W_Mod_rec(nbs_blocks : list[int],current_inv,weights_grid,size_grid
                 outer_grid_next=outer_grid.copy()
                 ## above current_pos
                 for a in range(i):
-                    #print("wwww",next_inv,inner_grid,outer_grid,k,a,i,j)
+                    print("next_inv,inner_grid,outer_grid,k,a,i,j",next_inv,inner_grid,outer_grid,k,a,i,j)
                     inner_grid_next[k,a,j],outer_grid_next[k,a,j] = adjust_inner_outer_ijk(inner_grid[k,a,j],outer_grid[k,a,j],next_inv[k,a,i-1],next_inv[k,i,j])
                 """
                     new_inner=[]

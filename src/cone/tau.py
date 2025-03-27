@@ -459,6 +459,11 @@ class Tau:
         """
         blocks = (sorted(b) for b in Blocks(self.components, self.G.outer))
         return Tau(itertools.chain.from_iterable(blocks))
+    
+    @cached_property
+    def outer(self) -> tuple[int, ...]:
+        """ Returns length of the symmetries in tau """
+        return tuple(symmetries(self.components))
         
     def orbit_symmetries(self) -> Iterable["Tau"]:
         """
