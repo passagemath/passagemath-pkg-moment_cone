@@ -46,7 +46,7 @@ class Inequality:
     ):
         if w is None and inversions is None and gr_inversions is None :
             raise ValueError("At least one of w, inversions or gr_inversions, should be defined")
-        assert w is None or len(tau.G) == len(self.w)
+        assert w is None or len(tau.G) == len(list(w))
             
         self._tau = tau
         self._w = w
