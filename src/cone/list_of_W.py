@@ -49,7 +49,6 @@ def List_Inv_Ws_Mod(tau : Tau,V: Representation) -> Iterable[dict[int,list[Root]
     #Initialization of target_weights to len(grading_positive_weights)
     target_weights = {key: len(value) for key, value in tau.positive_weights(V).items()}
     for k in range(s):
-        print(nbs_blocks[k])
         for i in range(nbs_blocks[k]):
             for j in range(i,nbs_blocks[k]):
                 size_grid[k,i,j] = [tau.reduced.mult[k][i],tau.reduced.mult[k][j+1]]
@@ -123,13 +122,15 @@ def List_Inv_W_Mod_rec(nbs_blocks : list[int],current_inv,weights_grid,size_grid
             for mu in current_part_list :
                 next_inv = current_inv.copy() # copy to avoid confusion
                 next_inv[*current_pos]=mu
+                print("mu, current_pos, next_inv, target_weights,p,l",mu, current_pos, next_inv,target_weights,p,l)
                 # Ajust inner and outer
                 inner_grid_next=inner_grid.copy()    #deepcopy?
                 outer_grid_next=outer_grid.copy()
                 ## above current_pos
                 for a in range(i):
-                    print("next_inv,inner_grid,outer_grid,k,a,i,j",next_inv,inner_grid,outer_grid,k,a,i,j)
-                    inner_grid_next[k,a,j],outer_grid_next[k,a,j] = adjust_inner_outer_ijk(inner_grid[k,a,j],outer_grid[k,a,j],next_inv[k,a,i-1],next_inv[k,i,j])
+                    inner_grid_next[k,a,j],outer_grid_next[k,a,j] = adjust_inner_outer_ijk(inner_grid[k,a,j],outer_grid[k,a,j], next_inv[k,a,j-i+a], next_inv[k,i,j])
+                    print("next_inv,inner_grid, outer_grid,k,a,i,j,current_pos,mu", next_inv,inner_grid_next,outer_grid_next,k,a,i,j,current_pos,mu)
+
                 """
                     new_inner=[]
                     new_outer=[]
@@ -177,15 +178,17 @@ def List_Inv_W_Mod_rec(nbs_blocks : list[int],current_inv,weights_grid,size_grid
                 if p in target_weights_next.keys():
                     target_weights_next[p]-=l
                 # Exit if not possible : inner, outer incompatible with target_weights
+                to_continue=True
                 for p1 in target_weights_next.keys():
                     MAX_mult=sum(sum(outer_grid_next[*free_pos]) for free_pos in Dic_tau_redroots[p1])
                     MIN_mult=sum(sum(inner_grid_next[*free_pos]) for free_pos in Dic_tau_redroots[p1])
                     if MAX_mult < target_weights_next[p1] or MIN_mult > target_weights_next[p1] :
-                        print("a")
-                        return []
+                        to_continue=False
+                        print("stop this branch")
                     # Recursive call
-                result+= List_Inv_W_Mod_rec(nbs_blocks, next_inv, weights_grid, size_grid, inner_grid_next, outer_grid_next, target_weights_next, List_redroots_next, Dic_tau_redroots)
-    print("rrrrrrrrrrrrrrr",result)
+                if to_continue:
+                    result+= List_Inv_W_Mod_rec(nbs_blocks, next_inv, weights_grid, size_grid, inner_grid_next, outer_grid_next, target_weights_next, List_redroots_next, Dic_tau_redroots)
+    print("partial function result, inner_grid,outer_grid,next_inv,",result)
     return result
         
 """        
