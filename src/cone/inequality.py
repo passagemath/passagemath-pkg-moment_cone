@@ -213,26 +213,12 @@ class Inequality:
                    w    = 0 1 | 1 0 | 0 1 | 2 0 1 | 0,
                    wtau = 1 4 | 4 1 | 6 2 | 3 1 5 | 1)
         """
-        if self._w is not None :
-            pairs = tuple(zip(self.tau.components, self.w))
-            blocks = (sorted(b) for b in Blocks(pairs, self.tau.G.outer))
-            tau_components, w = zip(*itertools.chain.from_iterable(blocks))
-            tau = Tau(tau_components)
-            return Inequality(tau, w=w)
-        elif self._inversions is not None :
-            pairs = tuple(zip(self.tau.components, self.inversions))
-            blocks = (sorted(b) for b in Blocks(pairs, self.tau.G.outer))
-            tau_components, invs = zip(*itertools.chain.from_iterable(blocks))
-            tau = Tau(tau_components)
-            return Inequality(tau, inversions=invs)
-        else :
-            print("aaa",self.tau.components,self.gr_inversions)
-            pairs = tuple(zip(self.tau.components, self.gr_inversions))
-            print(pairs, self.tau.G.outer)
-            blocks = (sorted(b) for b in Blocks(pairs, self.tau.G.outer))
-            tau_components, gr_invs = zip(*itertools.chain.from_iterable(blocks))
-            tau = Tau(tau_components)
-            return Inequality(tau, gr_inversions=gr_invs)
+        pairs = tuple(zip(self.tau.components, self.w))
+        blocks = (sorted(b) for b in Blocks(pairs, self.tau.G.outer))
+        tau_components, w = zip(*itertools.chain.from_iterable(blocks))
+        tau = Tau(tau_components)
+        return Inequality(tau, w=w)
+        
 
 
     
