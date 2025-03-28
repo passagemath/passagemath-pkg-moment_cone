@@ -79,7 +79,7 @@ class Inequality:
         """
         if self._inversions is None and self._gr_inversions is not None :
             # Compute from gr_inversions
-            self._inversions = chain.from_iterable(self._gr_inversions.values())
+            self._inversions = itertools.chain.from_iterable(self._gr_inversions.values())
         elif self._inversions is None :
             # Compute from w
             self._inversions = self._compute_inversions_from_w()
@@ -98,9 +98,16 @@ class Inequality:
         """
         Compute w from the inversions.
         """
-        #TODO avec perm_from_inversions
-        
-        return 
+        w=[]
+        dims=self.tau.G
+        inversions=self.inversions
+        classified_inversions=[[] for _ in range(len(dims))]
+        for inv in inversions:
+            classified_inversions[inv.k].append(inv)
+        for i,d in enumerate(dims):
+            i_inversions=[(inv.i,inv.j) for inv in classified_inversions[i]]
+            w.append(Permutation.from_inversions(d,i_inversions))
+        return tuple(w)
 
     def _compute_inversions_from_w(self) -> dict[int, list[Root]]:
         """
@@ -147,7 +154,7 @@ class Inequality:
         taup = Tau(
             Blocks.from_blocks([[t for t, i in taub] for taub in tau_pairs])
         )
-        w = (Permutation([i for t, i in taub]) for taub in tau_pairs)
+        w = tuple((Permutation([i for t, i in taub]) for taub in tau_pairs))
         return Inequality(taup, w=w)
     
     @staticmethod
