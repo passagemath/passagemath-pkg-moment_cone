@@ -91,15 +91,13 @@ def adjust_inner_outer_ijk(inner_ik,outer_ik,entry_ij,entry_jk,mi,mj):
     return (inner_ik_new,outer_ik_new)
 
 def List_Inv_W_Mod_rec(nbs_blocks : list[int],sizes_blocks, current_inv,weights_grid,inner_grid,outer_grid,target_weights,List_pos,Dic_tau_redroots,sum_sym : tuple[int],test_inc : bool):
-
+    #if current_inv[0,0,1]==[1]:
+    #    print("cccccccc", current_inv,inner_grid,outer_grid,test_inc)
     if len(List_pos)==0: #last position already hit
         return [Table_part_2_inv_list(nbs_blocks,sizes_blocks,weights_grid,current_inv)]
     current_pos=List_pos[0]
     List_pos_next=List_pos[1:]
     k,i,j=current_pos
-    test_inc_next=test_inc
-    if len(List_pos_next)!=0 and List_pos_next[0][0]>k: #Reinit test_inc when a new bloc appears 
-        test_inc_next=True 
     #if current_pos[0] in sum_sym : #Reinit test_inc when a new bloc (with respect to symmetries of tau); argument passed to future inductive call
     #    test_inc=True
     test_eff=(current_pos[0] not in sum_sym) #In the current instance of List_Inv_W_Mod_rec, we will consider comparisons with the previous bloc only when it satisfies tau.components[k-1] = tau.components[k] (until test_inc=False) 
@@ -117,54 +115,57 @@ def List_Inv_W_Mod_rec(nbs_blocks : list[int],sizes_blocks, current_inv,weights_
     else:
         target_lengths=[0]
     # We run over these lengths
-    if nbs_blocks[k]==0: 
-        print("fffffffffffffffffffffff")
-        return  List_Inv_W_Mod_rec(nbs_blocks, sizes_blocks, current_inv, weights_grid, inner_grid, outer_grid, target_weights, List_pos_next,Dic_tau_redroots_next,sum_sym,test_inc_next)
-    else:
-        for l in target_lengths :
-            partit=[list(part) for part in Partitions(l, inner=inner_grid[*current_pos], outer=outer_grid[*current_pos])]
-            current_part_list=[part+[0]*(len(inner_grid[*current_pos])-len(part)) for part in partit]
-            #current_part_list=[list(part)+[0]*(len(inner_grid[*current_pos])-len(part)) for part in Partitions(l, inner=inner_grid[*current_pos], outer=outer_grid[*current_pos])]
-            s= len(weights_grid) 
-            for mu in current_part_list :
-                # If test_inc keep only mu that are bigger or equal
-                if test_inc and test_eff:
-                     mu_ref=current_inv[k-1,i,j]
-                     if mu < mu_ref:
-                         continue # skip this mu
-                     if mu > mu_ref:
-                         test_inc = False # for some lexicographic order, we have ensured that w[k]>w[k-1]
-                next_inv = current_inv.copy() # copy to avoid confusion
-                next_inv[*current_pos]=mu
-                #print("mu, current_pos, next_inv, target_weights,p,l",mu, current_pos, next_inv,target_weights,p,l)
-                # Ajust target_weights
-                target_weights_next=target_weights.copy() # copy to avoid confusion
-                if p in target_weights_next.keys():
-                    target_weights_next[p]-=l
-                # Ajust inner and outer and exit if incompatibility (inner bigger than outer).
-                to_continue=True
-                inner_grid_next=inner_grid.copy()    #deepcopy?
-                outer_grid_next=outer_grid.copy()
-                ## above current_pos
-                bound_a=max(2*i-j-1,0)
-                for a in range(bound_a,i):
-                    inner_grid_next[k,a,j],outer_grid_next[k,a,j] = adjust_inner_outer_ijk(inner_grid[k,a,j],outer_grid[k,a,j], next_inv[k,a,i-1], next_inv[k,i,j], sizes_blocks[k][a], sizes_blocks[k][i])
-                bound_b=min(2*j-i+1, nbs_blocks[k])
-                for b in range(j+1,bound_b):
-                    inner_grid_next[k,i,b],outer_grid_next[k,i,b] = adjust_inner_outer_ijk(inner_grid[k,i,b],outer_grid[k,i,b], next_inv[k,i,j], next_inv[k,j+1,b], sizes_blocks[k][i], sizes_blocks[k][j+1])
+    #if current_inv[0,0,1]==[1]:
+    #    print("ddddddddddd", current_pos, target_lengths)
+    for l in target_lengths :
+        partit=[list(part) for part in Partitions(l, inner=inner_grid[*current_pos], outer=outer_grid[*current_pos])]
+        current_part_list=[part+[0]*(len(inner_grid[*current_pos])-len(part)) for part in partit]
+        #current_part_list=[list(part)+[0]*(len(inner_grid[*current_pos])-len(part)) for part in Partitions(l, inner=inner_grid[*current_pos], outer=outer_grid[*current_pos])]
+        s= len(weights_grid) 
+        for mu in current_part_list :
+            # If test_inc keep only mu that are bigger or equal
+            if test_inc and test_eff:
+                 mu_ref=current_inv[k-1,i,j]
+                 if mu < mu_ref:
+                     #if current_inv[0,0,1]==[1]:
+                     #     print("eeeeee", mu, mu_ref, current_inv,inner_grid,outer_grid)
+                     continue # skip this mu
+                 if mu > mu_ref:
+                     test_inc = False # for some lexicographic order, we have ensured that w[k]>w[k-1]
+            next_inv = current_inv.copy() # copy to avoid confusion
+            next_inv[*current_pos]=mu
+            #print("mu, current_pos, next_inv, target_weights,p,l",mu, current_pos, next_inv,target_weights,p,l)
+            # Ajust target_weights
+            target_weights_next=target_weights.copy() # copy to avoid confusion
+            if p in target_weights_next.keys():
+                target_weights_next[p]-=l
+            # Ajust inner and outer and exit if incompatibility (inner bigger than outer).
+            to_continue=True
+            inner_grid_next=inner_grid.copy()    #deepcopy?
+            outer_grid_next=outer_grid.copy()
+            ## above current_pos
+            bound_a=max(2*i-j-1,0)
+            for a in range(bound_a,i):
+                inner_grid_next[k,a,j],outer_grid_next[k,a,j] = adjust_inner_outer_ijk(inner_grid[k,a,j],outer_grid[k,a,j], next_inv[k,a,i-1], next_inv[k,i,j], sizes_blocks[k][a], sizes_blocks[k][i])
+            bound_b=min(2*j-i+1, nbs_blocks[k])
+            for b in range(j+1,bound_b):
+                inner_grid_next[k,i,b],outer_grid_next[k,i,b] = adjust_inner_outer_ijk(inner_grid[k,i,b],outer_grid[k,i,b], next_inv[k,i,j], next_inv[k,j+1,b], sizes_blocks[k][i], sizes_blocks[k][j+1])
 
-                    #for j in 
-                    #print("next_inv,inner_grid, outer_grid,k,a,i,j,current_pos,mu", next_inv,inner_grid_next,outer_grid_next,k,a,i,j,current_pos,mu)
-                # Exit if not possible : inner, outer incompatible with target_weights
-                for p1 in target_weights_next.keys():
-                    MAX_mult=sum(sum(outer_grid_next[*free_pos]) for free_pos in Dic_tau_redroots_next[p1])
-                    MIN_mult=sum(sum(inner_grid_next[*free_pos]) for free_pos in Dic_tau_redroots_next[p1])
-                    if MAX_mult < target_weights_next[p1] or MIN_mult > target_weights_next[p1] :
-                        to_continue=False
-                        #print("stop this branch, next_inv, inner, outer, current_pos",inner_grid_next, outer_grid_next, next_inv,current_pos)
-                # Recursive call
-                if to_continue:
-                    result+= List_Inv_W_Mod_rec(nbs_blocks, sizes_blocks, next_inv, weights_grid, inner_grid_next, outer_grid_next, target_weights_next, List_pos_next, Dic_tau_redroots_next,sum_sym,test_inc_next)
+                #for j in 
+                #print("next_inv,inner_grid, outer_grid,k,a,i,j,current_pos,mu", next_inv,inner_grid_next,outer_grid_next,k,a,i,j,current_pos,mu)
+            # Exit if not possible : inner, outer incompatible with target_weights
+            for p1 in target_weights_next.keys():
+                MAX_mult=sum(sum(outer_grid_next[*free_pos]) for free_pos in Dic_tau_redroots_next[p1])
+                MIN_mult=sum(sum(inner_grid_next[*free_pos]) for free_pos in Dic_tau_redroots_next[p1])
+                if MAX_mult < target_weights_next[p1] or MIN_mult > target_weights_next[p1] :
+                    to_continue=False
+                    #print("stop this branch, next_inv, inner, outer, current_pos",inner_grid_next, outer_grid_next, next_inv,current_pos)
+            # Recursive call
+            if to_continue:
+                test_inc=test_inc
+                if len(List_pos_next)!=0 and List_pos_next[0][0]>k: #Reinit test_inc when a new bloc appears 
+                    test_inc=True 
+                result+= List_Inv_W_Mod_rec(nbs_blocks, sizes_blocks, next_inv, weights_grid, inner_grid_next, outer_grid_next, target_weights_next, List_pos_next, Dic_tau_redroots_next,sum_sym,test_inc)
     #print("partial function result,next_inv,current_pos",result, next_inv,current_pos)
     return result
         
