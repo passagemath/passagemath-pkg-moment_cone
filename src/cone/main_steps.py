@@ -645,12 +645,11 @@ class ExportStep(FilterStep[Inequality]):
 
 ###############################################################################
 InequalityFilterStr = Literal[
-    "ModuloReduction",
     "PiDominancy",
     "LinearTriangular",
     "BKRCondition",
-    "Birationality",
     "Grobner",
+    "Birationality",   
 ]
 
 inequalities_filter_dict: Final[dict[InequalityFilterStr, type[Step]]] = {
