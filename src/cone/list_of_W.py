@@ -91,6 +91,8 @@ def adjust_inner_outer_ijk(inner_ik,outer_ik,entry_ij,entry_jk, mi: int, mj: int
              outer_ik_new.append(outer_ik[i1])
          else:
              outer_ik_new.append(min(outer_ik[i1],entry_jk[mj-entry_ij[i1]-1]))
+         if inner_ik_new[-1]>outer_ik_new[-1]:
+             print("hhhhhhhhhhhhhhhhh inner_ik, inner_ik_new, outer_ik, outer_ik_new,entry_ij, entry_jk,mi,mj", inner_ik, inner_ik_new, outer_ik, outer_ik_new,entry_ij, entry_jk,mi,mj) 
     return (inner_ik_new,outer_ik_new)
 
 def List_Inv_W_Mod_rec(nbs_blocks : list[int],sizes_blocks, current_inv,weights_grid,inner_grid,outer_grid,target_weights,List_pos,Dic_tau_redroots,sum_sym : tuple[int],test_inc : bool):

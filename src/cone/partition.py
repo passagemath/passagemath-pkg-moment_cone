@@ -150,7 +150,7 @@ class Partition:
             for tail_sp in tail.all_subpartitions():
                 yield Partition((x + 1, *tail_sp), check=False)
 
-    def find_max_index(L: "Partition", Out: "Partition"): # output not typed because int or None
+def find_max_index(L: "Partition", Out: "Partition"): # output not typed because int or None
     """
     Biggest index i that can be increased in L to stay a subpartition of Out by keepping the first values of L unchanged.
     Return None if such an index does not exist.
