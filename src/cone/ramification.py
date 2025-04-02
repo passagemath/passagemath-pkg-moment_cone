@@ -24,6 +24,7 @@ from .utils import prod
 
     
 def is_not_contracted(inversions_v: tuple[Root], tau: Tau, V: Representation, method: Method,non_positive_weights: list[Weight],positive_weights: list[Weight]) -> bool:
+
     """
     ???
 
