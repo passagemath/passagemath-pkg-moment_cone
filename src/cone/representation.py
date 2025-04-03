@@ -9,6 +9,7 @@ __all__ = (
 from abc import ABC, abstractmethod
 from functools import cached_property
 import itertools
+import numpy as np
 
 from .typing import *
 from .linear_group import LinearGroup
@@ -80,23 +81,15 @@ class Representation(CachedClass, ABC):
         ...
 
     @cached_property
-    def actionK(self) -> dict[Root, Matrix]:
+    def actionK(self):
         """
-        The list of matrices rho_V(xi) for xi in the bases of K.
+        The list of matrices rho_V(xi) for xi in the bases of K as a tridimensional np.array.
+        The first entry are indexed by all_rootsK using the dictionnary dict_rootK of the class LinearGroup.
+        The other entries are indexed by self.all_Weights using self.index_of_weight(chi).
         """
-        from .rings import I
-        L={}
-        for beta in Root.all_of_B(self.G) : 
-            i,j = beta.i,beta.j
-            if i == j :
-                L[beta]=I*self.rhoEij(beta)
-            else :
-                A=self.rhoEij(beta)
-                B=self.rhoEij(beta.opposite)
-                L[beta]=A-B
-                L[beta.opposite]=I*(A+B)
-        return L
-
+        ... 
+                
+                
     #TODO: unify rhoEij and action_op_el (should be done with sparse matrix since otherwise, much more time of computation, e.g. \times 3-4 for kron 4 4 4)
     @abstractmethod
     def action_op_el(self, alpha: Root, v: Vector) -> Vector:
@@ -238,6 +231,58 @@ class KroneckerRepresentation(Representation):
                 as_list=list(vector(sum(w, start=())))
             ) # Summing tuples is concatenating them 
 
+    @cached_property
+    def actionK(self):
+        """
+        The list of matrices rho_V(xi) for xi in the bases of K as a tridimensional np.array.
+        The first entry are indexed by all_rootsK using the dictionnary dict_rootK of the class LinearGroup.
+        The other entries are indexed by self.all_Weights using self.index_of_weight(chi).
+        """
+        print('ici')
+        alphatest=Root(0,1,0)
+        L=Root.dict_rootK(self.G)
+        shiftI = self.dim # basis over the real e_0,...,e_{D-1},Ie_0,Ie_1,...
+        result=np.zeros((self.G.dim,2*self.dim,2*self.dim), dtype=np.int8)
+        for chi in self.all_weights:
+            id_chi=self.index_of_weight(chi)
+            #print('chi',chi.as_list)
+            for k,b in enumerate(chi.as_list):
+                # entries for action of I E^k_bb
+                result[L[Root(k,b,b)],shiftI+id_chi,id_chi]=1
+                result[L[Root(k,b,b)],id_chi,shiftI+id_chi]=-1
+                for j in range(b+1,self.G[k]):
+                    #print(chi.as_list[:k] + (j,) + chi.as_list[k+1:])
+                    chi_j = WeightAsList(
+                        self.G,
+                        as_list=chi.as_list[:k] + (j,) + chi.as_list[k+1:]
+                        )
+                    id_j = self.index_of_weight(chi_j)
+                    #print('id',L[Root(k,i,j)],id_chi,id_j)
+                    #if Root(k,b,j) == alphatest or Root(k,j,b) == alphatest:
+                    #    print('là1')
+                    # entries for action of E^k_ij - E^k_ji
+                    result[L[Root(k,b,j)],id_j,id_chi]=-1
+                    result[L[Root(k,b,j)],shiftI+id_j,shiftI+id_chi]=-1
+                    result[L[Root(k,j,b)],shiftI+id_j,id_chi]=1
+                    result[L[Root(k,j,b)],id_j,shiftI+id_chi]=-1
+
+                for i in range(b):
+                    #print(chi.as_list[:k] + (i,) + chi.as_list[k+1:])
+                    chi_i = WeightAsList(
+                        self.G,
+                        as_list=chi.as_list[:k] + (i,) + chi.as_list[k+1:]
+                        )
+                    id_i = self.index_of_weight(chi_i)
+                    #print('id',L[Root(k,i,j)],id_chi,id_i)
+                    # entries for action of E^k_ij - E^k_ji
+                    #if Root(k,b,i) == alphatest or Root(k,i,b) == alphatest:
+                    #    print('là2',L[Root(k,i,b)],L[Root(k,b,i)],shiftI+id_i,id_chi)
+                    result[L[Root(k,i,b)],id_i,id_chi]=1
+                    result[L[Root(k,i,b)],shiftI+id_i,shiftI+id_chi]=1
+                    result[L[Root(k,b,i)],shiftI+id_i,id_chi]=1
+                    result[L[Root(k,b,i)],id_i,shiftI+id_chi]=-1
+        return(result)            
+    
     def rhoEij(self, alpha: Root) -> Matrix:
         """
         Return the matrix rho_V(E_alpha).
