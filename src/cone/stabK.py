@@ -48,9 +48,13 @@ def dim_gen_stab_of_K(T,ListK = None,ListChi = None) -> int: # New
     
     n: int = len(ListChi)  # Size of the square matrices that is dimension of the represention as a real vector space
     # Create the vector v in the representation
-    v = vector(ZZ, [randint(-9,9) for i in range(n)])
+    #v = vector(ZZ, [randint(-9,9) for i in range(n)])
+    v = np.random.randint(-9, 10, size=n) # higher bound in excluded in Numpy
+
     # Construct the matrix M
-    M = matrix(QQ, n, dk, lambda i, k: sum([T[ListK[k],ListChi[i],ListChi[j]] * v[j] for j in range(n)]))
+    #M = matrix(QQ, n, dk, lambda i, k: sum([T[ListK[k],ListChi[i],ListChi[j]] * v[j] for j in range(n)]))
+    M = matrix(QQ, (T[np.ix_(ListK, ListChi, ListChi)] * v).sum(axis=-1).T)
+
     #from sympy import Matrix as Matrix_sympy
     #Ms = Matrix_sympy(n, dk, lambda i, k: sum(T[ListK[k]][ListChi[i]][ListChi[j]] * v[j] for j in range(n)))
     #Bs_tmp, pivots = Ms.T.rref()
