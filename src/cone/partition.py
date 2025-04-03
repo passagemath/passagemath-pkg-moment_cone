@@ -219,18 +219,19 @@ def gen_partitions(
     ) -> list[Partition]:
     """
     Generate all the partitions containing In contained in Out and of weight in [min_weight, max_weight]
-    >>> [l for l in gen_partitions(4,6,[2,1,0],[4,3,1])]
-    [[2, 1, 1],
-     [2, 2, 0],
-     [2, 2, 1],
-     [3, 1, 0],
-     [3, 1, 1],
-     [3, 2, 0],
-     [3, 2, 1],
-     [3, 3, 0],
-     [4, 1, 0],
-     [4, 1, 1],
-     [4, 2, 0]]
+    >>> for l in gen_partitions(4, 6, [2,1,0], [4,3,1]):
+    ...     print(l)
+    Partition((2, 1, 1))
+    Partition((2, 2))
+    Partition((2, 2, 1))
+    Partition((3, 1))
+    Partition((3, 1, 1))
+    Partition((3, 2))
+    Partition((3, 2, 1))
+    Partition((3, 3))
+    Partition((4, 1))
+    Partition((4, 1, 1))
+    Partition((4, 2))
     """
     if len(Out)==0:
         if min_weight == 0 :
