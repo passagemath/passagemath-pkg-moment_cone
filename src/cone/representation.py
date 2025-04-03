@@ -230,7 +230,8 @@ class KroneckerRepresentation(Representation):
                 self.G,
                 as_list=list(vector(sum(w, start=())))
             ) # Summing tuples is concatenating them 
-
+    
+    #@property
     @cached_property
     def actionK(self):
         """

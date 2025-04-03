@@ -20,33 +20,6 @@ from .rings import matrix, Matrix, vector, Vector, QQ, ZZ, I, real_part, imag_pa
 
 
 
-def mat_C_to_R(M : Matrix) -> Matrix :
-    "M is a matrix with complex coefficients. Replace each coefficient coefficien a+bI by a 2x2-matrix [a,-b,b,a]"
-    A = real_part(M)
-    B = imag_part(M)
-    p = M.nrows()
-    q = M.ncols() 
-    R = matrix(QQ,2*p,2*q)
-    for i in range(p):
-        for j in range(q):
-            R[2*i,2*j]=A[i,j]
-            R[2*i+1,2*j+1]=A[i,j]
-            R[2*i+1,2*j]=B[i,j]
-            R[2*i,2*j+1]=-B[i,j]
-    return(R)
-
-def Lie_action_as_matrices_Vtau(tau : Tau, matrices: dict[Root, Matrix], V: Representation) -> dict[Root, Matrix]: 
-    Indices_V_tau = [V.index_of_weight(chi) for chi in tau.orthogonal_weights(V)]
-    n=len(Indices_V_tau)
-    res={}
-
-    # Todo faire tau.all_orthogonal_roots pour éviter les 3 cas ci-dessous
-    for beta in tau.orthogonal_rootsB :
-        res[beta]=matrices[beta].matrix_from_rows_and_columns(Indices_V_tau,Indices_V_tau)
-        if beta.i != beta.j :
-            res[beta.opposite]=matrices[beta.opposite].matrix_from_rows_and_columns(Indices_V_tau,Indices_V_tau)
-    return(res)
-
 
 
 def dim_gen_stab_of_K(T,ListK = None,ListChi = None) -> int: # New
@@ -80,9 +53,9 @@ def dim_gen_stab_of_K(T,ListK = None,ListChi = None) -> int: # New
     v = vector(ZZ, [randint(-9,9) for i in range(n)])
     # Construct the matrix M
     M = matrix(QQ, n, dk, lambda i, k: sum([T[ListK[k],ListChi[i],ListChi[j]] * v[j] for j in range(n)]))
-    from sympy import Matrix as Matrix_sympy
-    Ms = Matrix_sympy(n, dk, lambda i, k: sum(T[ListK[k]][ListChi[i]][ListChi[j]] * v[j] for j in range(n)))
-    #Bs_tmp, pivots = A_sympy.T.rref()
+    #from sympy import Matrix as Matrix_sympy
+    #Ms = Matrix_sympy(n, dk, lambda i, k: sum(T[ListK[k]][ListChi[i]][ListChi[j]] * v[j] for j in range(n)))
+    #Bs_tmp, pivots = Ms.T.rref()
 
     # Echelon form of M.transpose() to computation modulo the image F of M
     B_tmp = M.transpose().echelon_form().rref() # reduced echelon form
