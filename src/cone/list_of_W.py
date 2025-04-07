@@ -4,25 +4,21 @@ __all__ = (
     "Check_Rank_Tpi",
 )
 
-import operator
-import itertools
 import numpy as np
 from typing import Tuple
 from collections import defaultdict
-
 
 from .typing import *
 from .permutation import *
 from .partition import *
 from .root import *
 from .vector_chooser import *
-from .rings import matrix
+from .rings import matrix, QQ
 from .tau import Tau
 from .representation import *
 from .inequality import Inequality
 from .utils import *
 from .array import *
-from copy import copy, deepcopy
 
 
 def List_Inv_Ws_Mod(tau: Tau, V: Representation) -> list[dict[int,list[Root]]]:
@@ -258,14 +254,13 @@ def inversion_set_to_permutation(
     return Permutation(w)
 
 
-def Check_Rank_Tpi(ineq : Inequality, V: Representation, method: Method) -> bool :
+def Check_Rank_Tpi(ineq : Inequality, V: Representation, method: Method) -> bool:
     """
     Check if Tpi is inversible at a general point of V^\tau. 
     General means randon if the method is probabilist and formal if the method is symbolic.
     The matrix being block trinagular, the function check successively the diagonal blocks.
     """
-    ineq_check=Inequality.from_tau(Tau(((0, -1, 0, 1),(0, 1, -1, 0),(1, 0, -1, 0),(-1,))))
-    tau=ineq.tau
+    tau = ineq.tau
     G = tau.G 
     # Ring depending on the computational method
     if method == "probabilistic":
@@ -274,20 +269,23 @@ def Check_Rank_Tpi(ineq : Inequality, V: Representation, method: Method) -> bool
         ring = V.QV
     else:
         raise ValueError(f"Invalid value {method} of the computation method")
+    
+    import numpy as np
+
     zero_weights = tau.orthogonal_weights(V)
-    v = point_vect(zero_weights, V, ring, bounds=(-100, 100))
+    chi_Vtau_idx=[V.index_of_weight(chi) for chi in zero_weights]
+    #v = point_vect(zero_weights, V, ring, bounds=(-100, 100))
     gw = tau.grading_weights(V)
     gr = ineq.gr_inversions 
     for x in sorted(gr.keys(),reverse=True): # Run over the possible values of tau.scalar(root) for root inversion of w
-        M=matrix(ring,len(gr[x]))
-        for col,root in enumerate(gr[x]): # List of roots such that tau.scalar(root)=x
-               uv=V.action_op_el(root,v)
-               for row, chi in enumerate(gw[x]): # List of weights such that tau.scalar(chi)=x 
-                   M[row,col]=uv[V.index_of_weight(chi)]
+        gr_idx=[a.index_in_all_of_U(G) for a in gr[x]]
+        gw_idx=[V.index_of_weight(chi) for chi in gw[x]]
+        Mn = V.T_Pi_3D[np.ix_(chi_Vtau_idx, gr_idx, gw_idx)].sum(axis=0) 
+        M=matrix(QQ,Mn) # Mettre une conversion ici pour avoir accés au rang ???        
         rank_M = M.change_ring(ring.fraction_field()).rank()
-        if rank_M<M.nrows():
-               return(False)
-    return(True)	       
+        if rank_M < M.nrows():
+               return False
+    return True       
 
 
 

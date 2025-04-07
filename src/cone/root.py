@@ -65,6 +65,23 @@ class Root:
             for i, j in itertools.combinations(range(dk), 2):
                 yield Root(k, i, j)
 
+
+    def index_in_all_of_U(self, G: LinearGroup) -> int:
+        """
+        Returns index of this weight in the lexicographical order for given dimensions (see `all_of_K` method)
+        
+        By default, it will returns the index attribute (if not None) assuming that it has been defined
+        for the same dimensions. `use_internal_index` can be set to `False` in order to force the computation
+        of the index for the given dimension. In that case, the internal index will be updated for later reuse.
+
+        >>> G = LinearGroup((2, 3, 4))
+        >>> all(i == root.index_in_all_of_U(G) for i, root in enumerate(Root.all_of_U(G)))
+        True
+        """
+        tot = sum((x * (x - 1)) // 2 for x in G[:self.k])
+        return tot + (G[self.k] - self.i - 1) * self.i + (self.i * (self.i + 1)) // 2 + self.j - self.i - 1
+    
+
     @staticmethod
     def all_of_B(G: LinearGroup) -> Iterable["Root"]:
         """

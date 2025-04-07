@@ -9,6 +9,8 @@ __all__ = (
 from abc import ABC, abstractmethod
 from functools import cached_property
 import itertools
+import numpy as np
+from numpy.typing import NDArray
 
 from .typing import *
 from .linear_group import LinearGroup
@@ -70,6 +72,17 @@ class Representation(CachedClass, ABC):
         It assumes that G is arranged so that blocks are contiguous.
         """
         ...
+
+    @cached_property
+    @abstractmethod
+    def T_Pi_3D(self) -> NDArray:
+        """
+        The list of matrices rho_V(xi) for xi in the bases of K as a tridimensional np.array.
+        The first entry are indexed by all_rootsK using the dictionary dict_rootK of the class LinearGroup.
+        The other entries are indexed by self.all_Weights using self.index_of_weight(chi).
+        """
+    ...
+
 
     @abstractmethod
     def rhoEij(self, alpha : Root) -> Matrix:
@@ -166,6 +179,22 @@ class Representation(CachedClass, ABC):
     @cached_property
     def QU_QV(self) -> PolynomialRingForWeights:
         return (self.G).QU((self.QV.sage_ring).fraction_field())
+
+    def random_element(self):
+        import numpy as np
+        return np.random.randint(-999, 1000, size=self.dim)
+    
+    @cached_property
+    def fixed_random_element_Q(self):
+        return self.random_element()
+    
+    def fixed_random_element_QI(self):
+        from .rings import I
+        return self.random_element() + I * self.random_element()
+
+    @cached_property
+    def fixed_random_line_in(self):
+        return self.random_element() * self.QZ('z') + self.random_element()
     
 
 class KroneckerRepresentation(Representation):
@@ -238,6 +267,31 @@ class KroneckerRepresentation(Representation):
                 as_list=list(vector(sum(w, start=())))
             ) # Summing tuples is concatenating them 
 
+    @cached_property
+    def T_Pi_3D(self) -> NDArray:
+        """
+        The list of matrices rho_V(xi) for xi in the bases of K as a tridimensional np.array.
+        The first entry are indexed by all_rootsK using the dictionary dict_rootK of the class LinearGroup.
+        The other entries are indexed by self.all_Weights using self.index_of_weight(chi).
+        """
+        import numpy as np
+        result = np.zeros((self.dim, self.G.dimU, self.dim), dtype=np.int8)
+        v = self.random_element()
+        for chi in self.all_weights:
+            id_chi=self.index_of_weight(chi)
+            #print('chi',chi.as_list)
+            for k,b in enumerate(chi.as_list):
+                for i in range(b):
+                    #print(chi.as_list[:k] + (i,) + chi.as_list[k+1:])
+                    chi_i = WeightAsList(
+                        self.G,
+                        as_list=chi.as_list[:k] + (i,) + chi.as_list[k+1:]
+                        )
+                    id_i = self.index_of_weight(chi_i)
+                    result[id_chi,Root(k,i,b).index_in_all_of_U(self.G),id_i] = v[id_chi]
+                    
+        return result
+    
     def rhoEij(self, alpha: Root) -> Matrix:
         """
         Return the matrix rho_V(E_alpha).
