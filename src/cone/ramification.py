@@ -6,6 +6,7 @@ __all__ = (
 
 from random import randint
 import itertools
+import numpy as np
 
 from .typing import *
 from .tau import Tau
@@ -58,14 +59,17 @@ def is_not_contracted(
     
     # FIXME: do we stay we list conversion at each call?
     # Maybe grading root and weight should be implemented using a more convenient class?
-
-    v = point_vect(non_positive_weights, V, ring, bounds=(-10, 10))
-    A = matrix(ring, len(positive_weights), len(inversions_v))
-    for j, root in enumerate(inversions_v):
-        uv = V.action_op_el(root, v)
-        for i, chi in enumerate(positive_weights):
-            A[i, j] = uv[V.index_of_weight(chi)]   
-
+    invs_idx=[a.index_in_all_of_U(V.G) for a in inversions_v]
+    npw_idx=[V.index_of_weight(chi) for chi in non_positive_weights]
+    pw_idx=[V.index_of_weight(chi) for chi in positive_weights]
+    #v = point_vect(non_positive_weights, V, ring, bounds=(-10, 10))
+    #A = matrix(ring, len(positive_weights), len(inversions_v))
+    #for j, root in enumerate(inversions_v):
+    #    uv = V.action_op_el(root, v)
+    #    for i, chi in enumerate(positive_weights):
+    #        A[i, j] = uv[V.index_of_weight(chi)]   
+    An = V.T_Pi_3D(method)[np.ix_(npw_idx, pw_idx, invs_idx)].sum(axis=0) 
+    A=matrix(ring,An)     
     rank_A: int = A.change_ring(ring.fraction_field()).rank()
     return rank_A == len(inversions_v)
 
@@ -83,17 +87,21 @@ def Compute_JA_square_free(ineq: Inequality, V: Representation) -> tuple[Polynom
     ring = V.QV
     # a generic vector in VV^tau
     zero_weights = tau.orthogonal_weights(V)
-    v = point_vect(zero_weights, V, ring, bounds=(-10, 10)) # bounds unuseful here
+    #v = point_vect(zero_weights, V, ring, bounds=(-10, 10)) # bounds unuseful here
+    zw_idx=[V.index_of_weight(chi) for chi in tau.orthogonal_weights(V)]
     gr = ineq.gr_inversions
     Jred: Polynomial = 1
     J: Polynomial = 1
     factors_Jred: list[Polynomial] = []
-    for x in sorted(gr.keys(),reverse=True): # Choose a diagonal block of Tpi that is a weight of tau        
-        M=matrix(ring,len(gr[x]))
-        for col,root in enumerate(gr[x]): # List of roots such that tau.scalar(root)=x
-            uv=V.action_op_el(root, v)
-            for row, chi in enumerate(tau.positive_weights(V)[x]): # List of weights such that tau.scalar(chi)=x 
-                M[row,col]=uv[V.index_of_weight(chi)]
+    for x in sorted(gr.keys(),reverse=True): # Choose a diagonal block of Tpi that is a weight of tau
+        gr_idx=[a.index_in_all_of_U(V.G) for a in gr[x]]
+        gw_idx=[V.index_of_weight(chi) for chi in tau.positive_weights(V)[x]]
+        Mn = V.T_Pi_3D('symbolic')[np.ix_(zw_idx, gw_idx, gr_idx)].sum(axis=0)
+        M=matrix(ring,Mn)
+        #for col,root in enumerate(gr[x]): # List of roots such that tau.scalar(root)=x
+        #    uv=V.action_op_el(root, v)
+        #    for row, chi in enumerate(tau.positive_weights(V)[x]): # List of weights such that tau.scalar(chi)=x 
+        #        M[row,col]=uv[V.index_of_weight(chi)]
         
         Jb: Polynomial = M.det()
         partial_derivatives: list[Polynomial] = [
@@ -160,42 +168,59 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
     J,J_square_free, factors_J_sqf= Compute_JA_square_free(ineq, V) # The Jacobian and it's reduced form
     
     # Generic point v of V(tau<=0) and matrix of Tpi at (e,v)
-    v = point_vect(Neg0_Weights_sorted,V,V.QV)
-    A=matrix(V.QV,len(Pos_Weights_sorted),dU)
-    B0=matrix(V.QV,len(tau.orthogonal_weights(V)),dU)
-    gr = ineq.gr_inversions
-    col=0
-    for x in sorted(gr.keys(),reverse=True): # Choose a diagonal block of Tpi that is a weight of tau
-        if x > 0 :   
-            for root in gr[x]: # List of roots such that tau.scalar(root)=x
-                uv=V.action_op_el(root, v)
-                for row,chi in enumerate(Pos_Weights_sorted):
-                    A[row,col]=uv[V.index_of_weight(chi)]
-                for row,chi in enumerate(tau.orthogonal_weights(V)):
-                    B0[row,col]=uv[V.index_of_weight(chi)]
-                col+=1
+    #v = point_vect(Neg0_Weights_sorted,V,V.QV)
+    #A=matrix(V.QV,len(Pos_Weights_sorted),dU)
+    #B0=matrix(V.QV,len(tau.orthogonal_weights(V)),dU)
+    #gr = ineq.gr_inversions
+
+    #col=0
+    #for x in sorted(gr.keys(),reverse=True): # Choose a diagonal block of Tpi that is a weight of tau
+    #    if x > 0 :
+    #        gr_idx=[a.index_in_all_of_U(G) for a in gr[x]]
+    #        gw_idx=[V.index_of_weight(chi) for chi in gw[x]]   
+    #        for root in gr[x]: # List of roots such that tau.scalar(root)=x
+    #            uv=V.action_op_el(root, v)
+    #            for row,chi in enumerate(Pos_Weights_sorted):
+    #                A[row,col]=uv[V.index_of_weight(chi)]
+    #            for row,chi in enumerate(tau.orthogonal_weights(V)):
+    #                B0[row,col]=uv[V.index_of_weight(chi)]
+    #            col+=1
        
+    inv_idx=[a.index_in_all_of_U(V.G) for a in ineq.inversions]
+    pw_idx=[V.index_of_weight(chi) for chi in Pos_Weights_sorted]
+    npw_idx=[V.index_of_weight(chi) for chi in Neg0_Weights_sorted]
+    zw_idx=[V.index_of_weight(chi) for chi in tau.orthogonal_weights(V)]
+    Azn = V.T_Pi_3D('line_'+method_R0)[np.ix_(npw_idx, pw_idx, inv_idx)].sum(axis=0)
+    Az=matrix(ring_R0,Azn)
+    B0zn = V.T_Pi_3D('line_'+method_R0)[np.ix_(npw_idx, zw_idx, inv_idx)].sum(axis=0) 
+    B0z=matrix(ring_R0,B0zn)
     # The line: gradiant of J
     L0=matrix(V.QV,1,len(tau.orthogonal_weights(V)))
-    for col,chi in enumerate(tau.orthogonal_weights(V)) :
+    for col,idx in enumerate(zw_idx):
+        chi = V.all_weights[idx]
         L0[0,col]=J_square_free.derivative(V.QV.variable(chi))
+    #for col,chi in enumerate(tau.orthogonal_weights(V)) :
+    #    L0[0,col]=J_square_free.derivative(V.QV.variable(chi))
 
     # Dictionnary for substitution    
-    subs_dict: dict[Variable, Variable] = {}    
-    for chi in Neg0_Weights_sorted:
-        if method_R0 == "probabilistic":
-            subs_dict[V.QV.variable(chi)]= randint(-500,500)*V.QZ('z')+randint(-500,500)# TODO :Tester l'effet du changement de 500. Math : Doit-on mettre du I ? 
-        else:
-            va, vb = V.QV2.variable(chi) 
-            subs_dict[V.QV.variable(chi)]= va*ring_R0('z') + vb # type: ignore
+    #subs_dict: dict[Variable, Variable] = {}    
+    #for chi in Neg0_Weights_sorted:
+    #    if method_R0 == "probabilistic":
+    #        subs_dict[V.QV.variable(chi)]= randint(-500,500)*V.QZ('z')+randint(-500,500)# TODO :Tester l'effet du changement de 500. Math : Doit-on mettre du I ? 
+    #    else:
+    #        va, vb = V.QV2.variable(chi) 
+    #        subs_dict[V.QV.variable(chi)]= va*ring_R0('z') + vb # type: ignore
 
     # Substitutions
-    Az=A.subs(subs_dict)
+    #Az=A.subs(subs_dict)
     
-    B0z=B0.subs(subs_dict)
-    L0z=L0.subs(subs_dict)
-    Jz=J.subs(subs_dict)
-    factors_J_sqf_z = sum([list(dict(Poly.subs(subs_dict).factor()).keys()) for Poly in factors_J_sqf],[])
+    #B0z=B0.subs(subs_dict)
+    L0z=L0.subs(V.T_Pi_3D('dict_'+method_R0))
+    #Jz=J.subs(subs_dict)
+    Jz=J.subs(V.T_Pi_3D('dict_'+method_R0))
+    assert method_R0 == 'symbolic' or J.degree() == Jz.degree(), "The random line is not enough generic to intersect each irreducible component of R0. Please Restart."
+    #print("Assert degree",J.degree(), Jz.degree())
+    factors_J_sqf_z = sum([list(dict(Poly.subs(V.T_Pi_3D('dict_'+method_R0)).factor()).keys()) for Poly in factors_J_sqf],[])
     Ldelta=[]
     for delta1 in factors_J_sqf_z:
         quo, rem = Jz.quo_rem(delta1**2)
@@ -220,6 +245,9 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
     # Kernel of Az modulo delta
     noyau=Kernel_modulo_P(ring_R0,Az,Ldelta,LIB)
 
+    #print("inversions",ineq.inversions)
+    #print("orth weights",tau.orthogonal_weights(V))
+    #print("positive weights",tau.positive_weights(V))
     #if Inequality.from_tau(ineq.wtau.end0_representative.sort_mod_sym_dim)  == Inequality.from_tau(Tau(((-1, 0, 1, 0), (0, 1, -1, 0), (1, 0, -1, 0), (-1,))).end0_representative.sort_mod_sym_dim):
     #    print('kernel',noyau)
     # Check divisibility

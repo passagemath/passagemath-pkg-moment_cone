@@ -280,8 +280,8 @@ def Check_Rank_Tpi(ineq : Inequality, V: Representation, method: Method) -> bool
     for x in sorted(gr.keys(),reverse=True): # Run over the possible values of tau.scalar(root) for root inversion of w
         gr_idx=[a.index_in_all_of_U(G) for a in gr[x]]
         gw_idx=[V.index_of_weight(chi) for chi in gw[x]]
-        Mn = V.T_Pi_3D[np.ix_(chi_Vtau_idx, gr_idx, gw_idx)].sum(axis=0) 
-        M=matrix(QQ,Mn) # Mettre une conversion ici pour avoir accés au rang ???        
+        Mn = V.T_Pi_3D(method)[np.ix_(chi_Vtau_idx, gw_idx, gr_idx)].sum(axis=0) 
+        M=matrix(ring,Mn)     
         rank_M = M.change_ring(ring.fraction_field()).rank()
         if rank_M < M.nrows():
                return False

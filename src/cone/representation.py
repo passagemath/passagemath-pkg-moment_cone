@@ -16,7 +16,7 @@ from .typing import *
 from .linear_group import LinearGroup
 from .weight import Weight as WeightBase, WeightAsList, WeightAsListOfList
 from .partition import Partition
-from .rings import Matrix, Vector, Ring, PolynomialRingForWeights
+from .rings import Matrix, Vector, Ring, PolynomialRingForWeights,PolynomialRing, Polynomial, Variable
 from .root import Root
 from .utils import CachedClass
 
@@ -275,20 +275,67 @@ class KroneckerRepresentation(Representation):
         The other entries are indexed by self.all_Weights using self.index_of_weight(chi).
         """
         import numpy as np
-        result = np.zeros((self.dim, self.G.dimU, self.dim), dtype=np.int8)
-        v = self.random_element()
-        for chi in self.all_weights:
-            id_chi=self.index_of_weight(chi)
-            #print('chi',chi.as_list)
-            for k,b in enumerate(chi.as_list):
-                for i in range(b):
-                    #print(chi.as_list[:k] + (i,) + chi.as_list[k+1:])
-                    chi_i = WeightAsList(
-                        self.G,
-                        as_list=chi.as_list[:k] + (i,) + chi.as_list[k+1:]
-                        )
-                    id_i = self.index_of_weight(chi_i)
-                    result[id_chi,Root(k,i,b).index_in_all_of_U(self.G),id_i] = v[id_chi]
+        class CachedResult:
+            def __init__(self, parent):
+                # Calcul effectué une seule fois
+                print("Computation of Tpi (once)")
+                result_Q = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=np.int8)
+                result_QV = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
+                result_line_Q = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
+                result_line_QV = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
+                dict_Q={}
+                K=parent.QV2.fraction_field()
+                ring_R0 = PolynomialRing(K,"z")
+                dict_QV={}
+                
+                v = parent.random_element()
+                va = parent.random_element()
+                vb = parent.random_element()
+                for chi in parent.all_weights:
+                    id_chi=parent.index_of_weight(chi)
+                    vchi_a, vchi_b = parent.QV2.variable(chi)
+                    dict_QV[parent.QV.variable(chi)]= vchi_a*ring_R0('z') + vchi_b
+                    for k,b in enumerate(chi.as_list):
+                        for i in range(b):
+                            chi_i = WeightAsList(
+                                parent.G,
+                                as_list=chi.as_list[:k] + (i,) + chi.as_list[k+1:]
+                                )
+                            id_i = parent.index_of_weight(chi_i)
+                            result_Q[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = v[id_chi]
+                            result_QV[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = parent.QV.variable(chi)
+                            result_line_Q[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = va[id_chi]*parent.QZ('z')+vb[id_chi]
+                            dict_Q[parent.QV.variable(chi)]= va[id_chi]*parent.QZ('z')+vb[id_chi]
+                            result_line_QV[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = vchi_a*ring_R0('z') + vchi_b
+                # Stockage des résultats
+                self.Q = result_Q
+                self.QV = result_QV
+                self.line_Q = result_line_Q
+                self.line_QV = result_line_QV
+                self.dict_Q = dict_Q
+                self.dict_QV = dict_QV
+                 
+            
+            def __call__(self, souhait=None):
+                if souhait == 'probabilistic':
+                    return self.Q
+                elif souhait == 'symbolic':
+                    return self.QV
+                elif souhait == 'line_probabilistic':
+                    return self.line_Q
+                elif souhait == 'line_symbolic':
+                    return self.line_QV
+                elif souhait == 'dict_probabilistic':
+                    return self.dict_Q
+                elif souhait == 'dict_symbolic':
+                    return self.dict_QV
+                # Par défaut, retourner le tuple complet
+                return (self.Q,self.QV,self.line_Q,self.line_QV,self.dict_Q,self.dict_QV)
+        
+        return CachedResult(self)
+    
+        
+        
                     
         return result
     
