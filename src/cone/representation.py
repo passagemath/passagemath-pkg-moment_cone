@@ -180,13 +180,14 @@ class Representation(CachedClass, ABC):
     def QU_QV(self) -> PolynomialRingForWeights:
         return (self.G).QU((self.QV.sage_ring).fraction_field())
 
-    def random_element(self):
-        return np.random.randint(-999, 1000, size=self.dim)
+    def random_element(self):# Random vector avoiding 0 entries
+        return (-1)^np.random.randint(0,2,size=self.dim)*np.random.randint(1, 1000, size=self.dim)
     
     @cached_property
     def fixed_random_element_Q(self):
         return self.random_element()
     
+    @cached_property
     def fixed_random_element_QI(self):
         from .rings import I
         return self.random_element() + I * self.random_element()
