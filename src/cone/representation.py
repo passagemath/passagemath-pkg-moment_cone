@@ -16,7 +16,7 @@ from .typing import *
 from .linear_group import LinearGroup
 from .weight import Weight as WeightBase, WeightAsList, WeightAsListOfList
 from .partition import Partition
-from .rings import Matrix, Vector, Ring, PolynomialRingForWeights,PolynomialRing, Polynomial, Variable
+from .rings import Matrix, Vector, Ring, PolynomialRingForWeights,PolynomialRing, Polynomial, Variable, I
 from .root import Root
 from .utils import CachedClass
 
@@ -280,6 +280,7 @@ class KroneckerRepresentation(Representation):
                 # Calcul effectué une seule fois
                 print("Computation of Tpi (once)")
                 result_Q = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=np.int8)
+                result_QI = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
                 result_QV = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
                 result_line_Q = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
                 result_line_QV = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
@@ -289,6 +290,8 @@ class KroneckerRepresentation(Representation):
                 dict_QV={}
                 
                 v = parent.random_element()
+                v_real = parent.random_element()
+                v_im = parent.random_element()
                 va = parent.random_element()
                 vb = parent.random_element()
                 for chi in parent.all_weights:
@@ -303,12 +306,14 @@ class KroneckerRepresentation(Representation):
                                 )
                             id_i = parent.index_of_weight(chi_i)
                             result_Q[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = v[id_chi]
+                            result_QI[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = v_real[id_chi]+I*v_im[id_chi]
                             result_QV[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = parent.QV.variable(chi)
                             result_line_Q[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = va[id_chi]*parent.QZ('z')+vb[id_chi]
                             dict_Q[parent.QV.variable(chi)]= va[id_chi]*parent.QZ('z')+vb[id_chi]
                             result_line_QV[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = vchi_a*ring_R0('z') + vchi_b
                 # Stockage des résultats
                 self.Q = result_Q
+                self.QI= result_QI
                 self.QV = result_QV
                 self.line_Q = result_line_Q
                 self.line_QV = result_line_QV
@@ -319,7 +324,9 @@ class KroneckerRepresentation(Representation):
             def __call__(self, souhait=None):
                 if souhait == 'probabilistic':
                     return self.Q
-                elif souhait == 'symbolic':
+                elif souhait == 'imaginary_probabilistic':
+                    return self.QI
+                elif souhait == 'symbolic' or souhait =='imaginary_symbolic':
                     return self.QV
                 elif souhait == 'line_probabilistic':
                     return self.line_Q
@@ -488,6 +495,7 @@ class ParticleRepresentation(Representation):
                 # Calcul effectué une seule fois
                 print("Computation of Tpi (once)")
                 result_Q = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=np.int8)
+                result_QI = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
                 result_QV = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
                 result_line_Q = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
                 result_line_QV = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
@@ -497,6 +505,8 @@ class ParticleRepresentation(Representation):
                 dict_QV={}
                 
                 v = parent.random_element()
+                v_real = parent.random_element()
+                v_im = parent.random_element()
                 va = parent.random_element()
                 vb = parent.random_element()
                 for chi in parent.all_weights:
@@ -522,12 +532,14 @@ class ParticleRepresentation(Representation):
                                     chi_i = WeightAsListOfList(parent.G, as_list_of_list=[Li])
                                     id_i = parent.index_of_weight(chi_i)
                                     result_Q[id_chi,id_i,Root(0,i,b).index_in_all_of_U(parent.G)] = mult* (-1)**dec*v[id_chi]
+                                    result_QI[id_chi,id_i,Root(0,i,b).index_in_all_of_U(parent.G)] = mult*(-1)**dec*(v_real[id_chi]+I*v_im[id_chi])
                                     result_QV[id_chi,id_i,Root(0,i,b).index_in_all_of_U(parent.G)] = mult* (-1)**dec*parent.QV.variable(chi)
                                     result_line_Q[id_chi,id_i,Root(0,i,b).index_in_all_of_U(parent.G)] = mult* (-1)**dec*(va[id_chi]*parent.QZ('z')+vb[id_chi])
                                     dict_Q[parent.QV.variable(chi)] = va[id_chi]*parent.QZ('z')+vb[id_chi]
                                     result_line_QV[id_chi,id_i,Root(0,i,b).index_in_all_of_U(parent.G)] = mult* (-1)**dec*(vchi_a*ring_R0('z') + vchi_b)
                 # Stockage des résultats
                 self.Q = result_Q
+                self.QI = result_QI
                 self.QV = result_QV
                 self.line_Q = result_line_Q
                 self.line_QV = result_line_QV
@@ -538,7 +550,9 @@ class ParticleRepresentation(Representation):
             def __call__(self, souhait=None):
                 if souhait == 'probabilistic':
                     return self.Q
-                elif souhait == 'symbolic':
+                elif souhait == 'imaginary_probabilistic':
+                    return self.QI
+                elif souhait == 'symbolic' or souhait =='imaginary_symbolic':
                     return self.QV
                 elif souhait == 'line_probabilistic':
                     return self.line_Q
