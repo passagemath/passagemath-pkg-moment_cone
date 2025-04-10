@@ -181,7 +181,7 @@ class Representation(CachedClass, ABC):
         return (self.G).QU((self.QV.sage_ring).fraction_field())
 
     def random_element(self):# Random vector avoiding 0 entries
-        return (-1)^np.random.randint(0,2,size=self.dim)*np.random.randint(1, 1000, size=self.dim)
+        return (-1)**np.random.randint(0,2,size=self.dim)*np.random.randint(1, 1000, size=self.dim)
     
     @cached_property
     def fixed_random_element_Q(self):
