@@ -19,7 +19,7 @@ from .representation import *
 from .inequality import Inequality
 from .utils import *
 from .array import *
-
+import sympy as sp
 
 def List_Inv_Ws_Mod(tau: Tau, V: Representation) -> list[dict[int,list[Root]]]:
     """
@@ -281,9 +281,12 @@ def Check_Rank_Tpi(ineq : Inequality, V: Representation, method: Method) -> bool
         gr_idx=[a.index_in_all_of_U(G) for a in gr[x]]
         gw_idx=[V.index_of_weight(chi) for chi in gw[x]]
         Mn = V.T_Pi_3D("imaginary_"+method)[np.ix_(chi_Vtau_idx, gw_idx, gr_idx)].sum(axis=0) 
-        M=matrix(ring,Mn)     
+        #M=sp.Matrix(Mn)
+        #rank_M = M.rank()     
+        M=matrix(ring,Mn)
         rank_M = M.change_ring(ring.fraction_field()).rank()
-        if rank_M < M.nrows():
+        #if rank_M < M.shape[0]:
+        if rank_M<M.nrows():
                return False
     return True       
 

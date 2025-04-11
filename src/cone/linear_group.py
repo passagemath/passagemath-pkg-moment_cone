@@ -85,7 +85,7 @@ class LinearGroup(tuple[int, ...]):
         14
         """
         from math import floor
-        return floor(sum(d * d / 2 * (1 - 1 / e)) for d, e in zip(self, Gred))        
+        return floor(sum([d * d / 2 * (1 - 1 / e) for d, e in zip(self, Gred)]))        
 
     def QU(self, base_ring: Optional["Ring"] = None) -> "PolynomialRingForWeights":
         from .rings import PolynomialRingForWeights, QQ
