@@ -11,6 +11,7 @@ from functools import cached_property
 import itertools
 import numpy as np
 from numpy.typing import NDArray
+from typing import NamedTuple
 
 from .typing import *
 from .linear_group import LinearGroup
@@ -20,8 +21,49 @@ from .rings import Matrix, Vector, Ring, PolynomialRingForWeights,PolynomialRing
 from .root import Root
 from .utils import CachedClass
 
-if TYPE_CHECKING:
-    from numpy.typing import NDArray
+
+class TPi3DResult(NamedTuple):
+    """ Result class of Representation.T_Pi_3D method """
+    Q: NDArray
+    QI: NDArray
+    QV: NDArray
+    line_Q: NDArray
+    line_QV: NDArray
+    dict_Q: dict[Polynomial, Polynomial]
+    dict_QV: dict[Polynomial, Polynomial]
+
+    @overload
+    def __call__(
+            self,
+            method: Literal["probabilistic", "imaginary_probabilistic",
+                           'symbolic', 'imaginary_symbolic',
+                           'line_probabilistic', 'line_symbolic']
+        ) -> NDArray:
+        ...
+    
+    @overload
+    def __call__(
+            self,
+            method: Literal['dict_probabilistic', 'dict_symbolic']
+        ) -> dict[Polynomial, Polynomial]:
+        ...
+
+    def __call__(
+            self,
+            method: Literal["probabilistic", "imaginary_probabilistic",
+                           'symbolic', 'imaginary_symbolic',
+                           'line_probabilistic', 'line_symbolic',
+                           'dict_probabilistic', 'dict_symbolic']
+        ) -> NDArray | dict[Polynomial, Polynomial]:
+        match method:
+            case 'probabilistic': return self.Q
+            case 'imaginary_probabilistic': return self.QI
+            case 'symbolic' | 'imaginary_symbolic': return self.QV
+            case 'line_probabilistic': return self.line_Q
+            case 'line_symbolic': return self.line_QV
+            case 'dict_probabilistic': return self.dict_Q
+            case 'dict_symbolic': return self.dict_QV
+            case _: raise ValueError(f"Unknown method {method}")
 
 
 class Representation(CachedClass, ABC):
@@ -78,14 +120,23 @@ class Representation(CachedClass, ABC):
 
     @cached_property
     @abstractmethod
-    def T_Pi_3D(self) -> NDArray:
+    def T_Pi_3D(self) -> TPi3DResult:
         """
         The list of matrices rho_V(xi) for xi in the bases of K as a tridimensional np.array.
         The first entry are indexed by all_rootsK using the dictionary dict_rootK of the class LinearGroup.
         The other entries are indexed by self.all_Weights using self.index_of_weight(chi).
+
+        The result of this property is cached and is computer from random numbers.
+        If you need to get new random elements, call `clear_T_Pi_3D` method before.
         """
     ...
 
+    def clear_T_Pi_3D(self) -> None:
+        """ Clear cache of T_Pi_3D property """
+        try:
+            del self.__dict__["T_Pi_3D"]
+        except KeyError:
+            pass
 
     @abstractmethod
     def rhoEij(self, alpha : Root) -> Matrix:
@@ -97,7 +148,7 @@ class Representation(CachedClass, ABC):
 
     @cached_property
     @abstractmethod
-    def actionK(self) -> "NDArray":
+    def actionK(self) -> NDArray:
         """
         The list of matrices rho_V(xi) for xi in the bases of K as a tridimensional np.array.
         The first entry are indexed by all_rootsK using index_in_all_of_K of the class LinearGroup.
@@ -264,87 +315,57 @@ class KroneckerRepresentation(Representation):
             ) # Summing tuples is concatenating them 
     
     @cached_property
-    def T_Pi_3D(self) -> NDArray:
+    def T_Pi_3D(self) -> TPi3DResult:
         """
         The list of matrices rho_V(xi) for xi in the bases of K as a tridimensional np.array.
         The first entry are indexed by all_rootsK using the dictionary dict_rootK of the class LinearGroup.
         The other entries are indexed by self.all_Weights using self.index_of_weight(chi).
         """
 
-        class CachedResult:
-            def __init__(self, parent):
-                # Calcul effectué une seule fois
-                print("Computation of Tpi (once)")
-                result_Q = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=np.int8)
-                result_QI = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
-                result_QV = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
-                result_line_Q = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
-                result_line_QV = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
-                dict_Q={}
-                K=parent.QV2.fraction_field()
-                ring_R0 = PolynomialRing(K,"z")
-                dict_QV={}
-                
-                v = parent.random_element()
-                v_real = parent.random_element()
-                v_im = parent.random_element()
-                va = parent.random_element()
-                vb = parent.random_element()
-                for chi in parent.all_weights:
-                    id_chi=parent.index_of_weight(chi)
-                    vchi_a, vchi_b = parent.QV2.variable(chi)
-                    dict_QV[parent.QV.variable(chi)]= vchi_a*ring_R0('z') + vchi_b
-                    for k,b in enumerate(chi.as_list):
-                        for i in range(b):
-                            chi_i = WeightAsList(
-                                parent.G,
-                                as_list=chi.as_list[:k] + (i,) + chi.as_list[k+1:]
-                                )
-                            id_i = parent.index_of_weight(chi_i)
-                            result_Q[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = v[id_chi]
-                            result_QI[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = v_real[id_chi]+I*v_im[id_chi]
-                            result_QV[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = parent.QV.variable(chi)
-                            result_line_Q[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = va[id_chi]*parent.QZ('z')+vb[id_chi]
-                            dict_Q[parent.QV.variable(chi)]= va[id_chi]*parent.QZ('z')+vb[id_chi]
-                            result_line_QV[id_chi,id_i,Root(k,i,b).index_in_all_of_U(parent.G)] = vchi_a*ring_R0('z') + vchi_b
-                # Stockage des résultats
-                self.Q = result_Q
-                self.QI= result_QI
-                self.QV = result_QV
-                self.line_Q = result_line_Q
-                self.line_QV = result_line_QV
-                self.dict_Q = dict_Q
-                self.dict_QV = dict_QV
-                 
-            
-            def __call__(self, souhait=None):
-                if souhait == 'probabilistic':
-                    return self.Q
-                elif souhait == 'imaginary_probabilistic':
-                    return self.QI
-                elif souhait == 'symbolic' or souhait =='imaginary_symbolic':
-                    return self.QV
-                elif souhait == 'line_probabilistic':
-                    return self.line_Q
-                elif souhait == 'line_symbolic':
-                    return self.line_QV
-                elif souhait == 'dict_probabilistic':
-                    return self.dict_Q
-                elif souhait == 'dict_symbolic':
-                    return self.dict_QV
-                # Par défaut, retourner le tuple complet
-                return (self.Q,self.QV,self.line_Q,self.line_QV,self.dict_Q,self.dict_QV)
+        # Calcul effectué une seule fois
+        print("Computation of Tpi (once)")
+        result_Q = np.zeros((self.dim, self.dim, self.G.dimU), dtype=np.int8)
+        result_QI = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
+        result_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
+        result_line_Q = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
+        result_line_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
+        dict_Q={}
+        K=self.QV2.fraction_field()
+        ring_R0 = PolynomialRing(K,"z")
+        dict_QV={}
         
-        return CachedResult(self)
-    
-        
-        
-                    
-        return result
+        v = self.random_element()
+        v_real = self.random_element()
+        v_im = self.random_element()
+        va = self.random_element()
+        vb = self.random_element()
+        for chi in self.all_weights:
+            id_chi=self.index_of_weight(chi)
+            vchi_a, vchi_b = self.QV2.variable(chi)
+            dict_QV[self.QV.variable(chi)]= vchi_a*ring_R0('z') + vchi_b
+            for k,b in enumerate(chi.as_list):
+                for i in range(b):
+                    chi_i = WeightAsList(
+                        self.G,
+                        as_list=chi.as_list[:k] + (i,) + chi.as_list[k+1:]
+                        )
+                    id_i = self.index_of_weight(chi_i)
+                    result_Q[id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = v[id_chi]
+                    result_QI[id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = v_real[id_chi]+I*v_im[id_chi]
+                    result_QV[id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = self.QV.variable(chi)
+                    result_line_Q[id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = va[id_chi]*self.QZ('z')+vb[id_chi]
+                    dict_Q[self.QV.variable(chi)]= va[id_chi]*self.QZ('z')+vb[id_chi]
+                    result_line_QV[id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = vchi_a*ring_R0('z') + vchi_b
+
+        return TPi3DResult(
+            result_Q, result_QI, result_QV,
+            result_line_Q, result_line_QV,
+            dict_Q, dict_QV
+        )
     
     
     @cached_property
-    def actionK(self) -> "NDArray":
+    def actionK(self) -> NDArray:
         """
         The list of matrices rho_V(xi) for xi in the bases of K as a tridimensional np.array.
         The first entry are indexed by all_rootsK using index_in_all_of_K of the class LinearGroup.
@@ -522,7 +543,7 @@ class ParticleRepresentation(Representation):
             yield chi
 
     @cached_property
-    def actionK(self) -> "NDArray":
+    def actionK(self) -> NDArray:
         """
         The list of matrices rho_V(xi) for xi in the bases of K as a tridimensional np.array.
         The first entry are indexed by all_rootsK using index_in_all_of_K of the class LinearGroup.
@@ -578,89 +599,65 @@ class ParticleRepresentation(Representation):
         return(result)                    
 
     @cached_property
-    def T_Pi_3D(self) -> NDArray:
+    def T_Pi_3D(self) -> TPi3DResult:
         """
         The list of matrices rho_V(xi) for xi in the bases of K as a tridimensional np.array.
         The first entry are indexed by all_rootsK using the dictionary dict_rootK of the class LinearGroup.
         The other entries are indexed by self.all_Weights using self.index_of_weight(chi).
         """
         
-        class CachedResult:
-            def __init__(self, parent):
-                # Calcul effectué une seule fois
-                print("Computation of Tpi (once)")
-                result_Q = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=np.int8)
-                result_QI = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
-                result_QV = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
-                result_line_Q = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
-                result_line_QV = np.zeros((parent.dim, parent.dim, parent.G.dimU), dtype=object)
-                dict_Q={}
-                K=parent.QV2.fraction_field()
-                ring_R0 = PolynomialRing(K,"z")
-                dict_QV={}
-                
-                v = parent.random_element()
-                v_real = parent.random_element()
-                v_im = parent.random_element()
-                va = parent.random_element()
-                vb = parent.random_element()
-                for chi in parent.all_weights:
-                    id_chi=parent.index_of_weight(chi)
-                    vchi_a, vchi_b = parent.QV2.variable(chi)
-                    dict_QV[parent.QV.variable(chi)]= vchi_a*ring_R0('z') + vchi_b
-                    for k,b in enumerate(chi.as_list_of_list[0]):
-                        index_b = chi.as_list_of_list[0].index(b) #Used to treat repritions in the bosonic case
-                        if k == index_b:
-                            mult = chi.as_list_of_list[0].count(b) #Constant obtained by derivative
-                            # split chi 
-                            L1 = chi.as_list_of_list[0][:index_b]
-                            L2 = chi.as_list_of_list[0][index_b+1:]
-                            for i in range(b):
-                                if isinstance(parent, BosonRepresentation) or i not in L1: # otherwise action is zero
-                                    L3 = tuple(sorted(L1 + (i,)))
-                                    # dec is the number of moves used to resort i. Induces a sign in fermionic case.
-                                    if isinstance(parent, BosonRepresentation) :
-                                        dec=0
-                                    else :
-                                        dec=len(L3)-L3.index(i)-1
-                                    Li=L3+L2
-                                    chi_i = WeightAsListOfList(parent.G, as_list_of_list=[Li])
-                                    id_i = parent.index_of_weight(chi_i)
-                                    result_Q[id_chi,id_i,Root(0,i,b).index_in_all_of_U(parent.G)] = mult* (-1)**dec*v[id_chi]
-                                    result_QI[id_chi,id_i,Root(0,i,b).index_in_all_of_U(parent.G)] = mult*(-1)**dec*(v_real[id_chi]+I*v_im[id_chi])
-                                    result_QV[id_chi,id_i,Root(0,i,b).index_in_all_of_U(parent.G)] = mult* (-1)**dec*parent.QV.variable(chi)
-                                    result_line_Q[id_chi,id_i,Root(0,i,b).index_in_all_of_U(parent.G)] = mult* (-1)**dec*(va[id_chi]*parent.QZ('z')+vb[id_chi])
-                                    dict_Q[parent.QV.variable(chi)] = va[id_chi]*parent.QZ('z')+vb[id_chi]
-                                    result_line_QV[id_chi,id_i,Root(0,i,b).index_in_all_of_U(parent.G)] = mult* (-1)**dec*(vchi_a*ring_R0('z') + vchi_b)
-                # Stockage des résultats
-                self.Q = result_Q
-                self.QI = result_QI
-                self.QV = result_QV
-                self.line_Q = result_line_Q
-                self.line_QV = result_line_QV
-                self.dict_Q = dict_Q
-                self.dict_QV = dict_QV
-                 
-            
-            def __call__(self, souhait=None):
-                if souhait == 'probabilistic':
-                    return self.Q
-                elif souhait == 'imaginary_probabilistic':
-                    return self.QI
-                elif souhait == 'symbolic' or souhait =='imaginary_symbolic':
-                    return self.QV
-                elif souhait == 'line_probabilistic':
-                    return self.line_Q
-                elif souhait == 'line_symbolic':
-                    return self.line_QV
-                elif souhait == 'dict_probabilistic':
-                    return self.dict_Q
-                elif souhait == 'dict_symbolic':
-                    return self.dict_QV
-                # Par défaut, retourner le tuple complet
-                return (self.Q,self.QV,self.line_Q,self.line_QV,self.dict_Q,self.dict_QV)
+        # Calcul effectué une seule fois
+        print("Computation of Tpi (once)")
+        result_Q = np.zeros((self.dim, self.dim, self.G.dimU), dtype=np.int8)
+        result_QI = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
+        result_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
+        result_line_Q = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
+        result_line_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
+        dict_Q={}
+        K=self.QV2.fraction_field()
+        ring_R0 = PolynomialRing(K,"z")
+        dict_QV={}
         
-        return CachedResult(self)        
+        v = self.random_element()
+        v_real = self.random_element()
+        v_im = self.random_element()
+        va = self.random_element()
+        vb = self.random_element()
+        for chi in self.all_weights:
+            id_chi=self.index_of_weight(chi)
+            vchi_a, vchi_b = self.QV2.variable(chi)
+            dict_QV[self.QV.variable(chi)]= vchi_a*ring_R0('z') + vchi_b
+            for k,b in enumerate(chi.as_list_of_list[0]):
+                index_b = chi.as_list_of_list[0].index(b) #Used to treat repritions in the bosonic case
+                if k == index_b:
+                    mult = chi.as_list_of_list[0].count(b) #Constant obtained by derivative
+                    # split chi 
+                    L1 = chi.as_list_of_list[0][:index_b]
+                    L2 = chi.as_list_of_list[0][index_b+1:]
+                    for i in range(b):
+                        if isinstance(self, BosonRepresentation) or i not in L1: # otherwise action is zero
+                            L3 = tuple(sorted(L1 + (i,)))
+                            # dec is the number of moves used to resort i. Induces a sign in fermionic case.
+                            if isinstance(self, BosonRepresentation) :
+                                dec=0
+                            else :
+                                dec=len(L3)-L3.index(i)-1
+                            Li=L3+L2
+                            chi_i = WeightAsListOfList(self.G, as_list_of_list=[Li])
+                            id_i = self.index_of_weight(chi_i)
+                            result_Q[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*v[id_chi]
+                            result_QI[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult*(-1)**dec*(v_real[id_chi]+I*v_im[id_chi])
+                            result_QV[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*self.QV.variable(chi)
+                            result_line_Q[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*(va[id_chi]*self.QZ('z')+vb[id_chi])
+                            dict_Q[self.QV.variable(chi)] = va[id_chi]*self.QZ('z')+vb[id_chi]
+                            result_line_QV[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*(vchi_a*ring_R0('z') + vchi_b)
+        
+        return TPi3DResult(
+            result_Q, result_QI, result_QV,
+            result_line_Q, result_line_QV,
+            dict_Q, dict_QV
+        )
+      
     
     def rhoEij(self, alpha: Root) -> Matrix:
         """
