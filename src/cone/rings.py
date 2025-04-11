@@ -63,7 +63,7 @@ def variables(ring_or_gens: Ring | RingGens, id: Iterable[VariableId], seed: str
         ring_or_gens = ring_or_gens.gens_dict()
     return tuple(ring_or_gens[variable_name(nc, seed)] for nc in id)
 
-def real_part(value):
+def real_part(value: Any) -> Any:
     """
     Real part of a scalar, a vector, an array or a polynomial
     
@@ -79,7 +79,7 @@ def real_part(value):
         else:
             raise NotImplementedError()
 
-def imag_part(value):
+def imag_part(value: Any) -> Any:
     """
     Imaginary part of a scalar, a vector, an array or a polynomial
     

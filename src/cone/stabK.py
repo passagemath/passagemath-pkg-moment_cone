@@ -18,7 +18,11 @@ from .tau import *
 from .rings import matrix, Matrix, vector, Vector, QQ, ZZ, I, real_part, imag_part
 
 # Reference implementation
-def dim_gen_stab_of_K_vref(T: NDArray, ListK = None,ListChi = None) -> int: # New
+def dim_gen_stab_of_K_vref(
+        T: NDArray[Any],
+        ListK: Optional[Sequence[int]] = None, 
+        ListChi: Optional[Sequence[int]] = None
+    ) -> int:
     """
     Recursive function associating an integer to a list of matrices.
 
@@ -35,9 +39,9 @@ def dim_gen_stab_of_K_vref(T: NDArray, ListK = None,ListChi = None) -> int: # Ne
     assert T.shape[1] == T.shape[2]
 
     dk,dV,dV = T.shape
-    if ListK == None:
+    if ListK is None:
         ListK=list(range(dk))
-    if ListChi == None:
+    if ListChi is None:
         ListChi=list(range(dV))
 
     # Check if all matrices are zero that is V is the trivial representation
@@ -111,7 +115,11 @@ def dim_gen_stab_of_K_vref(T: NDArray, ListK = None,ListChi = None) -> int: # Ne
 
 
 # Optimized implementation
-def dim_gen_stab_of_K(T, ListK: Optional[Iterable[int]] = None, ListChi: Optional[Iterable[int]] = None) -> int: # New
+def dim_gen_stab_of_K(
+        T: NDArray[Any],
+        ListK: Optional[Iterable[int]] = None,
+        ListChi: Optional[Iterable[int]] = None
+    ) -> int:
     """
     Recursive function associating an integer to a list of matrices.
 

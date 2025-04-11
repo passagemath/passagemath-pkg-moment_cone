@@ -195,9 +195,9 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
     pw_idx=[V.index_of_weight(chi) for chi in Pos_Weights_sorted]
     npw_idx=[V.index_of_weight(chi) for chi in Neg0_Weights_sorted]
     zw_idx=[V.index_of_weight(chi) for chi in tau.orthogonal_weights(V)]
-    Azn = V.T_Pi_3D('line_'+method_R0)[np.ix_(npw_idx, pw_idx, inv_idx)].sum(axis=0)
+    Azn = V.T_Pi_3D(method_R0, 'line')[np.ix_(npw_idx, pw_idx, inv_idx)].sum(axis=0)
     Az=matrix(ring_R0,Azn)
-    B0zn = V.T_Pi_3D('line_'+method_R0)[np.ix_(npw_idx, zw_idx, inv_idx)].sum(axis=0) 
+    B0zn = V.T_Pi_3D(method_R0, 'line')[np.ix_(npw_idx, zw_idx, inv_idx)].sum(axis=0) 
     B0z=matrix(ring_R0,B0zn)
     # The line: gradiant of J
     L0=matrix(V.QV,1,len(tau.orthogonal_weights(V)))
@@ -220,12 +220,12 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
     #Az=A.subs(subs_dict)
     
     #B0z=B0.subs(subs_dict)
-    L0z=L0.subs(V.T_Pi_3D('dict_'+method_R0))
+    L0z=L0.subs(V.T_Pi_3D(method_R0, 'dict'))
     #Jz=J.subs(subs_dict)
-    Jz=J.subs(V.T_Pi_3D('dict_'+method_R0))
+    Jz=J.subs(V.T_Pi_3D(method_R0, 'dict'))
     assert method_R0 == 'symbolic' or J.degree() == Jz.degree(), "The random line is not enough generic to intersect each irreducible component of R0. Please Restart."
     #print("Assert degree",J.degree(), Jz.degree())
-    factors_J_sqf_z = sum([list(dict(Poly.subs(V.T_Pi_3D('dict_'+method_R0)).factor()).keys()) for Poly in factors_J_sqf],[])
+    factors_J_sqf_z = sum([list(dict(Poly.subs(V.T_Pi_3D(method_R0, 'dict')).factor()).keys()) for Poly in factors_J_sqf],[])
     Ldelta=[]
     for delta1 in factors_J_sqf_z:
         quo, rem = Jz.quo_rem(delta1**2)

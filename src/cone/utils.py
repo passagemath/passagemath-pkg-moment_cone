@@ -31,6 +31,7 @@ __all__ = (
 if TYPE_CHECKING:
     from line_profiler import LineProfiler
     import pstats
+    from .root import Root
 
 
 def is_decreasing(l: Iterable[int]) -> bool:
@@ -432,7 +433,7 @@ def cprofile(
 
     return result, stats
 
-def fl_dic(D : dict[int,list["Root"]],L: list[int])-> dict[int,int]:
+def fl_dic(D : dict[int, list["Root"]], L: list[int])-> dict[int, int]:
     """
     dictionnary h -> sum lenght D[i] for i <=h, for h in L.
     L has to be a sorted list.
