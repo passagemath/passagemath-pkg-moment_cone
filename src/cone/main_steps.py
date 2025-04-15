@@ -287,8 +287,6 @@ class SubModuleConditionStep(FilterStep[Tau]):
             validated=list(tau_dataset.validated()),
         )
     
-    def name_mod():
-        return "SubModule Condition"
 
 ###############################################################################
 class StabilizerConditionStep(FilterStep[Tau]):
@@ -314,9 +312,6 @@ class StabilizerConditionStep(FilterStep[Tau]):
             pending=output,
             validated=list(tau_dataset.validated()),
         )
-    
-    def name_mod():
-        return "Stabilizer Condition"
 
 
 ###############################################################################
@@ -805,7 +800,7 @@ class ConeStep(GeneratorStep[Inequality]):
                 tau_filter_step = self.__add_step(tau_filter_type)
                 with Task(tau_filter_step.name):
                     tau_candidates = tau_filter_step(tau_candidates)
-                    print("after", tau_filter_type.name_mod(), ", tau_candidates:",tau_candidates)
+                    print("after", tau_filter_type.name, ", tau_candidates:",tau_candidates)
             
             # Transform tau to inequality
             ineq_candidates: Dataset[Inequality]
