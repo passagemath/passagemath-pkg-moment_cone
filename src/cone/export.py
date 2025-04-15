@@ -321,7 +321,7 @@ def export_many(
     for format in formats:
         match to_literal(ExportFormat, format):
             case "Normaliz":
-                export_normaliz(V, full_under_symmetry_list_of_ineq(inequations), extra_info=extra_info, add_equations="all")
+                export_normaliz(V, full_under_symmetry_list_of_ineq(inequations), extra_info=extra_info, add_dominance="all", add_equations="all")
             case "LaTeX":
                 export_latex(V, inequations, extra_info=extra_info)
             case "Python":
