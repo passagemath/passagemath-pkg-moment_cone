@@ -27,9 +27,9 @@ class Task(contextlib.AbstractContextManager["Task"]):
     perf_counter: tuple[Optional[int], Optional[int]]
     process_time: tuple[Optional[int], Optional[int]]
 
-    all_tasks: list["Task"] = [] # All created tasks (static)
-    all_start: tuple[int, int] = (time.perf_counter_ns(), time.process_time_ns())
-    quiet: bool = False
+    all_tasks: ClassVar[list["Task"]] = [] # All created tasks (static)
+    all_start: ClassVar[tuple[int, int]] = (time.perf_counter_ns(), time.process_time_ns())
+    quiet: ClassVar[bool] = False
 
     @staticmethod
     def is_clear(task: "Task") -> TypeGuard["ClearTask"]:
@@ -167,7 +167,6 @@ class Task(contextlib.AbstractContextManager["Task"]):
         else:
             status = "Done"
 
-        pc, pt = self.duration
         return f"{self.name}: {status} ({Task.format_wall_cpu(self.duration)})"
     
 

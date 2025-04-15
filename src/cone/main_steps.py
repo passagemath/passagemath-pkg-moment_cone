@@ -652,9 +652,10 @@ class ConeStep(GeneratorStep[Inequality]):
     It returns a dataset containing the inequalities that are definitively
     validated and the ones whose state is still pending.
     """
-    config: Optional[Namespace]
-    options: dict[str, Any]
-    filters: list[InequalityFilterStr]
+    config: Optional[Namespace] # Configuration from the command-line
+    options: dict[str, Any] # Additional options passed to the constructor
+    filters: list[InequalityFilterStr] # List of filters applied to the inequalities
+    steps: list[Step] # All executed steps (for logging purpose)
 
     def __init__(
         self,
@@ -670,57 +671,70 @@ class ConeStep(GeneratorStep[Inequality]):
         ]
         self.config = config
         self.options = kwargs
+        self.steps = []
 
-    def __create_step(self, step_type: type[TStep]) -> TStep:
+    def __add_step(self, step_type: type[TStep]) -> TStep:
+        """ Create and configure a new step """
         if self.config is None:
-            return step_type(self.V, **self.options)
+            step = step_type(self.V, **self.options)
         else:
-            return step_type.from_config(self.V, self.config)
+            step = step_type.from_config(self.V, self.config)
+        self.steps.append(step)
+        return step
+    
+    def clear_steps(self) -> None:
+        """ Clear all stored steps """
+        self.steps.clear()
         
     def __call__(self) -> Dataset[Inequality]:
         from .task import Task
         Task.quiet = self.quiet
 
-        # Clearing TPi_3D cache
+        # Clearing TPi_3D cache to ensure using fresh random numbers
         self.V.clear_T_Pi_3D()
 
-        # Checking if the cone has the expected dimension
-        general_stab_dim_step = self.__create_step(GeneralStabilizerDimensionCheck)
-        with Task(general_stab_dim_step.name):
-            general_stab_dim_step()
+        # Clearing previous executed steps
+        self.clear_steps()
 
-        # Generate the list of candidates for tau
-        tau_candidates: Dataset[Tau]
-        tau_candidates_step = self.__create_step(TauCandidatesStep)
-        with Task(tau_candidates_step.name):
-            tau_candidates = tau_candidates_step()
-            #print(tau_candidates)
+        with Task(self.name):
+            # Checking if the cone has the expected dimension
+            general_stab_dim_step = self.__add_step(GeneralStabilizerDimensionCheck)
+            with Task(general_stab_dim_step.name):
+                general_stab_dim_step()
 
-        # Filters candidate tau
-        for tau_filter_type in SubModuleConditionStep, StabilizerConditionStep:
-            tau_filter_step = self.__create_step(tau_filter_type)
-            with Task(tau_filter_step.name):
-                tau_candidates = tau_filter_step(tau_candidates)
+            # Generate the list of candidates for tau
+            tau_candidates: Dataset[Tau]
+            tau_candidates_step = self.__add_step(TauCandidatesStep)
+            with Task(tau_candidates_step.name):
+                tau_candidates = tau_candidates_step()
                 #print(tau_candidates)
-        
-        # Transform tau to inequality
-        ineq_candidates: Dataset[Inequality]
-        ineq_candidates_step = self.__create_step(InequalityCandidatesStep)
-        with Task(ineq_candidates_step.name):
-            ineq_candidates = ineq_candidates_step(tau_candidates)
-            #print(ineq_candidates)
 
-        # Filters candidate tau
-        for name in self.filters:
-            ineq_filter_type = inequalities_filter_dict[name]
-            ineq_filter_step = self.__create_step(ineq_filter_type)
-            with Task(ineq_filter_step.name):
-                ineq_candidates = ineq_filter_step(ineq_candidates)
+            # Filters candidate tau
+            for tau_filter_type in SubModuleConditionStep, StabilizerConditionStep:
+                tau_filter_step = self.__add_step(tau_filter_type)
+                with Task(tau_filter_step.name):
+                    tau_candidates = tau_filter_step(tau_candidates)
+                    #print(tau_candidates)
+            
+            # Transform tau to inequality
+            ineq_candidates: Dataset[Inequality]
+            ineq_candidates_step = self.__add_step(InequalityCandidatesStep)
+            with Task(ineq_candidates_step.name):
+                ineq_candidates = ineq_candidates_step(tau_candidates)
                 #print(ineq_candidates)
+
+            # Filters candidate tau
+            for name in self.filters:
+                ineq_filter_type = inequalities_filter_dict[name]
+                ineq_filter_step = self.__add_step(ineq_filter_type)
+                with Task(ineq_filter_step.name):
+                    ineq_candidates = ineq_filter_step(ineq_candidates)
+                    #print(ineq_candidates)
+            
+            # Exporting inequalities
+            export_step = self.__add_step(ExportStep)
+            ineq_candidates = export_step(ineq_candidates)
         
-        # Exporting inequalities
-        export_step = self.__create_step(ExportStep)
-        ineq_candidates = export_step(ineq_candidates)
         return ineq_candidates
 
     @staticmethod
