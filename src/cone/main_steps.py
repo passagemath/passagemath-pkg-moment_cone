@@ -259,6 +259,8 @@ class SubModuleConditionStep(FilterStep[Tau]):
             validated=list(tau_dataset.validated()),
         )
     
+    def name_mod():
+        return "SubModule Condition"
 
 ###############################################################################
 class StabilizerConditionStep(FilterStep[Tau]):
@@ -284,6 +286,9 @@ class StabilizerConditionStep(FilterStep[Tau]):
             pending=output,
             validated=list(tau_dataset.validated()),
         )
+    
+    def name_mod():
+        return "Stabilizer Condition"
 
 
 ###############################################################################
@@ -740,6 +745,7 @@ class ConeStep(GeneratorStep[Inequality]):
         # Clearing TPi_3D cache to ensure using fresh random numbers
         self.V.clear_T_Pi_3D()
 
+<<<<<<< HEAD
         # Clearing previous executed steps
         self.clear_steps()
 
@@ -754,21 +760,22 @@ class ConeStep(GeneratorStep[Inequality]):
             tau_candidates_step = self.__add_step(TauCandidatesStep)
             with Task(tau_candidates_step.name):
                 tau_candidates = tau_candidates_step()
-                #print(tau_candidates)
+                print("after TauCandidatesStep, tau_candidates", tau_candidates)
+
 
             # Filters candidate tau
             for tau_filter_type in SubModuleConditionStep, StabilizerConditionStep:
                 tau_filter_step = self.__add_step(tau_filter_type)
                 with Task(tau_filter_step.name):
                     tau_candidates = tau_filter_step(tau_candidates)
-                    #print(tau_candidates)
+                    print("after", tau_filter_type.name_mod(), ", tau_candidates:",tau_candidates)
             
             # Transform tau to inequality
             ineq_candidates: Dataset[Inequality]
             ineq_candidates_step = self.__add_step(InequalityCandidatesStep)
             with Task(ineq_candidates_step.name):
                 ineq_candidates = ineq_candidates_step(tau_candidates)
-                #print(ineq_candidates)
+                print("after InequalityCandidatesStep, ineq_candidates:", ineq_candidates)
 
             # Pre-computation of Representation.TPi 3D matrix if necessary
             if 'PiDominancy' in self.filters or 'Birationality' in self.filters:
@@ -782,7 +789,7 @@ class ConeStep(GeneratorStep[Inequality]):
                 ineq_filter_step = self.__add_step(ineq_filter_type)
                 with Task(ineq_filter_step.name):
                     ineq_candidates = ineq_filter_step(ineq_candidates)
-                    #print(ineq_candidates)
+                    print("after ", name, ", ineq_candidates:", ineq_candidates)
             
             # Exporting inequalities
             export_step = self.__add_step(ExportStep)
