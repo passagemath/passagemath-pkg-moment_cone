@@ -132,14 +132,14 @@ class Task(contextlib.AbstractContextManager["Task"]):
         """ Entering context """
         self.start()
         if not self.quiet:
-            self.log(disp_duration=False)
+            self.self_log(format="{name}: {status}")
         return self
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         """ Leaving context """
         self.stop()
         if not self.quiet:
-            self.log()
+            self.self_log(format="{status} ({duration})", indent=1)
 
     def start(self) -> None:
         assert Task.is_clear(self)
@@ -178,13 +178,17 @@ class Task(contextlib.AbstractContextManager["Task"]):
         status = self.status_str()
         return f"{self.name}: {status} ({Task.format_wall_cpu(self.duration)})"
     
-    def log(self, level: int = logging.INFO, disp_duration: bool = True) -> None:
+    def self_log(self, level: int = logging.INFO, format: str = "{name}: {status} ({duration})", indent: int = 0) -> None:
+        name = self.name
         status = self.status_str()
-        logger = getLogger(self.name, indentation_level=self.level)
-        msg = f"{self.name}: {status}"
-        if disp_duration:
-            msg = msg + f" ({Task.format_wall_cpu(self.duration)})"
+        duration = Task.format_wall_cpu(self.duration)
+        msg = format.format(name=name, status=status, duration=duration)
+        self.log(msg, level, indent)
+
+    def log(self, msg: str, level: int = logging.INFO, indent: int = 0) -> None:
+        logger = getLogger(self.name, indentation_level=self.level + indent)
         logger.log(level, msg)
+
 
 
 # Sub-classes to make type check working

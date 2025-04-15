@@ -790,24 +790,24 @@ class ConeStep(GeneratorStep[Inequality]):
             # Generate the list of candidates for tau
             tau_candidates: Dataset[Tau]
             tau_candidates_step = self.__add_step(TauCandidatesStep)
-            with Task(tau_candidates_step.name):
+            with Task(tau_candidates_step.name) as task:
                 tau_candidates = tau_candidates_step()
-                print("after TauCandidatesStep, tau_candidates", tau_candidates)
+                task.log(f"tau_candidates: {tau_candidates}", indent=1)
 
 
             # Filters candidate tau
             for tau_filter_type in SubModuleConditionStep, StabilizerConditionStep:
                 tau_filter_step = self.__add_step(tau_filter_type)
-                with Task(tau_filter_step.name):
+                with Task(tau_filter_step.name) as task:
                     tau_candidates = tau_filter_step(tau_candidates)
-                    print("after", tau_filter_type.name, ", tau_candidates:",tau_candidates)
+                    task.log(f"tau_candidates: {tau_candidates}", indent=1)
             
             # Transform tau to inequality
             ineq_candidates: Dataset[Inequality]
             ineq_candidates_step = self.__add_step(InequalityCandidatesStep)
-            with Task(ineq_candidates_step.name):
+            with Task(ineq_candidates_step.name) as task:
                 ineq_candidates = ineq_candidates_step(tau_candidates)
-                print("after InequalityCandidatesStep, ineq_candidates:", ineq_candidates)
+                task.log(f"ineq_candidates: {ineq_candidates}", indent=1)
 
             # Pre-computation of Representation.TPi 3D matrix if necessary
             if 'PiDominancy' in self.filters or 'Birationality' in self.filters:
@@ -819,9 +819,9 @@ class ConeStep(GeneratorStep[Inequality]):
             for name in self.filters:
                 ineq_filter_type = inequalities_filter_dict[name]
                 ineq_filter_step = self.__add_step(ineq_filter_type)
-                with Task(ineq_filter_step.name):
+                with Task(ineq_filter_step.name) as task:
                     ineq_candidates = ineq_filter_step(ineq_candidates)
-                    print("after ", name, ", ineq_candidates:", ineq_candidates)
+                    task.log(f"ineq_candidates: {ineq_candidates}", indent=1)
             
             # Exporting inequalities
             export_step = self.__add_step(ExportStep)
