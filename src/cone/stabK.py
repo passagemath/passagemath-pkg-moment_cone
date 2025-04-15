@@ -149,7 +149,7 @@ def dim_gen_stab_of_K(
     n: int = len(ListChi)
 
     # Create the vector v in the representation
-    v = np.random.randint(-9, 10, size=n) # higher bound in excluded in Numpy
+    v = np.random.randint(-1, 1, size=n) # higher bound in excluded in Numpy
 
     # Construct the matrix M
     # M_{i, k} = \sum_{j=0}^n T_{ListK_k, ListChi_i, ListChi_j} * v_j
@@ -161,6 +161,7 @@ def dim_gen_stab_of_K(
     B_tmp = M.transpose().echelon_form().rref() # reduced echelon form
     B: Matrix = B_tmp.matrix_from_rows(B_tmp.pivot_rows()) # Suppress zero rows
     List_Pivots = np.asarray(B.pivots())
+        
 
     # Dimension of V/F
     dQ = n - len(List_Pivots)
@@ -168,6 +169,11 @@ def dim_gen_stab_of_K(
     # If V/F is trivial then we can conclude
     if dQ == 0 :
         return(dk-n)
+    
+    #in the case where no Pivots where found, the random element lies in V^K (of dimension <dim V), and the slice theorem makes doesn't help in this case. So we restart the computation
+    if len(List_Pivots)==0:
+        return dim_gen_stab_of_K(T) 
+
     
     # The images of the elements of the canonical bases indexed by i not in List_Pivots form a basis Bc of V/F 
     List_Not_Pivots = np.array([i for i in range(B.ncols()) if i not in List_Pivots])
