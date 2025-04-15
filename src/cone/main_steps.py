@@ -16,6 +16,7 @@ __all__ = (
 
 from argparse import ArgumentParser, Namespace
 import typing
+from tqdm.auto import tqdm # type: ignore
 
 from .typing import *
 from .representation import Representation
@@ -97,12 +98,17 @@ class Step:
         pass
 
     @classmethod
-    def from_config(cls: type[Self], V: Representation, config: Namespace) -> Self:
+    def from_config(
+            cls: type[Self],
+            V: Representation,
+            config: Namespace,
+            **kwargs: Any,
+        ) -> Self:
         """ Build a step from the representation and the command-line arguments """
         try:
-            return cls(V, quiet=config.quiet)
+            return cls(V, config=config, quiet=config.quiet, **kwargs)
         except AttributeError:
-            return cls(V)
+            return cls(V, config=config, **kwargs)
 
     @property
     def name(self) -> str:
@@ -118,7 +124,27 @@ class Step:
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}()"
-
+    
+    def _tqdm(self,
+              iterable: Optional[Iterable[T]] = None,
+              desc: Optional[str] = None,
+              leave: bool = False,
+              disable: Optional[bool] = None,
+              **kwargs: Any,
+              ) -> tqdm:
+        """ Helper function to generate a progress bar with appropriate configuration """
+        if desc is None:
+            desc = type(self).__name__
+        if disable is None:
+            disable = self.quiet
+        return tqdm(
+            iterable,
+            desc=desc,
+            leave=leave,
+            disable=disable,
+            **kwargs
+        )
+    
 
 class GeneratorStep(Step, Generic[T]):
     """ A step that generate a dataset """
@@ -224,11 +250,13 @@ class GeneralStabilizerDimensionCheck(Step):
         )
 
     @classmethod
-    def from_config(cls: type["Step"], V: Representation, config: Namespace) -> "GeneralStabilizerDimensionCheck":
+    def from_config(cls: type[Self], V: Representation, config: Namespace, **kwargs: Any) -> "GeneralStabilizerDimensionCheck":
         """ Build a step from the representation and the command-line arguments """
-        return GeneralStabilizerDimensionCheck(
+        return super().from_config(
             V=V,
+            config=config,
             no_dim_check=config.no_dim_check,
+            **kwargs,
         )
 
 
@@ -255,12 +283,10 @@ class SubModuleConditionStep(FilterStep[Tau]):
     """
     def apply(self, tau_dataset: Dataset[Tau]) -> ListDataset[Tau]:
         return ListDataset(
-            pending=[tau for tau in tau_dataset.pending() if tau.is_sub_module(self.V)],
+            pending=[tau for tau in self._tqdm(tau_dataset.pending()) if tau.is_sub_module(self.V)],
             validated=list(tau_dataset.validated()),
         )
     
-    def name_mod():
-        return "SubModule Condition"
 
 ###############################################################################
 class StabilizerConditionStep(FilterStep[Tau]):
@@ -273,7 +299,7 @@ class StabilizerConditionStep(FilterStep[Tau]):
         from .stabK import dim_gen_stab_of_K
         Ms = self.V.actionK
         output: list[Tau] = []
-        for tau in tau_dataset.pending():
+        for tau in self._tqdm(tau_dataset.pending()):
             if  tau.is_dom_reg :
                 output.append(tau)
             else: 
@@ -286,9 +312,6 @@ class StabilizerConditionStep(FilterStep[Tau]):
             pending=output,
             validated=list(tau_dataset.validated()),
         )
-    
-    def name_mod():
-        return "Stabilizer Condition"
 
 
 ###############################################################################
@@ -301,7 +324,7 @@ class InequalityCandidatesStep(TransformerStep[Tau, Inequality]):
     def apply(self, tau_dataset: Dataset[Tau]) -> ListDataset[Inequality]:
         from .list_of_W import List_Inv_Ws_Mod
         ineqalities: list[Inequality] = []
-        for tau in tau_dataset.pending():
+        for tau in self._tqdm(tau_dataset.pending()):
             Lw = List_Inv_Ws_Mod(tau, self.V)
             ineqalities += [Inequality(tau,gr_inversions=gr_inv) for gr_inv in Lw]
 
@@ -343,7 +366,7 @@ class PiDominancyStep(FilterStep[Inequality]):
         from .list_of_W import Check_Rank_Tpi
         inequalities = [
             ineq
-            for ineq in ineq_dataset.pending()
+            for ineq in self._tqdm(ineq_dataset.pending())
             if Check_Rank_Tpi(ineq, self.V, self.tpi_method)
         ]
         return ListDataset(
@@ -366,11 +389,13 @@ class PiDominancyStep(FilterStep[Inequality]):
         )
 
     @classmethod
-    def from_config(cls: type["Step"], V: Representation, config: Namespace) -> "PiDominancyStep":
+    def from_config(cls: type[Self], V: Representation, config: Namespace, **kwargs: Any) -> "PiDominancyStep":
         """ Build a step from the representation and the command-line arguments """
-        return PiDominancyStep(
+        return super().from_config(
             V=V,
+            config=config,
             tpi_method=config.tpi_method,
+            **kwargs,
         )
     
 
@@ -385,7 +410,7 @@ class LinearTriangularStep(FilterStep[Inequality]):
         from .linear_triangular import is_linear_triangular
         pending: list[Inequality] = []
         validated: list[Inequality] = []
-        for ineq in ineq_dataset.pending():
+        for ineq in self._tqdm(ineq_dataset.pending()):
             if is_linear_triangular(self.V, ineq.tau, list(ineq.inversions)):
                 validated.append(ineq)
             else:
@@ -426,7 +451,7 @@ class BKRConditionStep(FilterStep[Inequality]):
         
         from .bkr import Multiplicity_SV_tau
         inequalities: list[Inequality] = []
-        for ineq in ineq_dataset.pending():
+        for ineq in self._tqdm(ineq_dataset.pending()):
             if list(ineq.inversions) == []:
                 inequalities.append(ineq)
             elif Multiplicity_SV_tau(
@@ -459,7 +484,7 @@ class BKRConditionStep(FilterStep[Inequality]):
         )
 
     @classmethod
-    def from_config(cls: type["Step"], V: Representation, config: Namespace) -> "BKRConditionStep":
+    def from_config(cls: type[Self], V: Representation, config: Namespace, **kwargs: Any) -> "BKRConditionStep":
         """ Build a step from the representation and the command-line arguments """
         from . import kronecker as kro
 
@@ -474,10 +499,12 @@ class BKRConditionStep(FilterStep[Inequality]):
             case _:
                 raise ValueError(f"Invalid Kronecker type {config.kronecker}")
             
-        return BKRConditionStep(
+        return super().from_config(
             V=V,
+            config=config,
             kronecker=kronecker,
             plethysm=PlethysmCache(),
+            **kwargs
         )
     
 
@@ -505,7 +532,7 @@ class BirationalityStep(FilterStep[Inequality]):
         from .ramification import Is_Ram_contracted
         inequalities = [
             ineq
-            for ineq in ineq_dataset.pending()
+            for ineq in self._tqdm(ineq_dataset.pending())
             if Is_Ram_contracted(ineq,
                                  self.V,
                                  self.ram_schub_method,
@@ -541,12 +568,14 @@ class BirationalityStep(FilterStep[Inequality]):
         )
         
     @classmethod
-    def from_config(cls: type["Step"], V: Representation, config: Namespace) -> "BirationalityStep":
+    def from_config(cls: type[Self], V: Representation, config: Namespace, **kwargs: Any) -> "BirationalityStep":
         """ Build a step from the representation and the command-line arguments """
-        return BirationalityStep(
+        return super().from_config(
             V=V,
+            config=config,
             ram_schub_method=config.ram_schub_method,
             ram0_method=config.ram0_method,
+            **kwargs,
         )
     
 
@@ -608,12 +637,14 @@ class GrobnerStep(FilterStep[Inequality]):
         )
         
     @classmethod
-    def from_config(cls: type["Step"], V: Representation, config: Namespace) -> "GrobnerStep":
+    def from_config(cls: type[Self], V: Representation, config: Namespace, **kwargs: Any) -> "GrobnerStep":
         """ Build a step from the representation and the command-line arguments """
-        return GrobnerStep(
+        return super().from_config(
             V=V,
+            config=config,
             grobner_method=config.grobner_method,
             grobner_timeout=config.grobner_timeout,
+            **kwargs,
         )
 
 
@@ -664,11 +695,13 @@ class ExportStep(FilterStep[Inequality]):
         )
 
     @classmethod
-    def from_config(cls: type["Step"], V: Representation, config: Namespace) -> "ExportStep":
+    def from_config(cls: type[Self], V: Representation, config: Namespace, **kwargs: Any) -> "ExportStep":
         """ Build a step from the representation and the command-line arguments """
-        return ExportStep(
+        return super().from_config(
             V=V,
+            config=config,
             formats=config.formats,
+            **kwargs
         )
 
 
@@ -757,24 +790,24 @@ class ConeStep(GeneratorStep[Inequality]):
             # Generate the list of candidates for tau
             tau_candidates: Dataset[Tau]
             tau_candidates_step = self.__add_step(TauCandidatesStep)
-            with Task(tau_candidates_step.name):
+            with Task(tau_candidates_step.name) as task:
                 tau_candidates = tau_candidates_step()
-                print("after TauCandidatesStep, tau_candidates", tau_candidates)
+                task.log(f"tau_candidates: {tau_candidates}", indent=1)
 
 
             # Filters candidate tau
             for tau_filter_type in SubModuleConditionStep, StabilizerConditionStep:
                 tau_filter_step = self.__add_step(tau_filter_type)
-                with Task(tau_filter_step.name):
+                with Task(tau_filter_step.name) as task:
                     tau_candidates = tau_filter_step(tau_candidates)
-                    print("after", tau_filter_type.name_mod(), ", tau_candidates:",tau_candidates)
+                    task.log(f"tau_candidates: {tau_candidates}", indent=1)
             
             # Transform tau to inequality
             ineq_candidates: Dataset[Inequality]
             ineq_candidates_step = self.__add_step(InequalityCandidatesStep)
-            with Task(ineq_candidates_step.name):
+            with Task(ineq_candidates_step.name) as task:
                 ineq_candidates = ineq_candidates_step(tau_candidates)
-                print("after InequalityCandidatesStep, ineq_candidates:", ineq_candidates)
+                task.log(f"ineq_candidates: {ineq_candidates}", indent=1)
 
             # Pre-computation of Representation.TPi 3D matrix if necessary
             if 'PiDominancy' in self.filters or 'Birationality' in self.filters:
@@ -786,13 +819,14 @@ class ConeStep(GeneratorStep[Inequality]):
             for name in self.filters:
                 ineq_filter_type = inequalities_filter_dict[name]
                 ineq_filter_step = self.__add_step(ineq_filter_type)
-                with Task(ineq_filter_step.name):
+                with Task(ineq_filter_step.name) as task:
                     ineq_candidates = ineq_filter_step(ineq_candidates)
-                    print("after ", name, ", ineq_candidates:", ineq_candidates)
+                    task.log(f"ineq_candidates: {ineq_candidates}", indent=1)
             
             # Exporting inequalities
             export_step = self.__add_step(ExportStep)
-            ineq_candidates = export_step(ineq_candidates)
+            with Task(export_step.name):
+                ineq_candidates = export_step(ineq_candidates)
         
         return ineq_candidates
 
@@ -808,7 +842,7 @@ class ConeStep(GeneratorStep[Inequality]):
             action="store_true",
             help="Disable informations during computation",
         )
-        group.add_argument(
+        group.add_argument( # FIXME: Move in step
             "--filters",
             type=lambda s: to_literal(InequalityFilterStr, s),
             nargs='*',
@@ -827,13 +861,13 @@ class ConeStep(GeneratorStep[Inequality]):
 
 
     @classmethod
-    def from_config(cls: type["Step"], V: Representation, config: Namespace) -> "ConeStep":
+    def from_config(cls: type[Self], V: Representation, config: Namespace, **kwargs: Any) -> "ConeStep":
         """ Build a step from the representation and the command-line arguments """
-        return ConeStep(
+        return super().from_config(
             V,
-            filters=config.filters,
-            quiet=config.quiet,
             config=config,
+            filters=config.filters,
+            **kwargs
         )
         
 
