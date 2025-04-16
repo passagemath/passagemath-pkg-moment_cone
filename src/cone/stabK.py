@@ -75,6 +75,8 @@ def dim_gen_stab_of_K_vref(
     if dQ == 0 :
         return(dk-n)
     
+    if len(List_Pivots)==0:
+        return dim_gen_stab_of_K(T)
     # The images of the elements of the canonical bases indexed by i not in List_Pivots form a basis Bc of V/F 
     List_Not_Pivots=[i for i in range(B.ncols()) if i not in List_Pivots] # TODO : Complexité quadratique. On peut aller plus vite comme dans complement_of_coordinate avec first...    # The image of e_i for i in List_Pivots is the ith columns of N in the basis Bc
     N: Matrix = -B.matrix_from_columns(List_Not_Pivots).transpose()
@@ -161,6 +163,7 @@ def dim_gen_stab_of_K(
     B_tmp = M.transpose().echelon_form().rref() # reduced echelon form
     B: Matrix = B_tmp.matrix_from_rows(B_tmp.pivot_rows()) # Suppress zero rows
     List_Pivots = np.asarray(B.pivots())
+        
 
     # Dimension of V/F
     dQ = n - len(List_Pivots)
@@ -168,6 +171,11 @@ def dim_gen_stab_of_K(
     # If V/F is trivial then we can conclude
     if dQ == 0 :
         return(dk-n)
+    
+    #in the case where no Pivots where found, the random element lies in V^K (of dimension <dim V), and the slice theorem makes doesn't help in this case. So we restart the computation
+    if len(List_Pivots)==0:
+        return dim_gen_stab_of_K(T) 
+
     
     # The images of the elements of the canonical bases indexed by i not in List_Pivots form a basis Bc of V/F 
     List_Not_Pivots = np.array([i for i in range(B.ncols()) if i not in List_Pivots])
