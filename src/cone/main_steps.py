@@ -269,7 +269,7 @@ class TauCandidatesStep(GeneratorStep[Tau]):
     def apply(self) -> ListDataset[Tau]:
         from .tau import find_1PS
         return ListDataset(
-            pending=list(self._tqdm(find_1PS(self.V, quiet=self.quiet))),
+            pending=list(self._tqdm(find_1PS(self.V, quiet=self.quiet), unit="tau")),
             validated=[]
         )
 
@@ -283,7 +283,7 @@ class SubModuleConditionStep(FilterStep[Tau]):
     """
     def apply(self, tau_dataset: Dataset[Tau]) -> ListDataset[Tau]:
         return ListDataset(
-            pending=[tau for tau in self._tqdm(tau_dataset.pending()) if tau.is_sub_module(self.V)],
+            pending=[tau for tau in self._tqdm(tau_dataset.pending(), unit="tau") if tau.is_sub_module(self.V)],
             validated=list(tau_dataset.validated()),
         )
     
@@ -299,7 +299,7 @@ class StabilizerConditionStep(FilterStep[Tau]):
         from .stabK import dim_gen_stab_of_K
         Ms = self.V.actionK
         output: list[Tau] = []
-        for tau in self._tqdm(tau_dataset.pending()):
+        for tau in self._tqdm(tau_dataset.pending(), unit="tau"):
             if  tau.is_dom_reg :
                 output.append(tau)
             else: 
@@ -324,7 +324,7 @@ class InequalityCandidatesStep(TransformerStep[Tau, Inequality]):
     def apply(self, tau_dataset: Dataset[Tau]) -> ListDataset[Inequality]:
         from .list_of_W import List_Inv_Ws_Mod
         ineqalities: list[Inequality] = []
-        for tau in self._tqdm(tau_dataset.pending()):
+        for tau in self._tqdm(tau_dataset.pending(), unit="tau"):
             Lw = List_Inv_Ws_Mod(tau, self.V)
             ineqalities += [Inequality(tau,gr_inversions=gr_inv) for gr_inv in Lw]
 
@@ -366,7 +366,7 @@ class PiDominancyStep(FilterStep[Inequality]):
         from .list_of_W import Check_Rank_Tpi
         inequalities = [
             ineq
-            for ineq in self._tqdm(ineq_dataset.pending())
+            for ineq in self._tqdm(ineq_dataset.pending(), unit="ineq")
             if Check_Rank_Tpi(ineq, self.V, self.tpi_method)
         ]
         return ListDataset(
@@ -410,7 +410,7 @@ class LinearTriangularStep(FilterStep[Inequality]):
         from .linear_triangular import is_linear_triangular
         pending: list[Inequality] = []
         validated: list[Inequality] = []
-        for ineq in self._tqdm(ineq_dataset.pending()):
+        for ineq in self._tqdm(ineq_dataset.pending(), unit="tau"):
             if is_linear_triangular(self.V, ineq.tau, list(ineq.inversions)):
                 validated.append(ineq)
             else:
@@ -451,7 +451,7 @@ class BKRConditionStep(FilterStep[Inequality]):
         
         from .bkr import Multiplicity_SV_tau
         inequalities: list[Inequality] = []
-        for ineq in self._tqdm(ineq_dataset.pending()):
+        for ineq in self._tqdm(ineq_dataset.pending(), unit="tau"):
             if list(ineq.inversions) == []:
                 inequalities.append(ineq)
             elif Multiplicity_SV_tau(
@@ -532,7 +532,7 @@ class BirationalityStep(FilterStep[Inequality]):
         from .ramification import Is_Ram_contracted
         inequalities = [
             ineq
-            for ineq in self._tqdm(ineq_dataset.pending())
+            for ineq in self._tqdm(ineq_dataset.pending(), unit="ineq")
             if Is_Ram_contracted(ineq,
                                  self.V,
                                  self.ram_schub_method,
