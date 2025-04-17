@@ -220,10 +220,8 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
                 Ared=Az.apply_map(lambda entry: delta1_quotient(entry)) # A modulo delta1
                 if Ared.rank() == Ared.ncols()-1 :
                     Ldelta.append(delta1)
-        if Ldelta==[]:
-            delta=1
-        else: 
-            delta = prod(Ldelta)            
+
+        delta = prod(Ldelta)            
 
         # Computation of Bezout inverse
         LIB=Bezout_Inverse(Ldelta,ring_R0)
