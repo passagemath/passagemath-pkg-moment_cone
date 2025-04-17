@@ -184,13 +184,9 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
     for p in range(V.random_deep):
         if  method_R0 == 'probabilistic':   
             Azn = V.T_Pi_3D(method_R0,'line')[np.ix_([2*p, 2*p+1],npw_idx, pw_idx, inv_idx)].sum(axis=1)
-            Az=matrix(ring_R0,len(pw_idx),len(inv_idx), 
-                    lambda i,j: Azn[0,i,j]*ring_R0('z')+Azn[1,i,j]
-                    )
-            B0zn = V.T_Pi_3D(method_R0, 'line')[np.ix_([2*p, 2*p+1],npw_idx, zw_idx, inv_idx)].sum(axis=1) 
-            B0z=matrix(ring_R0,len(zw_idx), len(inv_idx),
-                    lambda i,j: B0zn[0,i,j]*ring_R0('z')+B0zn[1,i,j]
-                    )
+            Az = matrix(ring_R0, Azn[0, :, :] * ring_R0('z') + Azn[1, :, :])
+            B0zn = V.T_Pi_3D(method_R0, 'line')[np.ix_([2*p, 2*p+1], npw_idx, zw_idx, inv_idx)].sum(axis=1)
+            B0z = matrix(ring_R0, B0zn[0, :, :] * ring_R0('z') + B0zn[1, :, :])
         else :
             Azn = V.T_Pi_3D(method_R0, 'line')[np.ix_(npw_idx, pw_idx, inv_idx)].sum(axis=0)
             Az=matrix(ring_R0,Azn)
@@ -199,11 +195,12 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
             
         #local_dict = {V.QV.variable(chi): V.T_Pi_3D(method_R0, 'dict')[p][V.QV.variable(chi)] for chi in tau.orthogonal_weights(V)}
         #print(L0)
-        phi=V.T_Pi_3D(method_R0, 'dict')[p]
+        phi = V.T_Pi_3D(method_R0, 'dict')[p]
         #L0z=L0.subs(local_dict)
         #print('type J',type(J),type(J_square_free))
         #print('type L0',type(L0[0,0]))
-        L0z=matrix(V.QZ,1,len(tau.orthogonal_weights(V)), [phi(L0[0,x]) for x in range(len(tau.orthogonal_weights(V)))])         
+        L0z = matrix(V.QZ, L0.apply_map(phi))
+
         #Jz=J.subs(local_dict)
         Jz=phi(J)
         assert method_R0 == 'symbolic' or J.degree() == Jz.degree(), "The random line is not enough generic to intersect each irreducible component of R0. Please Restart."
