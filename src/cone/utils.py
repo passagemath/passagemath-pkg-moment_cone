@@ -90,8 +90,10 @@ def prod(values: Iterable[int]) -> int:
     6
     >>> prod([1, 2, 3, 0, 5])
     0
+    >>> prod([])
+    1
     """
-    return functools.reduce(operator.mul, values)
+    return functools.reduce(operator.mul, values, 1)
 
 def short_prod(values: Iterable[int]) -> int:
     """
@@ -101,6 +103,8 @@ def short_prod(values: Iterable[int]) -> int:
     6
     >>> short_prod([1, 2, 3, 0, 5])
     0
+    >>> short_prod([])
+    1
 
     Testing short-circuit feature:
     >>> g = iter([1, 2, 3, 0, 5])
