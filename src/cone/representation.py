@@ -301,22 +301,21 @@ class KroneckerRepresentation(Representation):
         The other entries are indexed by self.all_Weights using self.index_of_weight(chi).
         """
 
+        #from .rings import QQ
         # Computation made once
         result_Q = np.zeros((self.random_deep,self.dim, self.dim, self.G.dimU), dtype=np.int16)
         result_QI = np.zeros((2*self.random_deep,self.dim, self.dim, self.G.dimU), dtype=np.int16) #first index is used for real and imaginary part.
         result_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
-        result_line_Q = np.zeros((2*self.random_deep,self.dim, self.dim, self.G.dimU), dtype=np.int16)
+        result_line_Q = np.zeros((2*self.random_deep,self.dim, self.dim, self.G.dimU), dtype=np.int64)
         result_line_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
-        dict_Q=np.empty(self.random_deep, dtype=object)
+        
         K=self.QV2.fraction_field()
         ring_R0 = PolynomialRing(K,"z")
-        dict_QV=np.empty(self.random_deep, dtype=object)
-        for p in range(self.random_deep):
-            dict_Q[p]={}
-            dict_QV[p]={}
+        dict_Q = [{}]*self.random_deep 
+        dict_QV=[{}]*self.random_deep
         
         # produce a collection of 5* random_deep random vectors 
-        random_vectors =(-1)**np.random.randint(0,2,size=(5*self.random_deep,self.dim))*np.random.randint(1, 10000, size=(5*self.random_deep,self.dim))
+        random_vectors =(-1)**np.random.randint(0,2,size=(5*self.random_deep,self.dim))*np.random.randint(1, 1000, size=(5*self.random_deep,self.dim))
         # Index 0 used for Q, 1 and 2, for QI (real and imaginary parts), 3,4 for line_Q (a and b for az+b)
 
         for chi in self.all_weights:
@@ -340,10 +339,14 @@ class KroneckerRepresentation(Representation):
                         dict_Q[p][self.QV.variable(chi)]= random_vectors[5*p+3,id_chi]*self.QZ('z')+random_vectors[5*p+4,id_chi]
                         result_line_QV[id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = vchi_a*ring_R0('z') + vchi_b
 
+        homs_Q=[]
+        for p in range(self.random_deep):
+            subs_Q = [dict_Q[p].get(self.QV.variable(chi),1) for chi in self.all_weights]
+            homs_Q.append(self.QV.hom(subs_Q,self.QZ.sage_ring))
         return TPi3DResult(
             result_Q, result_QI, result_QV,
             result_line_Q, result_line_QV,
-            dict_Q, dict_QV
+            homs_Q, dict_QV
         )
     
     
@@ -525,30 +528,32 @@ class ParticleRepresentation(Representation):
         """
         
         # Computation made once
-        result_Q = np.zeros((self.dim, self.dim, self.G.dimU), dtype=np.int16)
-        result_QI = np.zeros((2,self.dim, self.dim, self.G.dimU), np.int16)
+        result_Q = np.zeros((self.random_deep,self.dim, self.dim, self.G.dimU), dtype=np.int16)
+        result_QI = np.zeros((2*self.random_deep,self.dim, self.dim, self.G.dimU), np.int16)
         result_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
-        result_line_Q = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
-        result_line_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
-        dict_Q={}
+        result_line_Q = np.zeros((2*self.random_deep,self.dim, self.dim, self.G.dimU), dtype=np.int16)
+        result_line_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)        
         K=self.QV2.fraction_field()
         ring_R0 = PolynomialRing(K,"z")
-        dict_QV={}
+        dict_Q = [{}]*self.random_deep
+        dict_QV=[{}]*self.random_deep
+        #for p in range(self.random_deep):
+        #    dict_Q[p]={}
+        #    dict_QV[p]={}
         
-        v = self.random_element()
-        v_real = self.random_element()
-        v_im = self.random_element()
-        va = self.random_element()
-        vb = self.random_element()
+        # produce a collection of 5* random_deep random vectors 
+        random_vectors =(-1)**np.random.randint(0,2,size=(5*self.random_deep,self.dim))*np.random.randint(1, 1000, size=(5*self.random_deep,self.dim))
+        # Index 0 used for Q, 1 and 2, for QI (real and imaginary parts), 3,4 for line_Q (a and b for az+b)
+
         for chi in self.all_weights:
             id_chi=self.index_of_weight(chi)
             vchi_a, vchi_b = self.QV2.variable(chi)
-            dict_QV[self.QV.variable(chi)]= vchi_a*ring_R0('z') + vchi_b
+            dict_QV[p][self.QV.variable(chi)]= vchi_a*ring_R0('z') + vchi_b
             for k,b in enumerate(chi.as_list_of_list[0]):
                 index_b = chi.as_list_of_list[0].index(b) #Used to treat repritions in the bosonic case
                 if k == index_b:
                     mult = chi.as_list_of_list[0].count(b) #Constant obtained by derivative
-                    # split chi 
+                    # ssplit chi 
                     L1 = chi.as_list_of_list[0][:index_b]
                     L2 = chi.as_list_of_list[0][index_b+1:]
                     for i in range(b):
@@ -562,14 +567,16 @@ class ParticleRepresentation(Representation):
                             Li=L3+L2
                             chi_i = WeightAsListOfList(self.G, as_list_of_list=[Li])
                             id_i = self.index_of_weight(chi_i)
-                            result_Q[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*v[id_chi]
-                            result_QI[0,id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult*(-1)**dec*v_real[id_chi]
-                            result_QI[1,id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult*(-1)**dec*v_im[id_chi]
-                            result_QV[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*self.QV.variable(chi)
-                            result_line_Q[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*(va[id_chi]*self.QZ('z')+vb[id_chi])
-                            dict_Q[self.QV.variable(chi)] = va[id_chi]*self.QZ('z')+vb[id_chi]
-                            result_line_QV[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*(vchi_a*ring_R0('z') + vchi_b)
-        
+                            for p in range(self.random_deep):
+                                result_Q[p,id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*random_vectors[5*p,id_chi]
+                                result_QI[2*p,id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult*(-1)**dec*random_vectors[5*p+1,id_chi]
+                                result_QI[2*p+1,id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult*(-1)**dec*random_vectors[5*p+2,id_chi]
+                                result_QV[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*self.QV.variable(chi)
+                                result_line_Q[2*p,id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*random_vectors[5*p+3,id_chi]  #(va[id_chi]*self.QZ('z')+vb[id_chi])
+                                result_line_Q[2*p+1,id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*random_vectors[5*p+4,id_chi]
+                                dict_Q[p][self.QV.variable(chi)] = random_vectors[5*p+3,id_chi]*self.QZ('z')+random_vectors[5*p+4,id_chi]
+                                result_line_QV[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*(vchi_a*ring_R0('z') + vchi_b)
+            
         return TPi3DResult(
             result_Q, result_QI, result_QV,
             result_line_Q, result_line_QV,

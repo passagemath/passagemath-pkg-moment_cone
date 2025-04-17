@@ -166,6 +166,7 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
                 if is_not_contracted(tuple(ineqv.inversions),V,method_S,Neg0_Weights_sorted,Pos_Weights_sorted) :
                     return(False)
 
+    #return True
     ### Divisor R_0
     J,J_square_free, factors_J_sqf= Compute_JA_square_free(ineq, V) # The Jacobian and it's reduced form
     
@@ -178,7 +179,7 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
     L0=matrix(V.QV,1,len(tau.orthogonal_weights(V)))
     for col,idx in enumerate(zw_idx):
         chi = V.all_weights[idx]
-        L0[0,col]=J_square_free.derivative(V.QV.variable(chi))
+        L0[0,col]=V.QV(J_square_free.derivative(V.QV.variable(chi)))
     
     for p in range(V.random_deep):
         if  method_R0 == 'probabilistic':   
@@ -196,18 +197,29 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
             B0zn = V.T_Pi_3D(method_R0, 'line')[np.ix_(npw_idx, zw_idx, inv_idx)].sum(axis=0) 
             B0z=matrix(ring_R0,B0zn)
             
-        
-        L0z=L0.subs(V.T_Pi_3D(method_R0, 'dict')[p])        
-        Jz=J.subs(V.T_Pi_3D(method_R0, 'dict')[p])
+        #local_dict = {V.QV.variable(chi): V.T_Pi_3D(method_R0, 'dict')[p][V.QV.variable(chi)] for chi in tau.orthogonal_weights(V)}
+        #print(L0)
+        phi=V.T_Pi_3D(method_R0, 'dict')[p]
+        #L0z=L0.subs(local_dict)
+        #print('type J',type(J),type(J_square_free))
+        #print('type L0',type(L0[0,0]))
+        L0z=matrix(V.QZ,1,len(tau.orthogonal_weights(V)), [phi(L0[0,x]) for x in range(len(tau.orthogonal_weights(V)))])         
+        #Jz=J.subs(local_dict)
+        Jz=phi(J)
         assert method_R0 == 'symbolic' or J.degree() == Jz.degree(), "The random line is not enough generic to intersect each irreducible component of R0. Please Restart."
-        factors_J_sqf_z = sum([list(dict(Poly.subs(V.T_Pi_3D(method_R0, 'dict')[p]).factor()).keys()) for Poly in factors_J_sqf],[])
-        
+        #factors_J_sqf_z = sum([list(dict(Poly.subs(local_dict).factor()).keys()) for Poly in factors_J_sqf],[])
+        factors_J_sqf_z = sum([list(dict(phi(Poly).factor()).keys()) for Poly in factors_J_sqf],[])
+
         Ldelta=[]
         for delta1 in factors_J_sqf_z:
-            delta1_quotient = ring_R0.quotient(delta1)
-            Ared=Az.apply_map(lambda entry: delta1_quotient(entry)) # A modulo delta1
-            if Ared.rank() == Ared.ncols()-1 :
+            #quo, rem = Jz.quo_rem(delta1**2)
+            if Jz % delta1**2 != 0 :
                 Ldelta.append(delta1)
+            else :
+                delta1_quotient = ring_R0.quotient(delta1)
+                Ared=Az.apply_map(lambda entry: delta1_quotient(entry)) # A modulo delta1
+                if Ared.rank() == Ared.ncols()-1 :
+                    Ldelta.append(delta1)
         if Ldelta==[]:
             delta=1
         else: 
