@@ -312,8 +312,9 @@ class KroneckerRepresentation(Representation):
         K=self.QV2.fraction_field()
         ring_R0 = PolynomialRing(K,"z")
         dict_Q: list[dict[Polynomial, Polynomial]] = [{} for _ in range(self.random_deep)]
-        dict_QV: list[dict[Polynomial, Polynomial]] = [{} for _ in range(self.random_deep)]
-        
+        subs_QV=[]  # type: ignore 
+        #dict_QV: list[dict[Polynomial, Polynomial]] = [{} for _ in range(self.random_deep)]
+        dict_QV=[{}]
         # produce a collection of 5* random_deep random vectors 
         random_vectors =(-1)**np.random.randint(0,2,size=(5*self.random_deep,self.dim))*np.random.randint(1, 1000, size=(5*self.random_deep,self.dim))
         # Index 0 used for Q, 1 and 2, for QI (real and imaginary parts), 3,4 for line_Q (a and b for az+b)
@@ -321,7 +322,10 @@ class KroneckerRepresentation(Representation):
         for chi in self.all_weights:
             id_chi=self.index_of_weight(chi)
             vchi_a, vchi_b = self.QV2.variable(chi)
-            dict_QV[0][self.QV.variable(chi)]= vchi_a*ring_R0('z') + vchi_b # type: ignore
+            #dict_QV[0][self.QV.variable(chi)]= vchi_a*ring_R0('z') + vchi_b # type: ignore
+            #homs_QV[0][self.QV.variable(chi)]= vchi_a*ring_R0('z') + vchi_b # type: ignore
+            #_QV.append(vchi_a*ring_R0('z') + vchi_b)#coucou
+            dict_QV[0][self.QV.variable(chi)]=vchi_a*ring_R0('z') + vchi_b
             for k,b in enumerate(chi.as_list):
                 for i in range(b):
                     chi_i = WeightAsList(
@@ -343,6 +347,7 @@ class KroneckerRepresentation(Representation):
         for p in range(self.random_deep):
             subs_Q = [dict_Q[p].get(self.QV.variable(chi),1) for chi in self.all_weights]
             homs_Q.append(self.QV.hom(subs_Q,self.QZ.sage_ring))
+        #homs_QV=[self.QV.hom(subs_Q,self.QV2.sage_ring)] # List of length one since in deterministic case non need of repetition    
         return TPi3DResult(
             result_Q, result_QI, result_QV,
             result_line_Q, result_line_QV,
@@ -536,10 +541,8 @@ class ParticleRepresentation(Representation):
         K=self.QV2.fraction_field()
         ring_R0 = PolynomialRing(K,"z")
         dict_Q: list[dict[Polynomial, Polynomial]] = [{} for _ in range(self.random_deep)]
-        dict_QV: list[dict[Polynomial, Polynomial]] = [{} for _ in range(self.random_deep)]
-        #for p in range(self.random_deep):
-        #    dict_Q[p]={}
-        #    dict_QV[p]={}
+        dict_QV=[{}]  # type: ignore 
+        
         
         # produce a collection of 5* random_deep random vectors 
         random_vectors =(-1)**np.random.randint(0,2,size=(5*self.random_deep,self.dim))*np.random.randint(1, 1000, size=(5*self.random_deep,self.dim))
@@ -548,7 +551,7 @@ class ParticleRepresentation(Representation):
         for chi in self.all_weights:
             id_chi=self.index_of_weight(chi)
             vchi_a, vchi_b = self.QV2.variable(chi)
-            dict_QV[p][self.QV.variable(chi)]= vchi_a*ring_R0('z') + vchi_b
+            dict_QV[0][self.QV.variable(chi)]=vchi_a*ring_R0('z') + vchi_b
             for k,b in enumerate(chi.as_list_of_list[0]):
                 index_b = chi.as_list_of_list[0].index(b) #Used to treat repritions in the bosonic case
                 if k == index_b:
@@ -576,11 +579,15 @@ class ParticleRepresentation(Representation):
                                 result_line_Q[2*p+1,id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*random_vectors[5*p+4,id_chi]
                                 dict_Q[p][self.QV.variable(chi)] = random_vectors[5*p+3,id_chi]*self.QZ('z')+random_vectors[5*p+4,id_chi]
                                 result_line_QV[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*(vchi_a*ring_R0('z') + vchi_b)
-            
+        homs_Q=[]
+        for p in range(self.random_deep):
+            subs_Q = [dict_Q[p].get(self.QV.variable(chi),1) for chi in self.all_weights]
+            homs_Q.append(self.QV.hom(subs_Q,self.QZ.sage_ring))
+        #homs_QV=[self.QV.hom(subs_Q,self.QV2.sage_ring)]    
         return TPi3DResult(
             result_Q, result_QI, result_QV,
             result_line_Q, result_line_QV,
-            dict_Q, dict_QV
+            homs_Q, dict_QV
         )
       
 
