@@ -311,8 +311,8 @@ class KroneckerRepresentation(Representation):
         
         K=self.QV2.fraction_field()
         ring_R0 = PolynomialRing(K,"z")
-        dict_Q = [{}]*self.random_deep 
-        dict_QV=[{}]*self.random_deep
+        dict_Q = [{} for _ in range(self.random_deep)]
+        dict_QV = [{} for _ in range(self.random_deep)]
         
         # produce a collection of 5* random_deep random vectors 
         random_vectors =(-1)**np.random.randint(0,2,size=(5*self.random_deep,self.dim))*np.random.randint(1, 1000, size=(5*self.random_deep,self.dim))
