@@ -43,9 +43,11 @@ def is_not_contracted(
     >>> tau
     6 2 | 1 4 1 | 4 5 3 1 | 1
     >>> roots = list(Root.all_of_U(G))[:10]
-    >>> is_not_contracted(roots, tau, V, "probabilistic")
+    >>> positive_weights = list(itertools.chain.from_iterable(tau.positive_weights(V).values()))
+    >>> non_positive_weights = list(itertools.chain.from_iterable(tau.non_positive_weights(V).values()))
+    >>> is_not_contracted(roots, V, "probabilistic", positive_weights, non_positive_weights)
     False
-    >>> is_not_contracted(roots, tau, V, "symbolic")
+    >>> is_not_contracted(roots, V, "symbolic", positive_weights, non_positive_weights)
     False
     """
 
