@@ -211,7 +211,7 @@ class TimeOutException(Exception):
 
 
 @contextmanager
-def timeout(t: int, no_raise: bool = True) -> Generator[None]:
+def timeout(t: float, no_raise: bool = True) -> Generator[None]:
     """
     Decorator and context manager to limit wall execution time of a code
     

@@ -152,24 +152,24 @@ def Groebner_basis_brut(V: Representation, ineq: Inequality, method: Method) -> 
       
 
 def is_fiber_singleton(V: Representation, ineq: Inequality, method: Method) -> bool:
-   """
-   returns True if the fiber (either formal or random, depending on the method) is a single point or not.
-   """
-   GB=Groebner_basis_brut(V,ineq,method)
-   if GB=="special case: trivial map":
-       return True
-   dic={-1:len(list(ineq.inversions))}
-   for eq in GB:
-      dg=eq.degree()
-      if dg in dic.keys():
-         dic[dg]+=1
-      else:
-         dic[dg]=1
-   dgs=dic.keys()
-   t=(len(dgs)==2) and (1 in dgs) and (dic[1]==dic[-1])
-   if not(t):
-      print(dic)
-   return t
+    """
+    returns True if the fiber (either formal or random, depending on the method) is a single point or not.
+    """
+    GB=Groebner_basis_brut(V,ineq,method)
+    if GB=="special case: trivial map":
+        return True
+    dic={-1:len(list(ineq.inversions))}
+    for eq in GB:
+        dg=eq.degree()
+        if dg in dic.keys():
+            dic[dg]+=1
+        else:
+            dic[dg]=1
+    dgs=dic.keys()
+    t=(len(dgs)==2) and (1 in dgs) and (dic[1]==dic[-1])
+    #if not(t):
+    #   print(dic)
+    return t
 
 def is_fiber_singleton_reorder(ineq: Inequality, V: Representation, method: Method) -> bool:
     """
@@ -178,41 +178,36 @@ def is_fiber_singleton_reorder(ineq: Inequality, V: Representation, method: Meth
     return is_fiber_singleton(V,ineq,method)
     
 
-def long_calculation(Liste: Sequence[T], function: Callable[..., U], lim: int, extra_arguments: Iterable[Any]) -> list[tuple[int, T, U]]:
+def long_calculation(Liste: Sequence[T], function: Callable[..., U], lim: float, extra_arguments: Iterable[Any]) -> list[tuple[int, T, U]]:
     """
     For each element of Liste,
     computes function applied to each element, (and common list of extra_arguments for each call)
     if time of computation exceeds lim seconds, computation is stopped.
     """
+    from .task import timeout, TimeOutException
+    from .utils import getLogger
+    logger = getLogger("groebner.long_calculation")
     Res: list[tuple[int, T, U]] = []
     for i,l in enumerate(Liste):
-       signal.alarm(lim)
-       succ = True
-       resl = None
-       try:
-           #print('starting calculation ', i,' over',len(Liste)) 
-           resl=function(l,*extra_arguments)
-       except:
-           #print('did not complete! in ', lim, ' seconds')
-           succ=False
-       # if the computation finished early, though, the alarm is still ticking!
-       # so let's turn it off..
-       signal.alarm(0)
-       #cancel_alarm()
-       if succ:
-          #print(i, "success. Result is", resl)
+        try:
+            with timeout(lim, no_raise=False):
+                logger.debug(f'starting calculation {i} over {len(Liste)}')
+                resl=function(l,*extra_arguments)
+        except TimeOutException:
+           logger.debug(f'{i} did not complete in {lim} seconds!')
+        else:
+          logger.debug(f'{i} completed, result is {resl}')
           assert resl is not None
           Res.append((i, l, resl))
-       #else: 
-          #print(i, "fail")
-    print(len(Res), " over ", len(Liste), " computations finished")
+
+    logger.debug(f"{len(Res)} over {len(Liste)} computations finished")
     if len(Res)>0 and type(Res[0][-1])==bool:
-       print(len([m for m in Res if m[-1]]), "results with output True")
+       logger.debug(f"{len([m for m in Res if m[-1]])} results with output True")
     return Res
 
 def Grobner_List_Test(
         Liste: Sequence[Inequality],
-        lim: int,
+        lim: float,
         V: Representation,
         method: Method
     ) -> tuple[list[Inequality], list[Inequality]]:
@@ -222,7 +217,10 @@ def Grobner_List_Test(
     Grobner_False=[m[1] for m in Grobner_Res if not(m[2])]
     conclusive_indices=[m[0] for m in Grobner_Res]
     Grobner_Inconclusive=[Liste[i] for i in range(len(Liste)) if not(i in conclusive_indices)]
-    print(len(Grobner_True),'true inequalities found by Grobner method, ', len(Grobner_Inconclusive), 'inconclusive inequalities')
+
+    from .utils import getLogger
+    logger = getLogger("groebner.Grobner_List_Test")
+    logger.debug(f"{len(Grobner_True)} true inequalities found by Grobner method, {len(Grobner_Inconclusive)} inconclusive inequalities")
     return Grobner_True, Grobner_Inconclusive
 
 

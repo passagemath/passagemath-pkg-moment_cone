@@ -589,12 +589,12 @@ class GrobnerStep(FilterStep[Inequality]):
     are set as pending.
     """
     method: Method
-    timeout: int
+    timeout: float
 
     def __init__(self,
                  V: Representation,
                  grobner_method: Method = "probabilistic",
-                 grobner_timeout: int = 1,
+                 grobner_timeout: float = 1,
                  **kwargs: Any):
         super().__init__(V, **kwargs)
         self.method = grobner_method
@@ -631,7 +631,7 @@ class GrobnerStep(FilterStep[Inequality]):
         )
         group.add_argument(
             "--grobner_timeout",
-            type=int,
+            type=float,
             default=1,
             help="Maximal processing time per inequality when checking birationaly",
         )
