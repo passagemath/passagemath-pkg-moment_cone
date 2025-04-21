@@ -16,7 +16,7 @@ __all__ = (
 
 from argparse import ArgumentParser, Namespace
 import typing
-from tqdm.auto import tqdm # type: ignore
+from tqdm.auto import tqdm
 
 from .typing import *
 from .representation import Representation
@@ -27,7 +27,6 @@ from .kronecker import KroneckerCoefficient, KroneckerCoefficientMLCache
 from .bkr import PlethysmCache
 from .utils import to_literal
 from .export import ExportFormat
-from .root import Root
 
 class Dataset(Generic[T], ABC):
     """ Catalog of pending and validated objects of type T
@@ -131,7 +130,7 @@ class Step:
               leave: bool = False,
               disable: Optional[bool] = None,
               **kwargs: Any,
-              ) -> tqdm:
+              ) -> tqdm: # type: ignore
         """ Helper function to generate a progress bar with appropriate configuration """
         if desc is None:
             desc = type(self).__name__
