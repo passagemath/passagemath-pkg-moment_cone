@@ -7,6 +7,9 @@ REM Command file for Sphinx documentation
 if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=sphinx-build
 )
+if "%SPHINXAPIDOC%" == "" (
+	set SPHINXAPIDOC=sphinx-apidoc
+)
 set SOURCEDIR=source
 set BUILDDIR=build
 
@@ -24,12 +27,21 @@ if errorlevel 9009 (
 )
 
 if "%1" == "" goto help
+if "%1" == "help" goto help
+if "%1" == "clean" goto clean
 
+
+%SPHINXAPIDOC% -o "%SOURCEDIR%\moment_cone" -e ..\src\moment_cone
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 
 :help
 %SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+goto end
+
+:clean
+rmdir /s /q "%SOURCEDIR%\moment_cone"
+%SPHINXBUILD% -M clean %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 
 :end
 popd
