@@ -44,10 +44,10 @@ class Permutation(tuple[int, ...]): # Remark: hash of p is hash of underlying tu
     Permutation((2, 0, 1))
     Permutation((2, 1, 0))
     """
-    # Cache of instances of Permutation
+    #: Cache of instances of Permutation
     __all_instances: ClassVar[dict["Permutation", "Permutation"]] = {}
 
-    # Cache of permutations returned by Permutation.all_min_rep
+    #: Cache of permutations returned by Permutation.all_min_rep
     __all_min_rep: ClassVar[dict[tuple[int, ...], list["Permutation"]]] = {}
 
     def __new__(cls, indexes: Iterable[int] ) -> "Permutation":

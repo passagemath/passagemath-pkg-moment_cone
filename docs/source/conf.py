@@ -17,13 +17,24 @@ release = '0.1.0'
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
-    "sphinx_autodoc_typehints"
+    "sphinx_autodoc_typehints",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.apidoc",
 ]
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "sage": ("https://doc.sagemath.org/html/en/", None),
 }
+
+apidoc_modules = [
+    {
+        "path": "../../src/moment_cone",
+        "destination": "moment_cone",
+        'separate_modules': False,
+        'include_private': True,
+    },
+]
 
 templates_path = ['_templates']
 exclude_patterns = []

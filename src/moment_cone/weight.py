@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 class Weight:
     """ A weight on which tau can be applied """
     G: LinearGroup
-    index: Optional[int] # Index for an optional generation order
-    mult: int # Multiplicity of this weight
+    index: Optional[int] #: Index for an optional generation order
+    mult: int #: Multiplicity of this weight
 
     def __init__(self,
                  G: LinearGroup,

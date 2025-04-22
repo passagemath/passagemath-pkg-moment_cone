@@ -40,8 +40,8 @@ class Blocks(Generic[T]):
     (True, 1557127941034686738, 1557127941034686738)
     """
     __slots__ = 'flatten', '_indexes'
-    flatten: Sequence[T] # Flattened version of the data (can be mutable or not)
-    _indexes: tuple[int, ...] # Boundaries of each block
+    flatten: Sequence[T] #: Flattened version of the data (can be mutable or not)
+    _indexes: tuple[int, ...] #: Boundaries of each block
 
     def __init__(self, flatten: Sequence[T], sizes: Iterable[int]):
         """
