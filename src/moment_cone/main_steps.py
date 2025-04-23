@@ -638,7 +638,7 @@ class GrobnerStep(FilterStep[Inequality]):
             "--grobner_timeout",
             type=float,
             default=1,
-            help="Maximal processing time per inequality when checking birationaly",
+            help="Maximal processing time per inequality when checking birationaly (<= 0 to disable the limit)",
         )
         
     @classmethod

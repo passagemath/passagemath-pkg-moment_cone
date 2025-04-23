@@ -216,6 +216,8 @@ def timeout(t: float, no_raise: bool = True) -> Generator[None]:
     """
     Decorator and context manager to limit wall execution time of a code
     
+    Negative or zero timeout disable the execution time.
+
     Example of usage as a decorator:
 
     >>> @timeout(10)
@@ -248,12 +250,15 @@ def timeout(t: float, no_raise: bool = True) -> Generator[None]:
     ...     pass # Some something when task didn't finished
     1 2 3
     """
-    from cysignals.alarm import alarm, AlarmInterrupt, cancel_alarm # type: ignore
-    try:
-        alarm(t)
+    if t <= 0:
         yield
-    except AlarmInterrupt:
-        if not no_raise:
-            raise TimeOutException("Time is out!")
-    finally:
-        cancel_alarm()
+    else:
+        from cysignals.alarm import alarm, AlarmInterrupt, cancel_alarm # type: ignore
+        try:
+            alarm(t)
+            yield
+        except AlarmInterrupt:
+            if not no_raise:
+                raise TimeOutException("Time is out!")
+        finally:
+            cancel_alarm()
