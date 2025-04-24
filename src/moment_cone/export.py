@@ -187,7 +187,7 @@ def Latex_string_of_cluster_dom1PS(
     """ converts a list of Inequalities (associated to a given dominant 1PS  taudom) to a string describing part of a latex tabular
     """
     n=len(inequations)
-    chaine='\\multirow{'+str(n)+'}{*}{ '
+    chaine='\\multirow[t]{'+str(n)+'}{*}{ '
     chaine+=Latex_string_of_tau(inequations[0].tau, False, sgn)+' } ' 
     for ineq in inequations:
         chaine+=' & '+Latex_string_of_tau(ineq.wtau, lambda_notation, sgn)+' & '
@@ -252,7 +252,7 @@ def export_latex(
     info=info_from_GV(V)+extra_info
     file0 = open('ineq_Latex-'+info+'.tex','w')
     
-    file0.write("\\documentclass[12pt]{article} \n \\usepackage{amsmath,amssymb} \n \\usepackage{multirow} \n \\usepackage{graphicx} \n  \\usepackage{longtable} \n \\usepackage{geometry} \n \\newgeometry{left=1cm,right=1cm} \\usepackage{changepage} \n \n  \\begin{document}\n \n \\begin{center} \n  \\end{center} \n \\begin{longtable}[l]{|c|c|c|} \n \\caption{"+ caption+"} \\\\  \n \n ")
+    file0.write("\\documentclass[11pt]{article} \n \\usepackage{amsmath,amssymb} \n \\usepackage{multirow} \n \\usepackage{graphicx} \n  \\usepackage{longtable} \n \\usepackage[landscape,left=1cm,right=1cm]{geometry} \n \\usepackage{changepage} \n \n  \\begin{document}\n \n \\begin{longtable}[l]{|c|c|c|} \n \\caption{"+ caption+"} \\\\  \n \n ")
     file0.write(chaine)
     file0.write("\n  \n \\end{longtable} \n \\end{document}")
     file0.close()
