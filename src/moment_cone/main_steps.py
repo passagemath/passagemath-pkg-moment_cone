@@ -135,6 +135,7 @@ class Step:
               desc: Optional[str] = None,
               leave: bool = False,
               disable: Optional[bool] = None,
+              unit: str = 'it',
               **kwargs: Any,
               ) -> tqdm: # type: ignore
         """ Helper function to generate a progress bar with appropriate configuration """
@@ -142,11 +143,23 @@ class Step:
             desc = type(self).__name__
         if disable is None:
             disable = self.quiet
+
+        if (not disable or not self.quiet) and iterable is not None:
+            from .utils import getLogger, IterableHook
+            import logging
+            logger = getLogger(type(self).__name__)
+            if logger.isEnabledFor(logging.DEBUG):
+                iterable = IterableHook(
+                    iterable,
+                    lambda i, v: logger.debug(f"{unit} n°{i}: {v}"),
+                )
+
         return tqdm(
             iterable,
             desc=desc,
             leave=leave,
             disable=disable,
+            unit=unit,
             **kwargs
         )
     

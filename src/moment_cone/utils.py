@@ -553,4 +553,36 @@ class FilteredSet(Generic[T]):
 
     def __repr__(self) -> str:
         return repr(self.data)
+
+
+class IterableHook(Generic[T]):
+    """ Add a hook at each read of an iterable while preserving methods
+    of the original iterable, like `__len__`
+
+    The hook is a callable that take a T as input and whose return is discarded
+    """
+    iterable: Iterable[T]
+    hook: Callable[[int, T], None]
+
+    def __init__(self, iterable: Iterable[T], hook: Callable[[int, T], Any]):
+        self.iterable = iterable
+        self.hook = hook
+
+    def __iter__(self) -> Iterator[T]:
+        for i, v in enumerate(self.iterable):
+            self.hook(i, v)
+            yield v
         
+    def __len__(self) -> int:
+        """ Length of the iterable (if available) """
+        return len(cast(Sequence[T], self.iterable))
+    
+    def __getitem__(self, idx: int) -> T:
+        """ Access to an element """
+        item = cast(Sequence[T], self.iterable)[idx]
+        self.hook(idx, item)
+        return item
+    
+    def __getattr__(self, name: str) -> Any:
+        """ Forward access to missing attributes & methods to the iterable """
+        return getattr(self.iterable, name)
