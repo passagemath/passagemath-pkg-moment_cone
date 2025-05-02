@@ -246,6 +246,24 @@ class Representation(CachedClass, ABC):
 class KroneckerRepresentation(Representation):
     Weight = WeightAsList
     
+    def __init__(self, G: LinearGroup | Iterable[int]):
+        """ Kronecker representation
+
+        The last dimension of the linear group must be one for consistency reason.
+
+        >>> KroneckerRepresentation((3, 3, 3, 1))
+        KroneckerRepresentation(G=GL(3)xGL(3)xGL(3)xGL(1))
+        >>> KroneckerRepresentation((3, 3, 3))
+        KroneckerRepresentation(G=GL(3)xGL(3)xGL(3)xGL(1))
+        """
+        G = LinearGroup(G)
+        if G[-1] != 1:
+            from .utils import getLogger
+            logger = getLogger("KroneckerRepresentation")
+            logger.warning("Dimension 1 appended to the linear group of the Kronecker representation")
+            G = LinearGroup(tuple(G) + (1,))
+        super().__init__(G)
+
     @cached_property
     def dim_cone(self) -> int:
         return self.G.rank - len(self.G) + 1

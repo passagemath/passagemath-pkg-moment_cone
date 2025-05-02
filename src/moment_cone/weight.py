@@ -128,10 +128,10 @@ class WeightAsList(Weight):
         Implementation of self <= other (partial ordering)
         
         >>> from .representation import KroneckerRepresentation
-        >>> G = LinearGroup((3, 2))
+        >>> G = LinearGroup((3, 2, 1))
         >>> K = KroneckerRepresentation(G)
-        >>> chi1 = K.weight((2, 1))
-        >>> chi2 = K.weight((2, 0))
+        >>> chi1 = K.weight((2, 1, 0))
+        >>> chi2 = K.weight((2, 0, 0))
         >>> chi1 <= chi2
         True
 
