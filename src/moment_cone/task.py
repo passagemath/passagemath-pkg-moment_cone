@@ -11,6 +11,7 @@ __all__ = (
     "Task",
     "TimeOutException",
     "timeout",
+    "timeout_process",
 )
 
 class Task(contextlib.AbstractContextManager["Task"]):
@@ -267,3 +268,29 @@ def timeout(t: float, no_raise: bool = True) -> Generator[None]:
                 raise TimeOutException("Time is out!")
         finally:
             cancel_alarm()
+
+def timeout_process(
+        f: Callable[[Unpack[Ts]], T],
+        args: tuple[Unpack[Ts]],
+        timeout: Optional[float] = None
+    ) -> T:
+    """
+    Limits tje wall execution time of a given function
+    
+    Negative or zero timeout disable the execution time.
+
+    Raise TimeOutException when execution reach the given limit.
+    This version use a separate process to control the execution time of the
+    function and may be more reliable than the other `timeout` decorator/context
+    that seems to leave Sage in an incorrect state.
+    """
+    if timeout is None or timeout <= 0:
+        return f(*args)
+    
+    from multiprocessing import Pool, TimeoutError
+    with Pool(processes=1) as pool:
+        result = pool.apply_async(f, args)
+        try:
+            return result.get(timeout=timeout)
+        except TimeoutError:
+            raise TimeOutException("Time is out!")
