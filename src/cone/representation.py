@@ -27,6 +27,7 @@ class TPi3DResult(NamedTuple):
     Q: NDArray[Any]
     QI: NDArray[Any]
     QV: NDArray[Any]
+    QV_int: NDArray[Any]
     line_Q: NDArray[Any]
     line_QV: NDArray[Any]
     dict_Q: list[dict[Polynomial, Polynomial]]
@@ -57,6 +58,7 @@ class TPi3DResult(NamedTuple):
             case None, 'probabilistic': return self.Q
             case 'imaginary', 'probabilistic': return self.QI
             case None | 'imaginary', 'symbolic': return self.QV
+            case None, 'symbolic_int': return self.QV_int
             case 'line', 'probabilistic': return self.line_Q
             case 'line', 'symbolic': return self.line_QV
             case 'dict', 'probabilistic': return self.dict_Q
@@ -306,6 +308,7 @@ class KroneckerRepresentation(Representation):
         result_Q = np.zeros((self.random_deep,self.dim, self.dim, self.G.dimU), dtype=np.int16)
         result_QI = np.zeros((2*self.random_deep,self.dim, self.dim, self.G.dimU), dtype=np.int16) #first index is used for real and imaginary part.
         result_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
+        result_QV_int = np.zeros((self.dim, self.dim, self.G.dimU), dtype=np.int8)
         result_line_Q = np.zeros((2*self.random_deep,self.dim, self.dim, self.G.dimU), dtype=np.int64)
         result_line_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
         
@@ -338,6 +341,7 @@ class KroneckerRepresentation(Representation):
                         result_QI[2*p,id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = random_vectors[5*p+1,id_chi]
                         result_QI[2*p+1,id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = random_vectors[5*p+2,id_chi]
                         result_QV[id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = self.QV.variable(chi)
+                        result_QV_int[id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = 1
                         result_line_Q[2*p,id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = random_vectors[5*p+3,id_chi]
                         result_line_Q[2*p+1,id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = random_vectors[5*p+4,id_chi]
                         dict_Q[p][self.QV.variable(chi)]= random_vectors[5*p+3,id_chi]*self.QZ('z')+random_vectors[5*p+4,id_chi]
@@ -349,7 +353,7 @@ class KroneckerRepresentation(Representation):
             homs_Q.append(self.QV.hom(subs_Q,self.QZ.sage_ring))
         #homs_QV=[self.QV.hom(subs_Q,self.QV2.sage_ring)] # List of length one since in deterministic case non need of repetition    
         return TPi3DResult(
-            result_Q, result_QI, result_QV,
+            result_Q, result_QI, result_QV, result_QV_int,
             result_line_Q, result_line_QV,
             homs_Q, dict_QV
         )
@@ -536,6 +540,7 @@ class ParticleRepresentation(Representation):
         result_Q = np.zeros((self.random_deep,self.dim, self.dim, self.G.dimU), dtype=np.int16)
         result_QI = np.zeros((2*self.random_deep,self.dim, self.dim, self.G.dimU), np.int16)
         result_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)
+        result_QV_int = np.zeros((self.dim, self.dim, self.G.dimU), dtype=np.int8)
         result_line_Q = np.zeros((2*self.random_deep,self.dim, self.dim, self.G.dimU), dtype=np.int16)
         result_line_QV = np.zeros((self.dim, self.dim, self.G.dimU), dtype=object)        
         K=self.QV2.fraction_field()
@@ -575,6 +580,7 @@ class ParticleRepresentation(Representation):
                                 result_QI[2*p,id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult*(-1)**dec*random_vectors[5*p+1,id_chi]
                                 result_QI[2*p+1,id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult*(-1)**dec*random_vectors[5*p+2,id_chi]
                                 result_QV[id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*self.QV.variable(chi)
+                                result_QV_int[id_chi,id_i,Root(k,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec
                                 result_line_Q[2*p,id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*random_vectors[5*p+3,id_chi]  #(va[id_chi]*self.QZ('z')+vb[id_chi])
                                 result_line_Q[2*p+1,id_chi,id_i,Root(0,i,b).index_in_all_of_U(self.G)] = mult* (-1)**dec*random_vectors[5*p+4,id_chi]
                                 dict_Q[p][self.QV.variable(chi)] = random_vectors[5*p+3,id_chi]*self.QZ('z')+random_vectors[5*p+4,id_chi]
@@ -585,7 +591,7 @@ class ParticleRepresentation(Representation):
             homs_Q.append(self.QV.hom(subs_Q,self.QZ.sage_ring))
         #homs_QV=[self.QV.hom(subs_Q,self.QV2.sage_ring)]    
         return TPi3DResult(
-            result_Q, result_QI, result_QV,
+            result_Q, result_QI, result_QV,result_QV_int,
             result_line_Q, result_line_QV,
             homs_Q, dict_QV
         )

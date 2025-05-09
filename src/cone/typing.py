@@ -27,5 +27,5 @@ T_co = TypeVar('T_co')
 U = TypeVar('U') # Template parameter for generic classes or functions
 
 # Method kind used in different parts of the algorithm
-Method = Literal["probabilistic", "symbolic"]
+Method = Literal["probabilistic", "symbolic","symbolic_int"]
 
