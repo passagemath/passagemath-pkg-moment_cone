@@ -7,7 +7,8 @@ from random import randint
 import itertools
 import numpy as np
 from numpy.typing import NDArray
-from sage.all import NumberField # type: ignore
+from sage.all import NumberField, fast_callable
+from sage.misc.fpickle import pickle_function
 
 from .typing import *
 from .tau import Tau
@@ -16,7 +17,6 @@ from .weight import Weight
 from .representation import *
 from .inequality import *
 from .permutation import *
-#from .kx_mod import *
 from .rings import QQ, I, matrix, vector, Matrix, Polynomial, PolynomialRing
 from .utils import prod,fl_dic
 
@@ -85,13 +85,10 @@ def is_not_contracted(
 
 
 def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, method_R0: Method) -> bool :
-    from .utils import getLogger
-    logger = getLogger("ramification.Is_Ram_contracted")
-
     ws=ineq.w
     Inv_w=list(root for root in ineq.inversions)
     dU=len(Inv_w)
-    if dU==0 : # Trivial case. TODO : Math : Can we replace by <=1 ?
+    if dU<=1 : 
         return(True)
     
     if method_R0 == "probabilistic" :
@@ -105,7 +102,7 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
     tau=ineq.tau
     
     # Creation of sorted lists of weights
-    gr_inv = ineq.gr_inversions 
+    gr_inv = ineq.gr_inversions
     Neg0_Weights_sorted=list(itertools.chain.from_iterable(tau.non_positive_weights(V)[k] for k in sorted(tau.non_positive_weights(V)))) 
     gr_rootU = tau.grading_rootsU
     sorted_weightsU = sorted(gr_rootU.keys())
@@ -123,11 +120,12 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
                     continue
                 if is_not_contracted(tuple(ineqv.inversions),V,method_S,Neg0_Weights_sorted,Pos_Weights_sorted) :
                     return(False)
-
+                
     ### Divisor R_0
     # Indices of roots and weights    
     InversionSorted=list(itertools.chain.from_iterable(
             gr_inv[x] for x in sorted(gr_inv.keys(),reverse=True)))
+    List_C_mult_dec=sorted(gr_inv.keys(), reverse=True) 
     inv_idx=[a.index_in_all_of_U(V.G) for a in InversionSorted]
     pw_idx=[V.index_of_weight(chi) for chi in Pos_Weights_sorted]
     npw_idx=[V.index_of_weight(chi) for chi in Neg0_Weights_sorted]
@@ -159,75 +157,54 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
         List_deltas=[]
         List_Comatices=[]
         shift=0
-        for x in List_C_mult_dec : #sorted(gr_inv.keys(),reverse=True):
+        for x in List_C_mult_dec : 
             n_block=len(gr_inv[x])
             Azi=Az.submatrix(shift,shift,n_block,n_block)
-            #print(Azi)
+            
             Ji=Azi.det()
-            #Azi_com=Ji*Azi.inverse()
             Azi_com=Azi.adjugate()
-            #print('test com :',Azi.adjugate()==Azi_com)
-            #TODO : choisir entre ces deux méthodes
             List_Comatices.append(Azi_com.transpose())
             Jz*=Ji
             Blocks_Az.append(Azi)
             Factors_Jz.append(Ji)
             List_deltas.append(dict(Ji.factor()))
             shift+=n_block
-        #print('List of detas',List_deltas)    
-        #print(ineq)   
+        
         # Run over the diagonal blocks of A
         List_checked_deltas=[]
-        List_C_mult_dec=sorted(gr_inv.keys(), reverse=True) # TODO : déplacer
-        #print('lCmult',List_C_mult_dec)
-        for i,x in enumerate(List_C_mult_dec) : #sorted(gr_inv.keys(),reverse=True): 
+        for i,x in enumerate(List_C_mult_dec) :
             # Current block and its determinant
             Azi=Blocks_Az[i]
             Ji=Factors_Jz[i]
             n_current=len(gr_inv[x])
-            #deltas=dict(Ji.factor())
 
             for delta, m in List_deltas[i].items():
-                if delta not in List_checked_deltas:
-                    #print('delta',delta)    
+                if delta not in List_checked_deltas:   
                     List_checked_deltas.append(delta)
                                           
                     
                     K=NumberField(delta, 'a')
                     a = K.gen()
-                    #phiK = V.QZ.hom([a], K) # homomorphism from Q[x] onto K via z ↦ a
-                    # submatric of A modulo delta used to compute the kernel
-                    #Ared=Az.matrix_from_columns(range(sizeblocks[i], Az.ncols())).apply_map(lambda entry: entry(a))
                     Ared=Az.matrix_from_columns(range(sizeblocks[i], Az.ncols())).change_ring(K)
-                    #B0z_red=B0z.matrix_from_columns(range(sizeblocks[i], Az.ncols())).apply_map(lambda entry: entry(a))
                     # Block used to compoute L0
-                    #Aredj=Blocks_Az[jmin].apply_map(lambda entry: entry(a)) # A modulo delta
                     
-                    #com_Aredj=List_Comatices[jmin].apply_map(lambda entry: entry(a)) # A modulo delta
-                    
-                    #com_Aredj=List_Comatices[jmin].apply_map(phiK)
                     if Jz % delta**2 != 0  or Ared.rank() == Ared.ncols()-1 :
                         noyau=Ared.right_kernel().basis()[0] 
-                        #print('noyau',noyau)
                         
                         ### Computation of L0
                         # choose a block of minimal multiplicity. We first list the occurences of delta
                         occ_delta=[[i,m,x]]
                         for j,y in enumerate(List_C_mult_dec[i+1:]):
-                            #print('j',j) 
                             if delta in List_deltas[i+j+1].keys() :
-                                #print('ici')
                                 occ_delta.append([j+i+1,List_deltas[j+i+1][delta],y])
-                        #print('occ delta',occ_delta)        
-                        #jmax=max([occ[0] for occ in occ_delta])
+                        
                         jmin,mult_min,y = min(occ_delta, key=lambda occ: [occ[1],len(gr_inv[occ[2]])])
-                        #print('jmin',i,jmin,mult_min)
+                        
                         # We minimize multiplicity of delta. If several ones, we minimize the size of the block
                            
                         if mult_min==1:
                             nA = Ared.nrows()
                             L0=matrix(K,1,len(zw_idx))
-                            #y=gr_inv.keys()[jmin]
                             Aredj=Blocks_Az[jmin].change_ring(K) # block jmin modulo delta
                             com_Aredj=List_Comatices[jmin].change_ring(K) # its comatrix
                             for col,idx in enumerate(zw_idx):
@@ -235,52 +212,42 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
                                     np.ix_([idx],[V.index_of_weight(chi) for chi in tau.positive_weights(V)[y]], 
                                     [alpha.index_in_all_of_U(V.G) for alpha in gr_inv[y]])].sum(axis=0)
                                 nrow,ncol=Mn.shape
-                                #print('Mn',Mn)
                                 L0[0,col] = sum(
                                     Mn[r,s] * com_Aredj[r,s]
                                     for r in range(nrow)
                                     for s in range(ncol)
                                     if Mn[r,s] !=0
                                 )
-                            #print(L0)                                
+                                                        
                         else : # In this case we use a symbolic method to avoid computation of all small minors.
-                            logger.debug(f'A symbolic case with mult {mult_min} and block of degree {len(gr_inv[y])} for:')
-                            logger.debug(str(ineq))
+                            print('A symbolic case with mult',mult_min,' and block of degree ',len(gr_inv[y]),'for:')
+                            print(ineq)
                             Mn = V.T_Pi_3D('symbolic')[
                                     np.ix_([V.index_of_weight(chi) for chi in tau.orthogonal_weights(V)],
                                     [V.index_of_weight(chi) for chi in tau.positive_weights(V)[y]], 
                                     [alpha.index_in_all_of_U(V.G) for alpha in gr_inv[y]])].sum(axis=0)
-                            #Mn2 = V.T_Pi_3D('symbolic')[
-                            #        np.ix_([V.index_of_weight(chi) for chi in tau.orthogonal_weights(V)],
-                            #        [V.index_of_weight(chi) for chi in tau.positive_weights(V)[2]], 
-                            #        [alpha.index_in_all_of_U(V.G) for alpha in gr_inv[2]])].sum(axis=0)
-                            #print('matrix',Mn)
+                            
                             Jj=matrix(V.QV,Mn).det()
-                            #Jj=matrix(V.QV,Mn).det()*matrix(V.QV,Mn2).det()
-                            #print('Jj',Jj)
+                            
                             partial_derivatives: list[Polynomial] = [
                                 Jj.derivative(V.QV.variable(chi))                                             
                                 for chi in tau.orthogonal_weights(V)
                             ]
-                            #print('partial der',partial_derivatives)
+                            
                             from sage.all import gcd as sage_gcd # type: ignore
-                            #print('gcd',sage_gcd([Jj] + partial_derivatives))
+                            
                             Jjred: Polynomial = Jj//sage_gcd([Jj] + partial_derivatives)
                             Gradiant=[V.QV(Jjred.derivative(V.QV.variable(chi))) for chi in tau.orthogonal_weights(V)]
                             L0QV=matrix(V.QV,1,len(tau.orthogonal_weights(V)),Gradiant)
-                            #print('L0QV',L0QV)
+                            
                             phi = V.T_Pi_3D(method_R0, 'dict')[p]
                             L0 = matrix(V.QZ, L0QV.apply_map(phi))
-                            #print('L0',L0)
                             L0 =L0.change_ring(K)
-                            #print('L0K',L0)
+                            
 
                         B0z_red=B0z.matrix_from_columns(range(sizeblocks[i], Az.ncols())).change_ring(K)
-                        #print('B0noyau',B0z_red*noyau)
-                        #print('B0noyau',L0*B0z_red*noyau[0])
                         if (L0*B0z_red*noyau)[0] != 0 :
-                            #print('Bizarre')
                             return False 
-    #print('et là ?')                    
+                  
     return True                    
                 
