@@ -114,7 +114,7 @@ def find_hyperplanes_reg_mod_outer(weights: Sequence[Weight], V: Representation,
     Returns the subsets of weights, each set generating an hyperplane in X^*(T) likely to be the orthogonal of a dominant 1-parameter subgroup tau, such that there is at most u weights we of V with tau(we)>0
 
     Example:
-    >>> from cone import *
+    >>> from moment_cone import *
     >>> G = LinearGroup((4, 4, 4))
     >>> V = KroneckerRepresentation(G)
     >>> hp = list(find_hyperplanes_reg_mod_outer(V.all_weights, V, 4**3))
@@ -150,7 +150,7 @@ def find_hyperplanes_reg_mod_outer(weights: Sequence[Weight], V: Representation,
     St.indeterminate=[i for i in range(len(weights_free))]
     
     if isinstance(V, ParticleRepresentation): #Trivial outer
-        yield from find_hyperplanes_reg_impl(weights_free,mult_chi_tab,St, V.G, u,exp_dim,dom_order_matrix)
+        yield from find_hyperplanes_reg_impl(weights_free, mult_chi_tab, St, u, exp_dim, dom_order_matrix)
                                                  
 
     else : # Kronecker
@@ -173,7 +173,7 @@ def find_hyperplanes_reg_mod_outer(weights: Sequence[Weight], V: Representation,
 
         # Further exploring the branch
         
-        yield from find_hyperplanes_reg_impl(weights_free,mult_chi_tab,St2, V.G, u,exp_dim,dom_order_matrix)
+        yield from find_hyperplanes_reg_impl(weights_free,mult_chi_tab,St2, u,exp_dim,dom_order_matrix)
 
         # Removing symmetries
         for chi2 in chi.orbit_symmetries(V.G.outer):
@@ -181,7 +181,7 @@ def find_hyperplanes_reg_mod_outer(weights: Sequence[Weight], V: Representation,
             St.excluded.append(weights_free.index(chi2))
 
 
-def find_hyperplanes_reg_impl(weights: Sequence[Weight],MW: NDArray[np.int_], St: WeightSieve, G: LinearGroup, u: int, exp_dim: int, MO: NDArray[np.int8]) -> Iterable[list[Weight]]:
+def find_hyperplanes_reg_impl(weights: Sequence[Weight], MW: NDArray[np.int8], St: WeightSieve, u: int, exp_dim: int, MO: NDArray[np.int8]) -> Iterable[list[Weight]]:
     """ 
     Recursive part to find the hyperplane candidates.
     u is the maximal number of positive weights
@@ -211,7 +211,7 @@ def find_hyperplanes_reg_impl(weights: Sequence[Weight],MW: NDArray[np.int_], St
         St.excluded.append(id_chi)
         St2.zero.append(id_chi)
         
-        yield from find_hyperplanes_reg_impl(weights,MW,St, G, u,exp_dim,MO)
+        yield from find_hyperplanes_reg_impl(weights, MW, St, u, exp_dim, MO)
 
         # 2. We explore the branch where it is defined as a zero element (on the hyperplane)
         
@@ -223,6 +223,6 @@ def find_hyperplanes_reg_impl(weights: Sequence[Weight],MW: NDArray[np.int_], St
         # 2.2 Continuing if there are not too much positive elements
         
         if len(St2.positive) <=u or sum([MW[i] for i in St2.positive]) <=u:
-            yield from find_hyperplanes_reg_impl(weights,MW,St2, G, u,exp_dim,MO)
+            yield from find_hyperplanes_reg_impl(weights, MW, St2, u, exp_dim, MO)
 
 

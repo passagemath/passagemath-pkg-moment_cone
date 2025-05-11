@@ -333,9 +333,8 @@ class KroneckerRepresentation(Representation):
         K=self.QV2.fraction_field()
         ring_R0 = PolynomialRing(K,"z")
         dict_Q: list[dict[Polynomial, Polynomial]] = [{} for _ in range(self.random_deep)]
-        subs_QV=[]  # type: ignore 
         #dict_QV: list[dict[Polynomial, Polynomial]] = [{} for _ in range(self.random_deep)]
-        dict_QV=[{}]
+        dict_QV: list[dict[Polynomial, Polynomial]] = [{}]
         # produce a collection of 5* random_deep random vectors 
         random_vectors =(-1)**np.random.randint(0,2,size=(5*self.random_deep,self.dim))*np.random.randint(1, 1000, size=(5*self.random_deep,self.dim))
         # Index 0 used for Q, 1 and 2, for QI (real and imaginary parts), 3,4 for line_Q (a and b for az+b)
