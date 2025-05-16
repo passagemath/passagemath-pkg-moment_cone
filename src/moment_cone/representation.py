@@ -154,6 +154,42 @@ class Representation(ABC):
         seed = self._generate_seed(extra, nbytes)
         manual_seed(seed)
 
+    def reduce(self, reduced_G: Iterable[int] | LinearGroup, **extra: Any) -> Self:
+        """ Return a similar representation but with modified linear group
+
+        Ensure that extra properties like seed, random_deep, etc. are
+        set so that to ensure proper unique instance recovery.
+
+        >>> V = KroneckerRepresentation((4, 4, 4, 1), random_deep=2)
+        >>> Vred1 = V.reduce((4, 3, 3, 1))
+        >>> Vred2 = V.reduce((4, 3, 3, 1))
+        >>> Vred1 is Vred2
+        True
+
+        >>> V = FermionRepresentation((8,), particle_cnt=3, random_deep=2)
+        >>> Vred1 = V.reduce((6,))
+        >>> Vred2 = V.reduce((6,))
+        >>> Vred1 is Vred2
+        True
+
+        >>> V = BosonRepresentation((8,), particle_cnt=3, random_deep=2)
+        >>> Vred1 = V.reduce((6,), particle_cnt=2)
+        >>> Vred2 = V.reduce((6,), particle_cnt=2)
+        >>> Vred1.particle_cnt
+        2
+        >>> Vred1 is Vred2
+        True
+        """
+        kwargs: dict[str, Any] = dict(
+            random_deep=self.random_deep,
+            seed=self.seed,
+        )
+        kwargs.update(extra)
+        return type(self)(
+            reduced_G,
+            **kwargs,
+        )
+    
     def weight(self, *args: Any, **kwargs: Any) -> WeightBase:
         """ Creates a weight for the given representation """
         return self.Weight(self.G, *args, **kwargs)
@@ -576,7 +612,7 @@ class KroneckerRepresentation(Representation):
         M = matrix(ZZ,self.dim,self.dim)
         for alpha in roots:
             Gred = LinearGroup(self.G[:alpha.k ] +self.G[alpha.k+1:])
-            Vred = KroneckerRepresentation(Gred)
+            Vred = self.reduce(Gred)
             for w in Vred.all_weights:
                 wj = WeightAsList(
                     self.G,
@@ -614,6 +650,11 @@ class ParticleRepresentation(Representation):
             extra=(self.particle_cnt, extra),
             nbytes=nbytes
         )
+
+    def reduce(self, reduced_G: Iterable[int] | LinearGroup, **extra: Any) -> Self:
+        kwargs: dict[str, Any] = dict(particle_cnt=self.particle_cnt)
+        kwargs.update(extra)
+        return super().reduce(reduced_G, **kwargs)
     
     @cached_property
     def dim_cone(self) -> int:
@@ -791,8 +832,7 @@ class ParticleRepresentation(Representation):
         else :
             shiftrank = 0
 
-        # FIXME: not proof to change in Representation construction...
-        Vred = type(self)(
+        Vred = self.reduce(
             LinearGroup([self.G[0] - shiftrank]),
             particle_cnt=self.particle_cnt - 1,
         )
