@@ -59,6 +59,11 @@ def moment_cone_from_cmd() -> None:
         default=None,
         help="Seed for the pseudo-random generators",
     )
+    parser.add_argument(
+        "--check_inequalities",
+        action="store_true",
+        help="Check computed inequalities with references datas"
+    )
 
     Representation.add_arguments(parser)
 
@@ -117,7 +122,7 @@ def moment_cone_from_cmd() -> None:
     Task.reset_all()
 
     # Computing the cone
-    def compute() -> None:
+    def compute() -> list[Inequality]:
         if len(config.line_profiler) > 0:
             from .utils import line_profiler
             inequalities, lp = line_profiler(
@@ -129,9 +134,30 @@ def moment_cone_from_cmd() -> None:
             lp.print_stats()
         else:
             inequalities = list(step())
+        return inequalities
 
     if config.cprofile is None:
-        compute()
+        inequalities = compute()
     else:
         from .utils import cprofile
-        cprofile(compute, file_name=config.cprofile)
+        inequalities, stats = cprofile(compute, file_name=config.cprofile)
+
+    # Checking inequalities
+    if config.check_inequalities:
+        from .reference_datas import compare_to_reference
+        print()
+        try:
+            cmp = compare_to_reference(inequalities, V, source="results")
+        except KeyError:
+            print(f"There are no reference inequalities for {V}")
+        else:
+            print("Comparison with the reference inequalities:")
+            print(cmp)
+            if not cmp:
+                print("Only in results:")
+                for ineq in cmp.only1:
+                    print(f"\t{ineq}")
+                print("Only in reference:")
+                for ineq in cmp.only2:
+                    print(f"\t{ineq}")
+                
