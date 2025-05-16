@@ -96,16 +96,24 @@ def compare(
 def compare_ineq_mod_sym_dim(
         list1_ineq: Iterable[Inequality],
         list2_ineq: Iterable[Inequality],
-        comment1: str = "1",
-        comment2: str = "2"
+        source1: str = "1",
+        source2: str = "2"
     ) -> Comparison[Tau]:
     #assumes that list1 and list2 are lists of inequalities in a Kronecker representation
     list1_tau=unique_modulo_symmetry_list_of_tau([ineq.wtau.end0_representative for ineq in list1_ineq])
     list2_tau=unique_modulo_symmetry_list_of_tau([ineq.wtau.end0_representative for ineq in list2_ineq])
-    return compare(list1_tau,list2_tau,"inequalities",comment1,comment2)
+    return compare(list1_tau, list2_tau, "inequalities (up to S3-sym)", source1, source2)
     
 
-def compare_to_reference(list_ineq: Sequence[Inequality], V: Representation, source: str = "user") -> Comparison[Inequality]:
+@overload
+def compare_to_reference(list_ineq: Sequence[Inequality], V: KroneckerRepresentation, source: str = "user") ->  Comparison[Tau]:
+    ...
+
+@overload
+def compare_to_reference(list_ineq: Sequence[Inequality], V: ParticleRepresentation, source: str = "user") ->  Comparison[Inequality]:
+    ...
+
+def compare_to_reference(list_ineq: Sequence[Inequality], V: Representation, source: str = "user") -> Comparison[Inequality] | Comparison[Tau]:
     """
     list_ineq is a list of Inequalities computed for a certain representation V.
     If exists, it will be compared to a reference list of inequalities (currently only the cases of Klyachko.py for fermions and Vergne_Walter.py for kronecker)
@@ -115,8 +123,9 @@ def compare_to_reference(list_ineq: Sequence[Inequality], V: Representation, sou
     source_ref, reference = get_reference_ineqs(V)
     element_name = "inequalities"
     if isinstance(V, KroneckerRepresentation):
-        element_name = "inequalities (up to S3-sym)"
-    return compare(list_ineq, reference, element_name, source, source_ref)
+        return compare_ineq_mod_sym_dim(list_ineq, reference, source, source_ref)
+    else:
+        return compare(list_ineq, reference, element_name, source, source_ref)
 
 
 
