@@ -1,12 +1,5 @@
-#Inequalities selected for V of kron type with dimensions [4, 4, 4, 1]
-__all__ = (
-    'inequalities_VW444',
-)
-
-from ..linear_group import LinearGroup
-from ..representation import *
-from ..inequality import Inequality
-from ..tau import Tau
+# Inequalities selected for V of kron type with dimensions [4, 4, 4, 1]
+from moment_cone import *
 
 G=LinearGroup([4, 4, 4, 1]) 
 V = KroneckerRepresentation(G)
@@ -64,6 +57,6 @@ brut_inequations=[(5, 1, -3, -3, 5, -3, -3, 1, -5, -1, 3, 3, -5),
  ] 
 
 #inequalities in our formated type Inequality 
-inequalities_VW444=[Inequality.from_tau(Tau.from_flatten(brut_ineq,G)) for brut_ineq in brut_inequations] 
- 
+inequalities=[Inequality.from_tau(Tau.from_flatten(brut_ineq,G)) for brut_ineq in brut_inequations] 
+source = "Vergne-Walter"
  
