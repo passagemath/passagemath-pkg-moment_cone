@@ -132,18 +132,20 @@ def find_hyperplanes_reg_mod_outer(weights: Sequence[Weight], V: Representation,
     # We cancel weights that are necessarily negative
     weights_free = [chi for chi in weights if not has_too_much_geq_weights(chi, weights, V, u, sym)]
     weights_free_mod_outer = [weights_free.index(chi) for chi in V.weights_mod_outer if chi in weights_free]
-    # Orbit as a dictionnary
+    
+    # Orbit as a dictionary
+    orbit_as_dic_idx: Optional[dict[int, list[int]]] = None
     if isinstance(V, KroneckerRepresentation):
-        orbit_as_dic_idx={i:[weights_free.index(chi2) for chi2 in chi.orbit_symmetries(V.G.outer)] for i,chi in enumerate(weights_free)}
+        orbit_as_dic_idx = {i: [weights_free.index(chi2) for chi2 in chi.orbit_symmetries(V.G.outer)] for i, chi in enumerate(weights_free)}
 
-    # Preperatory: compute the incidence matrix of the dominance order
+    # Preparatory: compute the incidence matrix of the dominance order
     #               and put the multiplicities in an nparray
     #               we use the index in weights_free
     dom_order_matrix = np.zeros((len(weights_free),len(weights_free)), dtype=np.int8)
     mult_chi_tab = np.zeros((len(weights_free),), dtype=np.int8)
-    for i,chi1 in enumerate(weights_free):
+    for i, chi1 in enumerate(weights_free):
         mult_chi_tab[i] = chi1.mult
-        for j,chi2 in enumerate(weights_free):
+        for j, chi2 in enumerate(weights_free):
             if chi1.leq(chi2,sym) :
                 dom_order_matrix[i,j]=1
             elif chi2.leq(chi1,sym) :
@@ -155,65 +157,80 @@ def find_hyperplanes_reg_mod_outer(weights: Sequence[Weight], V: Representation,
     St.indeterminate=[i for i in range(len(weights_free))]
     
     if isinstance(V, ParticleRepresentation): #Trivial outer
-        yield from find_hyperplanes_reg_impl(weights_free,mult_chi_tab,St, V.G, u,exp_dim,dom_order_matrix)
+        raise NotImplementedError
+        yield from find_hyperplanes_reg_impl(
+            weights_free,
+            mult_chi_tab,
+            St, V.G, u,exp_dim,dom_order_matrix, orbit_as_dic_idx)
                                                  
 
     else : # Kronecker
-      #for chi in V.weights_mod_outer:
-      for id_chi in weights_free_mod_outer :  
-        # Checking if the element is indeterminate
-        
-        #try:
-        #    id_chi=weights_free.index(chi)  # meaning indeterminante 
-        #except ValueError:
-        #    continue
+        #for chi in V.weights_mod_outer:
+        from itertools import product
+        N: int = 2
+        for choices in product((False, True), repeat=N):
+            yield from find_hyperplanes_reg_inner(
+                choices,
+                weights,
+                weights_free,
+                V,
+                u,
+                exp_dim,
+                mult_chi_tab,
+                dom_order_matrix,
+                weights_free_mod_outer,
+                orbit_as_dic_idx,
+            )
 
-        # If so, we explore the branch where it is defined as a zero element (on the hyperplane)
-        St2 = St.copy()
-        St2.zero.append(id_chi)# put chi in the hyperplane
-        smart_remove(St2.indeterminate, id_chi)
 
-        # Deducing sign of lower and upper elements
-        sign_assignment(id_chi, St2.indeterminate, St2.negative, St2.positive,dom_order_matrix)
-        sign_assignment(id_chi, St2.excluded, St2.negative, St2.positive,dom_order_matrix)
+def find_hyperplanes_reg_inner(
+        choices: tuple[bool, ...], #: chosen branch
+        weights: Sequence[Weight],
+        weights_free: Sequence[Weight],
+        V: Representation,
+        u: int,
+        exp_dim: int,
+        MW: NDArray[np.int8],
+        MO: NDArray[np.int8],
+        weights_free_mod_outer: list[int],
+        orbit_as_dic_idx: Optional[dict[int, list[int]]] = None,
+        ) -> Iterable[list[Weight]]:
+    
+    St = init_sieve_for_family(choices, weights_free, V, MO, weights_free_mod_outer, orbit_as_dic_idx)
+    return find_hyperplanes_reg_impl(weights, MW, St, u, exp_dim, MO)
 
-        # Further exploring the branch
-        
-        yield from find_hyperplanes_reg_impl(weights_free,mult_chi_tab,St2, V.G, u,exp_dim,dom_order_matrix)
 
-        # Removing symmetries
-        for i2 in orbit_as_dic_idx[id_chi] : #chi.orbit_symmetries(V.G.outer):
-            St.indeterminate.remove(weights_free.index(i2))
-            St.excluded.append(weights_free.index(i2))
-
-def Initialisation4family(Choices : list[bool],weights_free: Sequence[Weight],V: Representation, MO: NDArray[np.int8], weights_free_mod_outer : list[int], orbit_as_dic_idx = None) -> WeightSieve:
+def init_sieve_for_family(choices: tuple[bool, ...], weights_free: Sequence[Weight], V: Representation, MO: NDArray[np.int8], weights_free_mod_outer: list[int], orbit_as_dic_idx: Optional[dict[int, list[int]]] = None) -> WeightSieve:
     St = WeightSieve([], [], [], [], [])
     St.indeterminate=[i for i in range(len(weights_free))]
     if isinstance(V, ParticleRepresentation): 
-        for j,test in enumerate(Choices[]):
-            if St.indeterminate==[]: break
+        for j, test in enumerate(choices):
+            if len(St.indeterminate) == 0: break
             # Checking if the element is indeterminate
-            id_chi = St.indeterminate.pop():
-            if test : # We put chi in the hyperplane
-                St.zero.append(id_chi)# put chi in the hyperplane
-                #smart_remove(St.indeterminate, id_chi)
+            id_chi = St.indeterminate.pop()
+            if test:
+                # We put chi in the hyperplane
+                St.zero.append(id_chi)
+
                 # Deducing sign of lower and upper elements
-                sign_assignment(id_chi, St.indeterminate, St.negative, St.positive,MO)
-                sign_assignment(id_chi, St.excluded, St.negative, St.positive,MO)
-            else: # We exclude chi from the hyperplane
+                sign_assignment(id_chi, St.indeterminate, St.negative, St.positive, MO)
+                sign_assignment(id_chi, St.excluded, St.negative, St.positive, MO)
+            else:
+                # We exclude chi from the hyperplane
                 St.excluded.append(id_chi)
         return St    
         
-    else :
-        N=len(Choices)
+    else: # KroneckerRepresentation
+        assert isinstance(V, KroneckerRepresentation) and orbit_as_dic_idx is not None
+        N = len(choices)
         try:
-            first_True=Choices.index(True)  
+            first_true = choices.index(True)  
         except ValueError:
-            first_True=N
+            first_true = N
 
         #i=0
         #for chi in V.weights_mod_outer:
-        for id_chi in weights_free_mod_outer[:first_True]: # The False at the beginning    
+        for id_chi in weights_free_mod_outer[:first_true]: # The False at the beginning    
             #if i>=first_True: break
             #try:
             #    id_chi=weights.index(chi)  # meaning indeterminante 
@@ -225,36 +242,39 @@ def Initialisation4family(Choices : list[bool],weights_free: Sequence[Weight],V:
                 St.excluded.append(id_chi2)
             #i+=1
 
-        if  first_True=N or len(weights_free_mod_outer) <= first_True  : # Only false or no more free weights #next_chi == None :
-            return(St)
+        if  first_true == N or len(weights_free_mod_outer) <= first_true  : # Only false or no more free weights #next_chi == None :
+            return St
         
-        next_id_chi = weights_free_mod_outer[first_True]
+        next_id_chi = weights_free_mod_outer[first_true]
         #id_chi=weights_free.index(next_chi)        
         # Put next_chi in the hyperplane
         St.zero.append(next_id_chi)# put chi in the hyperplane
         smart_remove(St.indeterminate, next_id_chi)
+
         # Deducing sign of lower and upper elements
-        sign_assignment(next_id_chi, St.indeterminate, St.negative, St.positive,MO)
-        sign_assignment(next_id_chi, St.excluded, St.negative, St.positive,MO)
+        sign_assignment(next_id_chi, St.indeterminate, St.negative, St.positive, MO)
+        sign_assignment(next_id_chi, St.excluded, St.negative, St.positive, MO)
                            
-        for j,test in enumerate(Choices[first_True+1:]):
-            if St.indeterminate==[]: break
+        for j, test in enumerate(choices[first_true+1:]):
+            if len(St.indeterminate) == 0: break
             # Checking if the element is indeterminate
-            id_chi = St.indeterminate.pop():
-            if test : # We put chi in the hyperplane
-                St.zero.append(id_chi)# put chi in the hyperplane
-                #smart_remove(St.indeterminate, id_chi)
+            id_chi = St.indeterminate.pop()
+            if test:
+                # We put chi in the hyperplane
+                St.zero.append(id_chi)
+
                 # Deducing sign of lower and upper elements
                 sign_assignment(id_chi, St.indeterminate, St.negative, St.positive,MO)
                 sign_assignment(id_chi, St.excluded, St.negative, St.positive,MO)
-            else: # We exclude chi from the hyperplane
+            else:
+                # We exclude chi from the hyperplane
                 St.excluded.append(id_chi)
         return St    
         
             
 
 
-def find_hyperplanes_reg_impl(weights: Sequence[Weight],MW: NDArray[np.int_], St: WeightSieve, G: LinearGroup, u: int, exp_dim: int, MO: NDArray[np.int8]) -> Iterable[list[Weight]]:
+def find_hyperplanes_reg_impl(weights: Sequence[Weight],MW: NDArray[np.int8], St: WeightSieve, u: int, exp_dim: int, MO: NDArray[np.int8]) -> Iterable[list[Weight]]:
     """ 
     Recursive part to find the hyperplane candidates.
     u is the maximal number of positive weights
@@ -284,7 +304,7 @@ def find_hyperplanes_reg_impl(weights: Sequence[Weight],MW: NDArray[np.int_], St
         St.excluded.append(id_chi)
         St2.zero.append(id_chi)
         
-        yield from find_hyperplanes_reg_impl(weights,MW,St, G, u,exp_dim,MO)
+        yield from find_hyperplanes_reg_impl(weights, MW, St, u, exp_dim, MO)
 
         # 2. We explore the branch where it is defined as a zero element (on the hyperplane)
         
@@ -296,6 +316,6 @@ def find_hyperplanes_reg_impl(weights: Sequence[Weight],MW: NDArray[np.int_], St
         # 2.2 Continuing if there are not too much positive elements
         
         if len(St2.positive) <=u or sum([MW[i] for i in St2.positive]) <=u:
-            yield from find_hyperplanes_reg_impl(weights,MW,St2, G, u,exp_dim,MO)
+            yield from find_hyperplanes_reg_impl(weights, MW, St2, u, exp_dim, MO)
 
 
