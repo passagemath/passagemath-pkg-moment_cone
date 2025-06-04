@@ -63,13 +63,13 @@ def smart_remove(l: list[T], idx: int) -> None:
     #    l.pop()
 
 
-def sign_assignment(id_chi: int,
+def sign_assignment_old(id_chi: int,
                     S_ex: list[int],
                     S_ind: list[int],
                     nb_positive: list[int],
                     MO: NDArray[np.int8],
                     MW: NDArray[np.int8],
-                    V) -> None:
+                    V: Representation) -> None:
     """ Determining the sign of weight from S_input by comparing it to the curring weight chi """
     idx = 0
     while idx < len(S_ex): # Loop on S_input with while since S_input changes
@@ -177,13 +177,13 @@ def has_too_much_geq_weights(chi: Weight, weights: Sequence[Weight], V: Represen
         leq_cnt-=chi.mult
         return leq_cnt > u
     
-def sort_criterium(id_chi: int,weights_free: list[int],V: Representation,MO: NDArray[np.int8]) -> int:
+def sort_criterium(id_chi: int, weights_free: list[Weight],V: Representation,MO: NDArray[np.int8]) -> tuple[int, int]:
     nb_sup = MO[id_chi, :].sum() - 1
     nb_inf = MO[:, id_chi].sum() - 1
     nb_orbit=len(list(weights_free[id_chi].orbit_symmetries(V.G.outer)))
-    return((nb_orbit,-nb_sup-nb_inf))
+    return nb_orbit, -nb_sup-nb_inf
 
-def best_index_for_sign(L: list[int],MO: NDArray[np.int8],coeff: int) -> tuple[int]:
+def best_index_for_sign(L: list[int],MO: NDArray[np.int8],coeff: float) -> tuple[int, int]:
     """
     Return the index of an element of L such that nb_inf + nb_sup is maximal
     """
@@ -192,9 +192,9 @@ def best_index_for_sign(L: list[int],MO: NDArray[np.int8],coeff: int) -> tuple[i
     #scores = 2 * MO[L][:, L].sum(axis=1) + MO[L][:, L].sum(axis=0)
     #scores = MO[L][:, L].sum(axis=1) + MO[L][:, L].sum(axis=0)
     best_i = int(np.argmax(scores))
-    return best_i,L[best_i]
+    return best_i, L[best_i]
 
-def best_index_for_sign2(L: list[int],MO: NDArray[np.int8]) -> tuple[int]:
+def best_index_for_sign2(L: list[int],MO: NDArray[np.int8]) -> tuple[int, int]:
     """
     Return the index of an element of L such that nb_inf + nb_sup is maximal
     """
@@ -213,7 +213,7 @@ def best_index_for_sign2(L: list[int],MO: NDArray[np.int8]) -> tuple[int]:
     val_max=max(Scores)
     best_i=Scores.index(val_max)
     #best_i = int(np.argmax(scores))
-    return best_i,L[best_i]
+    return best_i, L[best_i]
 
 def find_hyperplanes_reg_mod_outer(
         weights: Sequence[Weight],
@@ -221,7 +221,7 @@ def find_hyperplanes_reg_mod_outer(
         umax: int,
         sym: Optional[Sequence[int]] = None,
         flatten_level: int = 1, #: Flatten search graph up to given level
-    ) -> list[Tau] : #Iterable[list[Weight]]:
+    ) -> Iterable[Tau] : #Iterable[list[Weight]]:
     """
     Returns the subsets of weights, each set generating an hyperplane in X^*(T) likely to be the orthogonal of a dominant 1-parameter subgroup tau, such that there is at most u weights we of V with tau(we)>0
 
@@ -239,7 +239,7 @@ def find_hyperplanes_reg_mod_outer(
     # We cancel weights that are necessarily negative
     weights_almost_free = [chi for chi in weights if not has_too_much_geq_weights(chi, weights, V, umax, sym)]
     
-    weights_free=[]
+    weights_free: list[Weight] = []
     for chi1 in weights_almost_free:
         nb_sup=len([chi2 for chi2 in weights_almost_free if chi2.leq(chi1,sym)]) # Todo : ou le contraire
         if nb_sup+exp_dim<=len(weights_almost_free)+1 :
@@ -273,7 +273,7 @@ def find_hyperplanes_reg_mod_outer(
 
     weights_free_mod_outer = [weights_free.index(chi) for chi in V.weights_mod_outer if chi in weights_free]
     # For parallel : plus lent mais mieux équilibré
-    weights_free_mod_outer.sort(key=lambda id_chi:sort_criterium(id_chi,weights_free,V,dom_order_matrix),reverse=True)
+    weights_free_mod_outer.sort(key=lambda id_chi:sort_criterium(id_chi, weights_free,V,dom_order_matrix),reverse=True)
            
 
     # Orbit as a dictionary
@@ -298,13 +298,13 @@ def find_hyperplanes_reg_mod_outer(
         b = floor((len(Choices)+1)/2)
         q, r = divmod(free_choices, b)
         Choices = (
-        Choices[:r] + 
-        [x + p for x in Choices[r:b] for p in product((False, True), repeat=q)] + 
-        Choices[b:]
+            Choices[:r] + 
+            [x + p for x in Choices[r:b] for p in product((False, True), repeat=q)] + 
+            Choices[b:]
         )
         Choices = (
-        [x + p for x in Choices[:r] for p in product((False, True), repeat=q+1)] + 
-        Choices[r:]
+            [x + p for x in Choices[:r] for p in product((False, True), repeat=q+1)] + 
+            Choices[r:]
         )
 
     # Tâche 0 
@@ -323,6 +323,7 @@ def find_hyperplanes_reg_mod_outer(
             St,u,exp_dim,dom_order_matrix,sym=sym)
                                                  
     else : # Kronecker
+        assert orbit_as_dic_idx is not None
         for id_chi in weights_free_mod_outer[:Nb_False]: # One more False.            
             for id_chi2 in orbit_as_dic_idx[id_chi]:        
                 St.indeterminate.remove(id_chi2)
@@ -458,14 +459,15 @@ def find_hyperplanes_reg_impl(weights: Sequence[Weight],V: Representation,MW: ND
         taured=Tau.from_zero_weights([weights[i] for i in St.zero], V)
         if isinstance(V, KroneckerRepresentation) :
             taured_test_dom=taured
-        else :
+        else:
+            assert sym is not None
             taured_test_dom=Tau.from_flatten(taured.flattened,LinearGroup(sym))
         if taured_test_dom.is_dom_reg : # We keep only dominant regular 1-PS
             #yield from taured.orbit_symmetries()
             yield taured
         elif taured_test_dom.opposite.is_dom_reg :
             #yield from taured.opposite.orbit_symmetries()
-            yield from taured.opposite
+            yield taured.opposite
         #else :
         #    print('tau',taured_test_dom)
         #    for idx in St.zero :

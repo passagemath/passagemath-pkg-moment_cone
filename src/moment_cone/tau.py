@@ -469,7 +469,7 @@ class Tau:
         blocks = (sorted(b) for b in Blocks(self.components, self.G.outer))
         return Tau(itertools.chain.from_iterable(blocks))
     
-    def sort_blocks(self):
+    def sort_blocks(self) -> "Tau":
         """Trie les blocs de self.components selon les tailles spécifiées dans outer_sizes."""
         start = 0
         new_components = []
@@ -478,7 +478,7 @@ class Tau:
             new_components.extend(sorted(self.components[start:end]))
             start = end
         new_components.extend(self.components[start:])    
-        return(Tau(new_components))
+        return Tau(new_components)
     
     @cached_property
     def outer(self) -> tuple[int, ...]:
@@ -800,12 +800,12 @@ def find_1PS(V: Representation, flatten_level: int = 0, quiet: bool = False) -> 
                 logger.debug(f'For G={Vred.G} we get {len(List_1PS_Vred_reg)} candidates regular dominant')
 
             #List_1PS_smalld_reg=sum([list(tau.orbit_symmetries()) for tau in List_1PS_smalld_reg_mod_sym]  ,[])
-            List_1PS_Vred_extended=[]
+            List_1PS_Vred_extended: list[Tau] = []
             for permut in Permutation.embeddings_mod_sym(V.G, Vred.G):
                 for tau in List_1PS_Vred_reg:
                     tau_twist=Tau([tau.components[i] for i in permut])
                     #list_tau_extended=tau_twist.m_extend_with_repetitions(V.G)
-                    List_1PS_Vred_extended+=tau_twist.m_extend_with_repetitions(V.G)
+                    List_1PS_Vred_extended += tau_twist.m_extend_with_repetitions(V.G)
             #yield from List_1PS.yield_update(unique_modulo_symmetry_list_of_tau(List_1PS_Vred_extended))
             #L=unique_modulo_symmetry_list_of_tau(List_1PS_Vred_extended)
             #Ln={tau.sort_blocks() for tau in List_1PS_Vred_extended}
