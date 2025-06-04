@@ -2,7 +2,7 @@ __all__ = (
     "Tau",
     "ReducedTau",
     "unique_modulo_symmetry_list_of_tau",
-    "full_under_symmetry_list_of_tau",
+    #"full_under_symmetry_list_of_tau",
     "find_1PS",
 )
 
@@ -85,7 +85,9 @@ class Tau:
                M[shift_i + d-1,shift_j+j] = 1
                shift_i += d
 
-        b = M.kernel().basis()
+        #b = M.kernel().basis()
+        #b = M.kernel(algorithm='pari').basis()
+        b = M.kernel(algorithm='flint').basis()
         if len(b) != 1:
            raise ValueError("Given set of weights does not generates an hyperplane")
         else:
@@ -467,6 +469,17 @@ class Tau:
         blocks = (sorted(b) for b in Blocks(self.components, self.G.outer))
         return Tau(itertools.chain.from_iterable(blocks))
     
+    def sort_blocks(self):
+        """Trie les blocs de self.components selon les tailles spécifiées dans outer_sizes."""
+        start = 0
+        new_components = []
+        for size in self.G.outer[:-1]:
+            end = start + size
+            new_components.extend(sorted(self.components[start:end]))
+            start = end
+        new_components.extend(self.components[start:])    
+        return(Tau(new_components))
+    
     @cached_property
     def outer(self) -> tuple[int, ...]:
         """ Returns length of the symmetries in tau """
@@ -492,6 +505,26 @@ class Tau:
         """
         from .utils import orbit_symmetries
         for sym_comp in orbit_symmetries(self._components, self.G.outer):
+            yield Tau(sym_comp)
+
+    def orbit_symmetries_excepted_ones(self) -> Iterable["Tau"]:
+        """
+        Lists the orbit of tau under symmetries of dimensions of its components,
+        ignoring the symmetries of the last block of 1
+
+        >>> G = LinearGroup([2, 2, 2, 1, 1])
+        >>> tau = Tau.from_flatten([6, 2, 1, 4, 1, 4, 5, 3], G)
+        >>> tau
+        6 2 | 1 4 | 1 4 | 5 | 3
+        >>> for t in tau.orbit_symmetries_excepted_ones():
+        ...     print(t)
+        1 4 | 1 4 | 6 2 | 5 | 3
+        1 4 | 6 2 | 1 4 | 5 | 3
+        6 2 | 1 4 | 1 4 | 5 | 3
+        """
+        from .utils import orbit_symmetries
+        sym=list(self.G.outer)[:-1]+[1]*self.G.outer[-1]
+        for sym_comp in orbit_symmetries(self._components, sym):
             yield Tau(sym_comp)
 
     #@staticmethod
@@ -707,10 +740,10 @@ def unique_modulo_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> set[Tau]:
     """
     return {tau.end0_representative.sort_mod_sym_dim for tau in seq_tau}
 
-def full_under_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> Iterable[Tau]:
-    """ provides all the elements in orbits under symmetry for elements in seq_tau
-    """
-    return itertools.chain.from_iterable(tau.orbit_symmetries() for tau in seq_tau)
+#def full_under_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> Iterable[Tau]:
+#    """ provides all the elements in orbits under symmetry for elements in seq_tau
+#    """
+#    return itertools.chain.from_iterable(tau.orbit_symmetries() for tau in seq_tau)
 
 
 def find_1PS(V: Representation, flatten_level: int = 0, quiet: bool = False) -> Iterator[Tau]:
@@ -737,23 +770,30 @@ def find_1PS(V: Representation, flatten_level: int = 0, quiet: bool = False) -> 
         sub_rep = [
             V.reduce(LinearGroup(p)) 
             for p in Partition(tuple(V.G)).all_subpartitions()
-        ][1:] #[1:] excludes 1... 1
+            if p[1]>1
+        ] #[1:] excludes 1... 1
 
-        for Vred in sub_rep:
+        L=[]
+        for t in range(len(V.G)-1):
+            L.append(Tau([i*[0] for i in V.G[:t]]+
+                         [[0]*(V.G[t]-1)+[1]]+
+                         [i*[0] for i in V.G[t+1:]]))
+            L.append(Tau([i*[0] for i in V.G[:t]]+
+                         [[1]*(V.G[t]-1)+[0]]+
+                         [i*[0] for i in V.G[t+1:-1]]+
+                         [[-1]]))
+        #print(L)             
+        yield from unique_modulo_symmetry_list_of_tau(L)             
+        for Vred in sub_rep[:-1]:
+            #print(Vred)
             umax=V.G.u_max(Vred.G)
             #Recover by induction all candidates 1-PS mod symmetry
-            List_1PS_Vred_reg=[]
-            for H in find_hyperplanes_reg_mod_outer(list(Vred.all_weights), Vred, umax, flatten_level=flatten_level): # Important to keep sym at None
-                taured=Tau.from_zero_weights(H, Vred)
-                if taured.is_dom_reg : # We keep only dominant regular 1-PS
-                    List_1PS_Vred_reg+=[t for t in taured.orbit_symmetries()]
-                elif taured.opposite.is_dom_reg :
-                    List_1PS_Vred_reg+=[t for t in taured.opposite.orbit_symmetries()]
-                
-            # Suppress the repetitions (one hyperplane can be spanned by several collections of weights)       
-            List_1PS_Vred_reg=list(set(List_1PS_Vred_reg))
-            
-            #List_1PS_smalld_reg_mod_outer= list(find_1PS_reg_mod_sym_dim(Vred,umax))
+            List_1PS_Vred_reg=list({tau 
+                                    for taured in find_hyperplanes_reg_mod_outer(list(Vred.all_weights), Vred, umax, flatten_level=flatten_level)
+                                    for tau in taured.orbit_symmetries_excepted_ones()
+                                    })
+            #if Vred.G==LinearGroup([2,2,1,1]):
+            #    print('tau reg 2211',List_1PS_Vred_reg)
             if not quiet:
                 from .utils import getLogger
                 logger = getLogger("tau.find_1PS")
@@ -764,11 +804,24 @@ def find_1PS(V: Representation, flatten_level: int = 0, quiet: bool = False) -> 
             for permut in Permutation.embeddings_mod_sym(V.G, Vred.G):
                 for tau in List_1PS_Vred_reg:
                     tau_twist=Tau([tau.components[i] for i in permut])
-                    list_tau_extended=tau_twist.m_extend_with_repetitions(V.G)
-                    for tau_ext in list_tau_extended:
-                        if len(flatten_dictionary(tau_ext.positive_weights(V)))<=tau_ext.dim_Pu:
-                            List_1PS_Vred_extended.append(tau_ext)
-            yield from List_1PS.yield_update(unique_modulo_symmetry_list_of_tau(List_1PS_Vred_extended))
+                    #list_tau_extended=tau_twist.m_extend_with_repetitions(V.G)
+                    List_1PS_Vred_extended+=tau_twist.m_extend_with_repetitions(V.G)
+            #yield from List_1PS.yield_update(unique_modulo_symmetry_list_of_tau(List_1PS_Vred_extended))
+            #L=unique_modulo_symmetry_list_of_tau(List_1PS_Vred_extended)
+            #Ln={tau.sort_blocks() for tau in List_1PS_Vred_extended}
+            #print('New',len(Ln))
+            #L=[tau for tau in List_1PS.yield_update(unique_modulo_symmetry_list_of_tau(List_1PS_Vred_extended))]
+            #print('Old',len(L))
+            #print(L)
+            #for tau in Ln : 
+            #    if tau not in L :
+            #        print(tau)
+            yield from {tau.sort_blocks() for tau in List_1PS_Vred_extended}
+            #yield from unique_modulo_symmetry_list_of_tau(List_1PS_Vred_extended)
+        #print(unique_modulo_symmetry_list_of_tau(find_hyperplanes_reg_mod_outer(list(V.all_weights), V, V.G.dimU,flatten_level=flatten_level)))    
+        #yield from unique_modulo_symmetry_list_of_tau(find_hyperplanes_reg_mod_outer(list(V.all_weights), V, V.G.dimU,flatten_level=flatten_level))
+        yield from {tau.sort_blocks() for tau in find_hyperplanes_reg_mod_outer(list(V.all_weights), V, V.G.dimU,flatten_level=flatten_level)}
+            
 
     else:
         assert isinstance(V, ParticleRepresentation)
@@ -780,13 +833,10 @@ def find_1PS(V: Representation, flatten_level: int = 0, quiet: bool = False) -> 
             Gred=LinearGroup([len(partS)])
             Vred = V.reduce(Gred, particle_cnt=V.particle_cnt)
             sym=list(symmetries(partS))
-            for H in find_hyperplanes_reg_mod_outer(weights, Vred, umax, sym, flatten_level=flatten_level):
-                taured=Tau.from_zero_weights(H, Vred)
+            for taured in find_hyperplanes_reg_mod_outer(weights, Vred, umax, sym, flatten_level=flatten_level):
                 tau=taured.extend_from_S(partS)
                 # dominant 1-PS corresponding to tau and -tau
                 l1=list(tau.flattened)
                 l1.sort(reverse=True)
-                l2=list(tau.opposite.flattened)
-                l2.sort(reverse=True)
-                yield from List_1PS.yield_update([Tau.from_flatten(l1, V.G), Tau.from_flatten(l2, V.G)])
-
+                yield from List_1PS.yield_update([Tau.from_flatten(l1, V.G)])
+                

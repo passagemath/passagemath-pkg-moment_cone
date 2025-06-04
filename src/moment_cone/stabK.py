@@ -77,7 +77,7 @@ def dim_gen_stab_of_K(
     # Echelon form of M.transpose() to computation modulo the image F of M
     B_tmp = M.transpose().echelon_form().rref() # reduced echelon form
     #B: Matrix = B_tmp.matrix_from_rows(B_tmp.pivot_rows()) # Suppress zero rows
-    rkB=B_tmp.rank()
+    rkB=B_tmp.rank(algorithm='flint')
     B = matrix(QQ, map(B_tmp.row, range(rkB)))
     List_Pivots = np.asarray(pivot_columns_rref(B))
         
@@ -107,7 +107,7 @@ def dim_gen_stab_of_K(
         N_int[i, :] = [int(N_lcm * N[i, j]) for j in range(N.ncols())]
 
     # Compute the basis of the left kernel of M. That a bases of the stabilizer of v.
-    kernel_basis: list[Vector] = M.right_kernel().basis()
+    kernel_basis: list[Vector] = M.right_kernel(algorithm='flint').basis()
 
     # Converting the basis to integer vectors
     kernel_basis_int = np.empty((len(kernel_basis), dk), dtype=object) # dtype=object to use arbitrary precision integer of Python
