@@ -136,7 +136,7 @@ def has_too_much_geq_weights(chi: Weight, weights: Sequence[Weight], V: Represen
         leq_cnt-=chi.mult
         return leq_cnt > u
     
-def sort_criterium(id_chi: int, weights_free: list[int],V: Representation,MO: NDArray[np.int8]) -> tuple[int, int]:
+def sort_criterium(id_chi: int, weights_free: list[Weight],V: Representation,MO: NDArray[np.int8]) -> tuple[int, int]:
     nb_sup = MO[id_chi, :].sum() - 1
     nb_inf = MO[:, id_chi].sum() - 1
     nb_orbit=len(list(weights_free[id_chi].orbit_symmetries(V.G.outer)))
@@ -151,7 +151,7 @@ def best_index_for_sign(L: list[int],MO: NDArray[np.int8],coeff: float) -> tuple
     best_i = int(np.argmax(scores))
     return best_i, L[best_i]
 
-def best_index_for_sign2(S_ind: list[int],S_ex: list[int],MO: NDArray[np.int8],coeff: int) -> tuple[int]:
+def best_index_for_sign2(S_ind: list[int],S_ex: list[int],MO: NDArray[np.int8],coeff: int) -> tuple[int, int]:
     """
     Return the index of an element of L such that nb_inf + nb_sup is maximal
     """
@@ -423,7 +423,7 @@ def find_hyperplanes_reg_impl(weights: Sequence[Weight],V: Representation,MW: ND
         if taured_test_dom.is_dom_reg : # We keep only dominant regular 1-PS
             yield taured
         elif taured_test_dom.opposite.is_dom_reg :
-            yield from taured.opposite
+            yield taured.opposite
         
 
     elif len(St.zero) + len(St.indeterminate) >= exp_dim and len(St.indeterminate) > 0:
