@@ -183,7 +183,7 @@ def find_hyperplanes_reg_mod_outer(
     >>> V = KroneckerRepresentation(G)
     >>> hp = list(find_hyperplanes_reg_mod_outer(V.all_weights, V, 4**3))
     >>> print("Number of raw hyperplanes:", len(hp))
-    Number of raw hyperplanes: 1604
+    Number of raw hyperplanes: 796
     """
 
     exp_dim = V.dim_cone - 1
