@@ -125,7 +125,11 @@ class Step:
     
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """ Effective computation of the step """
-        pass
+        self.apply(*args, **kwargs)
+
+    @abstractmethod
+    def apply(self, *args: Any, **kwargs: Any) -> Any:
+        ...
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}()"
