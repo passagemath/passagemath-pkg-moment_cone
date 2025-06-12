@@ -752,6 +752,7 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
     """
     from .hyperplane_candidates import find_hyperplanes_reg_mod_outer, check_hyperplane_dim
     from .utils import symmetries, FilteredSet
+    from time import perf_counter
 
     # Reduced representation
     Vred: Representation
@@ -777,7 +778,7 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
         yield from unique_modulo_symmetry_list_of_tau(L)
 
         for Vred in sub_rep[:-1]:
-            #print(Vred)
+            tic = perf_counter()
             umax=V.G.u_max(Vred.G)
 
             #Recover by induction all candidates 1-PS mod symmetry
@@ -804,10 +805,11 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
                     gen_Vred_extented(tau_reg)
                 )
 
+            duration = perf_counter() - tic
             if not quiet:
                 from .utils import getLogger
                 logger = getLogger("tau.find_1PS")
-                logger.debug(f'For G={Vred.G} we get {cnt_tau_reg} candidates regular dominant')
+                logger.debug(f'For G={Vred.G} we get {cnt_tau_reg} candidates regular dominant in {duration}s')
         
         # Unique Tau from the original representation
         yield from FilteredSet[Tau]().yield_update((
