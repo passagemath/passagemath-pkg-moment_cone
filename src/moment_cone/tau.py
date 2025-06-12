@@ -90,7 +90,7 @@ class Tau:
         if b[1] != 1:
            raise ValueError("Given set of weights does not generates an hyperplane")
         else:
-           return Tau.from_flatten([b[0][i, 0] for i in range(b[0].nrows())], V.G)
+           return Tau.from_flatten([int(b[0][i, 0]) for i in range(b[0].nrows())], V.G)
 
     @property
     def opposite(self) -> "Tau":
