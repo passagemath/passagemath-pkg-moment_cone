@@ -8,7 +8,7 @@ __all__ = (
 
 import itertools
 from functools import cached_property
-from flint import fmpz_mat
+from flint import fmpz_mat # type: ignore
 import numpy as np
 from numpy.typing import NDArray
 
@@ -79,10 +79,9 @@ class Tau:
         TODO: doctest
         """
         if isinstance(V, KroneckerRepresentation):
-            L = list(weights).copy()
-            L+= [M_weights.shape[1] - i -1 for i in range(len(V.G)-1)]
+            L = list(weights) + [M_weights.shape[1] - i -1 for i in range(len(V.G)-1)]
         else :
-            L = weights
+            L = list(weights)
         M_np = M_weights[:, L]
         M_flint = fmpz_mat(M_np.tolist())    
         
@@ -775,15 +774,7 @@ def find_1PS(V: Representation, flatten_level: int = 0, quiet: bool = False) -> 
                          [i*[0] for i in V.G[t+1:-1]]+
                          [[-1]]))
         #print(L)             
-        yield from unique_modulo_symmetry_list_of_tau(L)      
-
-        # Initialisation with regular 1-PS
-        # We use here a FilteredSet that allows to iterate through the unique added
-        # elements while filtering them using a predicate.
-        # The predicate checks that the candidates really give a candidate
-        List_1PS = FilteredSet[Tau](
-            lambda tau: check_hyperplane_dim(tau.orthogonal_weights(V), V.dim_cone - 1)
-        )
+        yield from unique_modulo_symmetry_list_of_tau(L)
 
         for Vred in sub_rep[:-1]:
             #print(Vred)
@@ -831,9 +822,7 @@ def find_1PS(V: Representation, flatten_level: int = 0, quiet: bool = False) -> 
         # We use here a FilteredSet that allows to iterate through the unique added
         # elements while filtering them using a predicate.
         # The predicate checks that the candidates really give a candidate
-        List_1PS = FilteredSet[Tau](
-            lambda tau: check_hyperplane_dim(tau.orthogonal_weights(V), V.dim_cone - 1) # filter predicate FIXME: to be removed since it is done in find_hyperplanes_reg_mod_outer
-        )
+        List_1PS = FilteredSet[Tau]()
 
         list_partS=[p for p in Partition.all_for_integer(V.G.rank)][1:] #[1:] excludes n, so S is the center of G
         for partS in list_partS :

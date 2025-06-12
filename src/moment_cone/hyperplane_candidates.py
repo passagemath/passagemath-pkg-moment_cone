@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from flint import fmpz_mat
+from flint import fmpz_mat # type: ignore
 
 import itertools
 import numpy as np
@@ -118,8 +118,7 @@ def check_hyperplane_dim(weights: Sequence[int], exp_dim: int, M_weights : NDArr
 
     M_np = M_weights[:, weights]
     M_flint = fmpz_mat(M_np.tolist())
-    ##M_flint = fmpz_mat.from_numpy(M_np)
-    return M_flint.rank() == exp_dim  
+    return cast(int, M_flint.rank()) == exp_dim  
         
 def has_too_much_geq_weights(chi: Weight, weights: Sequence[Weight], V: Representation, u: int, sym: Optional[Sequence[int]] = None) -> bool:
     """ 
