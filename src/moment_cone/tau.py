@@ -751,7 +751,7 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
     Computed by 
     """
     from .hyperplane_candidates import find_hyperplanes_reg_mod_outer, check_hyperplane_dim
-    from .utils import symmetries, YieldableSet
+    from .utils import symmetries, UniqueFilter
     from time import perf_counter
 
     # Reduced representation
@@ -782,11 +782,13 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
             umax=V.G.u_max(Vred.G)
 
             #Recover by induction all candidates 1-PS mod symmetry
-            List_1PS_Vred_reg = YieldableSet[Tau]().yield_update((
+            List_1PS_Vred_reg = filter(UniqueFilter[Tau](),
+                (
                     tau 
                     for taured in find_hyperplanes_reg_mod_outer(Vred.all_weights, Vred, umax, flatten_cnt=flatten_cnt)
                     for tau in taured.orbit_symmetries_excepted_ones()
-            ))
+                )
+            )
 
             # Generator of extended Tau set
             permutations = list(Permutation.embeddings_mod_sym(V.G, Vred.G))
@@ -797,13 +799,11 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
                         yield tau.sort_blocks()
         
             # Set of unique extended Tau
-            List_1PS_Vred_extended = YieldableSet[Tau]()
+            tau_filter_ext = UniqueFilter[Tau]()
             cnt_tau_reg: int = 0
             for tau_reg in List_1PS_Vred_reg:
                 cnt_tau_reg += 1
-                yield from List_1PS_Vred_extended.yield_update(
-                    gen_Vred_extented(tau_reg)
-                )
+                yield from filter(tau_filter_ext, gen_Vred_extented(tau_reg))
 
             duration = perf_counter() - tic
             if not quiet:
@@ -812,9 +812,9 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
                 logger.debug(f'For G={Vred.G} we get {cnt_tau_reg} candidates regular dominant in {duration}s')
         
         # Unique Tau from the original representation
-        yield from YieldableSet[Tau]().yield_update((
-            tau.sort_blocks() for tau in find_hyperplanes_reg_mod_outer(list(V.all_weights), V, V.G.dimU,flatten_cnt=flatten_cnt)
-        ))
+        yield from filter(UniqueFilter[Tau](),
+            map(Tau.sort_blocks, find_hyperplanes_reg_mod_outer(list(V.all_weights), V, V.G.dimU,flatten_cnt=flatten_cnt))
+        )
             
 
     else:
@@ -824,7 +824,7 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
         # We use here a FilteredSet that allows to iterate through the unique added
         # elements while filtering them using a predicate.
         # The predicate checks that the candidates really give a candidate
-        List_1PS = YieldableSet[Tau]()
+        tau_filter_ext = UniqueFilter[Tau]()
 
         list_partS=[p for p in Partition.all_for_integer(V.G.rank)][1:] #[1:] excludes n, so S is the center of G
         for partS in list_partS :
@@ -839,5 +839,7 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
                 # dominant 1-PS corresponding to tau and -tau
                 l1=list(tau.flattened)
                 l1.sort(reverse=True)
-                yield from List_1PS.yield_update([Tau.from_flatten(l1, V.G)])
+                tau_1PS = Tau.from_flatten(l1, V.G)
+                if tau_filter_ext(tau_1PS):
+                    yield tau_1PS
                 
