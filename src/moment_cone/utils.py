@@ -542,13 +542,8 @@ class YieldableSet(Generic[T]):
 
 
 class UniqueFilter(Generic[T]):
-    """ Filter an iterator by unique elements
+    """ Filter an iterator by unique (hashable) elements
     
-    The elements must be hashable or a function must be given that returns a
-    unique identifier per element.
-
-    It uses internally a set of the unique identifiers (hash or custom)
-
     Examples :
 
     >>> list(filter(UniqueFilter(), (1, 2, 3, 1, -1, 10, 3, -1, 4, 5, 2)))
@@ -558,31 +553,28 @@ class UniqueFilter(Generic[T]):
     [0, 1, 2, 3, 4]
     >>> list(filter(uf, range(7)))
     [5, 6]
-
-    >>> uf = UniqueFilter(lambda n: n % 4)
-    >>> list(filter(uf, range(7)))
-    [0, 1, 2, 3]
     """
-    data: set[int]
-    transform: Callable[[T], int]
+    data: set[T]
 
-    def __init__(self, transform: Callable[[T], int] = hash):
+    def __init__(self):
         self.data = set()
-        self.transform = transform
 
     def __len__(self) -> int:
         return len(self.data)
     
-    def __iter__(self) -> Iterable[int]:
+    def __iter__(self) -> Iterable[T]:
         return iter(self.data)
     
     def __call__(self, element: T) -> bool:
-        element_id = self.transform(element)
-        if element_id not in self.data:
-            self.data.add(element_id)
+        if element not in self.data:
+            self.data.add(element)
             return True
         else:
             return False
+
+    def __repr__(self) -> str:
+        return repr(self.data)
+
 
 class IterableHook(Generic[T]):
     """ Add a hook at each read of an iterable while preserving methods
