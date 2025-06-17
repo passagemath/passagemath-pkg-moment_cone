@@ -556,7 +556,7 @@ class UniqueFilter(Generic[T]):
     """
     data: set[T]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.data = set()
 
     def __len__(self) -> int:
