@@ -66,10 +66,10 @@ class ListDataset(Dataset[T]):
     __pending: list[T]
     __validated: list[T]
 
-    def __init__(self, pending: list[T], validated: list[T]):
+    def __init__(self, pending: Iterable[T], validated: Iterable[T]):
         super().__init__()
-        self.__pending = pending
-        self.__validated = validated
+        self.__pending = pending if isinstance(pending, list) else list(pending)
+        self.__validated = validated if isinstance(validated, list) else list(validated)
 
     def pending(self) -> list[T]:
         return self.__pending
@@ -298,7 +298,7 @@ class TauCandidatesStep(GeneratorStep[Tau]):
     def apply(self) -> ListDataset[Tau]:
         from .tau import find_1PS
         return ListDataset(
-            pending=list(self._tqdm(find_1PS(self.V, flatten_cnt=self.flatten_cnt, quiet=self.quiet), unit="tau")),
+            pending=self._tqdm(find_1PS(self.V, flatten_cnt=self.flatten_cnt, quiet=self.quiet), unit="tau"),
             validated=[]
         )
 
@@ -336,7 +336,7 @@ class SubModuleConditionStep(FilterStep[Tau]):
     def apply(self, tau_dataset: Dataset[Tau]) -> ListDataset[Tau]:
         return ListDataset(
             pending=[tau for tau in self._tqdm(tau_dataset.pending(), unit="tau") if tau.is_sub_module(self.V)],
-            validated=list(tau_dataset.validated()),
+            validated=tau_dataset.validated(),
         )
     
 
@@ -362,7 +362,7 @@ class StabilizerConditionStep(FilterStep[Tau]):
 
         return ListDataset(
             pending=output,
-            validated=list(tau_dataset.validated()),
+            validated=tau_dataset.validated(),
         )
 
 
@@ -423,7 +423,7 @@ class PiDominancyStep(FilterStep[Inequality]):
         ]
         return ListDataset(
             pending=inequalities,
-            validated=list(ineq_dataset.validated()),
+            validated=ineq_dataset.validated(),
         )
     
     @staticmethod
@@ -460,6 +460,7 @@ class LinearTriangularStep(FilterStep[Inequality]):
     """
     def apply(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
         from .linear_triangular import is_linear_triangular
+        from itertools import chain
         pending: list[Inequality] = []
         validated: list[Inequality] = []
         for ineq in self._tqdm(ineq_dataset.pending(), unit="tau"):
@@ -470,7 +471,7 @@ class LinearTriangularStep(FilterStep[Inequality]):
         
         return ListDataset(
             pending=pending,
-            validated=list(ineq_dataset.validated()) + validated,
+            validated=chain(ineq_dataset.validated(), validated),
         )
     
 
@@ -497,8 +498,8 @@ class BKRConditionStep(FilterStep[Inequality]):
         from .representation import ParticleRepresentation
         if isinstance(self.V, ParticleRepresentation) and self.G[0] >= 8:
             return ListDataset(
-                pending=list(ineq_dataset.pending()),
-                validated=list(ineq_dataset.validated()),
+                pending=ineq_dataset.pending(),
+                validated=ineq_dataset.validated(),
             )
         
         from .bkr import Multiplicity_SV_tau
@@ -516,7 +517,7 @@ class BKRConditionStep(FilterStep[Inequality]):
         
         return ListDataset(
             pending=inequalities,
-            validated=list(ineq_dataset.validated()),
+            validated=ineq_dataset.validated(),
         )
     
     @staticmethod
@@ -582,6 +583,7 @@ class BirationalityStep(FilterStep[Inequality]):
 
     def apply(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
         from .ramification import Is_Ram_contracted
+        from itertools import chain
         inequalities = [
             ineq
             for ineq in self._tqdm(ineq_dataset.pending(), unit="ineq")
@@ -592,7 +594,7 @@ class BirationalityStep(FilterStep[Inequality]):
         ]
         return ListDataset(
             pending=[],
-            validated=list(ineq_dataset.validated()) + inequalities,
+            validated=chain(ineq_dataset.validated(), inequalities),
         )
     
     @staticmethod
@@ -654,6 +656,7 @@ class GrobnerStep(FilterStep[Inequality]):
 
     def apply(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
         from .groebner import Grobner_List_Test
+        from itertools import chain
         grobner_true, grobner_inconclusive = Grobner_List_Test(
             self._tqdm(ineq_dataset.pending(), unit="ineq"),
             lim=self.timeout,
@@ -662,7 +665,7 @@ class GrobnerStep(FilterStep[Inequality]):
         )
         return ListDataset(
             pending=grobner_inconclusive,
-            validated=list(ineq_dataset.validated()) + grobner_true,
+            validated=chain(ineq_dataset.validated(), grobner_true),
         )
 
     @staticmethod
@@ -722,8 +725,8 @@ class ExportStep(FilterStep[Inequality]):
     def apply(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
         from .export import export_many
         inequations = ListDataset(
-            pending=list(ineq_dataset.pending()),
-            validated=list(ineq_dataset.validated())
+            pending=ineq_dataset.pending(),
+            validated=ineq_dataset.validated()
         )
         export_many(self.formats, self.V, list(inequations))
         return inequations
