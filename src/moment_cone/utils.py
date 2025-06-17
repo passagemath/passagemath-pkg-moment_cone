@@ -28,7 +28,7 @@ __all__ = (
     "line_profiler",
     "fl_dic",
     "getLogger",
-    "FilteredSet",
+    "YieldableSet",
     "generate_seed",
     "manual_seed",
 )
@@ -494,13 +494,13 @@ logging.basicConfig(level=logging.INFO, format="%(message)-80s {%(name)s}")
 logging.getLogger('asyncio').setLevel(logging.WARNING)
 
 
-class FilteredSet(Generic[T]):
-    """ Set with additional filter
+class YieldableSet(Generic[T]):
+    """ Set with yield support while updating and filtering capability
     
     This implement also allows to iterate through the added elements that were
     not already in the set, using the `yield_update` method.
 
-    >>> s = FilteredSet(lambda v: v % 2 == 0)
+    >>> s = YieldableSet(lambda v: v % 2 == 0)
     >>> list(s.yield_update(range(6)))
     [0, 2, 4]
     >>> list(s.yield_update(range(6))) # Elements are already in the set

@@ -751,7 +751,7 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
     Computed by 
     """
     from .hyperplane_candidates import find_hyperplanes_reg_mod_outer, check_hyperplane_dim
-    from .utils import symmetries, FilteredSet
+    from .utils import symmetries, YieldableSet
     from time import perf_counter
 
     # Reduced representation
@@ -782,7 +782,7 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
             umax=V.G.u_max(Vred.G)
 
             #Recover by induction all candidates 1-PS mod symmetry
-            List_1PS_Vred_reg = FilteredSet[Tau]().yield_update((
+            List_1PS_Vred_reg = YieldableSet[Tau]().yield_update((
                     tau 
                     for taured in find_hyperplanes_reg_mod_outer(Vred.all_weights, Vred, umax, flatten_cnt=flatten_cnt)
                     for tau in taured.orbit_symmetries_excepted_ones()
@@ -797,7 +797,7 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
                         yield tau.sort_blocks()
         
             # Set of unique extended Tau
-            List_1PS_Vred_extended = FilteredSet[Tau]()
+            List_1PS_Vred_extended = YieldableSet[Tau]()
             cnt_tau_reg: int = 0
             for tau_reg in List_1PS_Vred_reg:
                 cnt_tau_reg += 1
@@ -812,7 +812,7 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
                 logger.debug(f'For G={Vred.G} we get {cnt_tau_reg} candidates regular dominant in {duration}s')
         
         # Unique Tau from the original representation
-        yield from FilteredSet[Tau]().yield_update((
+        yield from YieldableSet[Tau]().yield_update((
             tau.sort_blocks() for tau in find_hyperplanes_reg_mod_outer(list(V.all_weights), V, V.G.dimU,flatten_cnt=flatten_cnt)
         ))
             
@@ -824,7 +824,7 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
         # We use here a FilteredSet that allows to iterate through the unique added
         # elements while filtering them using a predicate.
         # The predicate checks that the candidates really give a candidate
-        List_1PS = FilteredSet[Tau]()
+        List_1PS = YieldableSet[Tau]()
 
         list_partS=[p for p in Partition.all_for_integer(V.G.rank)][1:] #[1:] excludes n, so S is the center of G
         for partS in list_partS :
