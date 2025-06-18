@@ -46,12 +46,46 @@ class Dataset(Generic[T], ABC):
     and thus should always be keeped by the filters.
     """
     @abstractmethod
+    def __init__(
+            self,
+            pending_or_all: Iterable[T] | Iterable[tuple[T, bool]], #: pending elements or joined pending/validated elements as tuple with status
+            validated: Optional[Iterable[T]] = None #: validated elements or None if the first elements are tuple of elements and status
+        ):
+        """
+        Two construction ways:
+        1. giving pending and validated elements separately using both arguments
+        2. given pending & validated elements as tuple (element, status) by giving only the first parameter
+        
+        Status: True for validated, False for pending.
+        """
+        ...
+
+    @classmethod
+    def from_separate(cls, pending: Iterable[T] = [], validated: Iterable[T] = []) -> Self:
+        return cls(pending, validated)
+    
+    @classmethod
+    def from_all(cls, all_elements: Iterable[tuple[T, bool]] = []) -> Self:
+        return cls(all_elements)
+
+    @abstractmethod
     def pending(self) -> Iterable[T]:
         ...
     
     @abstractmethod
     def validated(self) -> Iterable[T]:
         ...
+
+    def all(self) -> Iterable[tuple[T, bool]]:
+        """ All elements as tuple (element, status)
+        
+        Status: True for validated, False for pending.
+        """
+        from itertools import chain
+        return chain(
+            map(lambda t: (t, False), self.pending()),
+            map(lambda t: (t, True), self.validated())
+        )
 
     def __iter__(self) -> Iterator[T]:
         from itertools import chain
@@ -66,10 +100,23 @@ class ListDataset(Dataset[T]):
     __pending: list[T]
     __validated: list[T]
 
-    def __init__(self, pending: Iterable[T], validated: Iterable[T]):
-        super().__init__()
-        self.__pending = pending if isinstance(pending, list) else list(pending)
-        self.__validated = validated if isinstance(validated, list) else list(validated)
+    def __init__(
+            self,
+            pending_or_all: Iterable[T] | Iterable[tuple[T, bool]], #: pending elements or joined pending/validated elements as tuple with status
+            validated: Optional[Iterable[T]] = None #: validated elements or None if the first elements are tuple of elements and status
+        ):
+        if validated is None:
+           self.__pending = []
+           self.__validated = []
+           for element, status in cast(Iterable[tuple[T, bool]], pending_or_all):
+               if status:
+                   self.__validated.append(element)
+               else:
+                   self.__pending.append(element)
+        else:
+            pending = cast(Iterable[T], pending_or_all)
+            self.__pending = pending if isinstance(pending, list) else list(pending)
+            self.__validated = validated if isinstance(validated, list) else list(validated)
 
     def pending(self) -> list[T]:
         return self.__pending
@@ -78,7 +125,98 @@ class ListDataset(Dataset[T]):
         return self.__validated
 
     def __repr__(self) -> str:
-        return f"Dataset(#pending={len(self.pending())}, #validated={len(self.validated())})"
+        return f"ListDataset(#pending={len(self.pending())}, #validated={len(self.validated())})"
+
+
+class LazyDataset(Dataset[T]):
+    """ Catalog of pending/validated objects implemented in a lazy way
+
+    That means that elements are stored only if necessary (buffer) and that this
+    dataset cannot be iterated twice.
+    """
+    __all: Iterator[tuple[T, bool]]
+    __pending_cache: list[T]
+    __validated_cache: list[T]
+    has_ended: bool
+    pending_cnt: int
+    validated_cnt: int
+
+    def __init__(
+            self,
+            pending_or_all: Iterable[T] | Iterable[tuple[T, bool]], #: pending elements or joined pending/validated elements as tuple with status
+            validated: Optional[Iterable[T]] = None #: validated elements or None if the first elements are tuple of elements and status
+        ):
+        """
+        Two construction ways:
+        1. giving pending and validated elements separately using both arguments
+        2. given pending & validated elements as tuple (element, status) by giving only the first parameter
+        
+        Status: True for validated, False for pending.
+        """
+        if validated is None:
+            self.__all = iter(map(
+                self.__count_status,
+                cast(Iterable[tuple[T, bool]], pending_or_all
+            )))
+        else:
+            from itertools import chain
+            self.__all = iter(map(self.__count_status,
+                chain(
+                    map(lambda t: (t, False), cast(Iterable[T], pending_or_all)),
+                    map(lambda t: (t, True), validated)
+                )
+            ))
+
+        self.__pending_cache = []
+        self.__validated_cache = []
+        self.pending_cnt = 0
+        self.validated_cnt = 0
+        self.has_ended = False
+
+    def __count_status(self, el_and_status: tuple[T, bool]) -> tuple[T, bool]:
+        element, status = el_and_status
+        if status:
+            self.validated_cnt += 1
+        else:
+            self.pending_cnt += 1
+        return el_and_status
+
+    def all(self) -> Iterable[tuple[T, bool]]:
+        return self.__all
+    
+    def pending(self) -> Iterable[T]:
+        while True:
+            if len(self.__pending_cache):
+                yield self.__pending_cache.pop()
+            else:
+                try:
+                    t, validated = next(self.__all)
+                except StopIteration:
+                    self.has_ended = True
+                    return
+                if validated:
+                    self.__validated_cache.append(t)
+                else:
+                    yield t
+    
+    def validated(self) -> Iterable[T]:
+        while True:
+            if len(self.__validated_cache):
+                yield self.__validated_cache.pop()
+            else:
+                try:
+                    t, validated = next(self.__all)
+                except StopIteration:
+                    self.has_ended = True
+                    return
+                if validated:
+                    yield t
+                else:
+                    self.__pending_cache.append(t)
+
+    def __repr__(self) -> str:
+        continuing = "" if self.has_ended else "..."
+        return f"LazyDataset(#pending={self.pending_cnt}{continuing}, #validated={self.validated_cnt}{continuing})"
 
 
 class Step:
@@ -92,10 +230,18 @@ class Step:
     Processing is done through __call__ (overload of () operator).
     """
     V: Representation
+    TDataset: type[Dataset[Any]]
 
-    def __init__(self, V: Representation, quiet: bool = False, **kwargs: Any):
+    def __init__(
+            self,
+            V: Representation,
+            dataset_type: type[Dataset[Any]] = ListDataset,
+            quiet: bool = False,
+            **kwargs: Any
+        ):
         self.V = V
         self.quiet = quiet
+        self.TDataset = dataset_type
 
     @staticmethod
     def add_arguments(parent_parser: ArgumentParser, defaults: Mapping[str, Any] = {}) -> None:
@@ -295,9 +441,9 @@ class TauCandidatesStep(GeneratorStep[Tau]):
         # TODO when merged with dev_parallel2: compute so that 2^L > max_workers * chunk_size
         self.flatten_cnt = flatten_cnt or 1
 
-    def apply(self) -> ListDataset[Tau]:
+    def apply(self) -> Dataset[Tau]:
         from .tau import find_1PS
-        return ListDataset(
+        return self.TDataset.from_separate(
             pending=self._tqdm(find_1PS(self.V, flatten_cnt=self.flatten_cnt, quiet=self.quiet), unit="tau"),
             validated=[]
         )
@@ -333,9 +479,9 @@ class SubModuleConditionStep(FilterStep[Tau]):
     
     It only reject pending Taus and doesn't modified the validated ones.
     """
-    def apply(self, tau_dataset: Dataset[Tau]) -> ListDataset[Tau]:
-        return ListDataset(
-            pending=[tau for tau in self._tqdm(tau_dataset.pending(), unit="tau") if tau.is_sub_module(self.V)],
+    def apply(self, tau_dataset: Dataset[Tau]) -> Dataset[Tau]:
+        return self.TDataset.from_separate(
+            pending=(tau for tau in self._tqdm(tau_dataset.pending(), unit="tau") if tau.is_sub_module(self.V)),
             validated=tau_dataset.validated(),
         )
     
@@ -347,21 +493,21 @@ class StabilizerConditionStep(FilterStep[Tau]):
     
     It only reject pending Taus and doesn't modified the validated ones.
     """
-    def apply(self, tau_dataset: Dataset[Tau]) -> ListDataset[Tau]:
+    def apply(self, tau_dataset: Dataset[Tau]) -> Dataset[Tau]:
         from .stabK import dim_gen_stab_of_K
         Ms = self.V.actionK
         output: list[Tau] = []
-        for tau in self._tqdm(tau_dataset.pending(), unit="tau"):
+
+        def tau_filter(tau: Tau) -> bool:
             if  tau.is_dom_reg :
-                output.append(tau)
+                return True
             else: 
                 ListK=[beta.index_in_all_of_K(self.G) for beta in tau.orthogonal_rootsB]+[beta.opposite.index_in_all_of_K(self.G) for beta in tau.orthogonal_rootsU]
                 ListChi=[self.V.index_of_weight(chi) for chi in tau.orthogonal_weights(self.V)]+[self.V.dim+self.V.index_of_weight(chi) for chi in tau.orthogonal_weights(self.V)]
-                if dim_gen_stab_of_K(Ms,ListK,ListChi) == self.G.rank - self.V.dim_cone + 1:
-                    output.append(tau)
+                return dim_gen_stab_of_K(Ms,ListK,ListChi) == self.G.rank - self.V.dim_cone + 1
 
-        return ListDataset(
-            pending=output,
+        return self.TDataset.from_separate(
+            pending=filter(tau_filter, self._tqdm(tau_dataset.pending(), unit="tau")),
             validated=tau_dataset.validated(),
         )
 
@@ -373,15 +519,16 @@ class InequalityCandidatesStep(TransformerStep[Tau, Inequality]):
     
     It generates only pending inequalities.
     """
-    def apply(self, tau_dataset: Dataset[Tau]) -> ListDataset[Inequality]:
+    def apply(self, tau_dataset: Dataset[Tau]) -> Dataset[Inequality]:
         from .list_of_W import List_Inv_Ws_Mod
-        ineqalities: list[Inequality] = []
-        for tau in self._tqdm(tau_dataset.pending(), unit="tau"):
-            Lw = List_Inv_Ws_Mod(tau, self.V)
-            ineqalities += [Inequality(tau,gr_inversions=gr_inv) for gr_inv in Lw]
+        pending_tau = self._tqdm(tau_dataset.pending(), unit="tau")
+        def ineq_generator() -> Iterator[Inequality]:
+            for tau in pending_tau:
+                Lw = List_Inv_Ws_Mod(tau, self.V)
+                yield from (Inequality(tau,gr_inversions=gr_inv) for gr_inv in Lw)
 
-        return ListDataset(
-            pending=ineqalities,
+        return self.TDataset.from_separate(
+            pending=ineq_generator(),
             validated=[]
         )
     
@@ -414,14 +561,14 @@ class PiDominancyStep(FilterStep[Inequality]):
         super().__init__(V, **kwargs)
         self.tpi_method = tpi_method
 
-    def apply(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
+    def apply(self, ineq_dataset: Dataset[Inequality]) -> Dataset[Inequality]:
         from .list_of_W import Check_Rank_Tpi
-        inequalities = [
+        inequalities = (
             ineq
             for ineq in self._tqdm(ineq_dataset.pending(), unit="ineq")
             if Check_Rank_Tpi(ineq, self.V, self.tpi_method)
-        ]
-        return ListDataset(
+        )
+        return self.TDataset.from_separate(
             pending=inequalities,
             validated=ineq_dataset.validated(),
         )
@@ -458,21 +605,27 @@ class LinearTriangularStep(FilterStep[Inequality]):
     
     This filter can only definitively validate some of the inequalities (this inequalities are then not redondant).
     """
-    def apply(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
+    def apply(self, ineq_dataset: Dataset[Inequality]) -> Dataset[Inequality]:
         from .linear_triangular import is_linear_triangular
         from itertools import chain
         pending: list[Inequality] = []
         validated: list[Inequality] = []
-        for ineq in self._tqdm(ineq_dataset.pending(), unit="tau"):
-            if is_linear_triangular(self.V, ineq.tau, list(ineq.inversions)):
-                validated.append(ineq)
-            else:
-                pending.append(ineq)
+
+        pending_ineq = self._tqdm(ineq_dataset.pending(), unit="tau")
+        def ineq_splitter() -> Iterator[tuple[Inequality, bool]]:
+            for ineq in pending_ineq:
+                if is_linear_triangular(self.V, ineq.tau, list(ineq.inversions)):
+                    yield ineq, True # validated
+                else:
+                    yield ineq, False # still pending
         
-        return ListDataset(
-            pending=pending,
-            validated=chain(ineq_dataset.validated(), validated),
+        return self.TDataset.from_all(
+            chain(
+                ineq_splitter(),
+                map(lambda ineq: (ineq, True), ineq_dataset.validated())
+            )
         )
+
     
 
 ###############################################################################
@@ -494,29 +647,28 @@ class BKRConditionStep(FilterStep[Inequality]):
         self.kronecker = kronecker
         self.plethysm = plethysm
 
-    def apply(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
+    def apply(self, ineq_dataset: Dataset[Inequality]) -> Dataset[Inequality]:
         from .representation import ParticleRepresentation
         if isinstance(self.V, ParticleRepresentation) and self.G[0] >= 8:
-            return ListDataset(
-                pending=ineq_dataset.pending(),
-                validated=ineq_dataset.validated(),
-            )
+            return self.TDataset.from_all(ineq_dataset.all())
         
         from .bkr import Multiplicity_SV_tau
         inequalities: list[Inequality] = []
-        for ineq in self._tqdm(ineq_dataset.pending(), unit="tau"):
+        def ineq_filter(ineq: Inequality) -> bool:
             if list(ineq.inversions) == []:
-                inequalities.append(ineq)
-            elif Multiplicity_SV_tau(
+                return True
+            else:
+                keep = Multiplicity_SV_tau(
                     ineq.tau,
                     ineq.weight_det(self.V),
                     self.V,
                     True,
-                    self.kronecker, self.plethysm):
-                inequalities.append(ineq)
+                    self.kronecker, self.plethysm)
+                assert isinstance(keep, bool)
+                return keep
         
-        return ListDataset(
-            pending=inequalities,
+        return self.TDataset.from_separate(
+            pending=filter(ineq_filter, self._tqdm(ineq_dataset.pending(), unit="ineq")),
             validated=ineq_dataset.validated(),
         )
     
@@ -581,20 +733,20 @@ class BirationalityStep(FilterStep[Inequality]):
         self.ram_schub_method = ram_schub_method
         self.ram0_method = ram0_method
 
-    def apply(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
+    def apply(self, ineq_dataset: Dataset[Inequality]) -> Dataset[Inequality]:
         from .ramification import Is_Ram_contracted
         from itertools import chain
-        inequalities = [
+        inequalities = (
             ineq
             for ineq in self._tqdm(ineq_dataset.pending(), unit="ineq")
             if Is_Ram_contracted(ineq,
                                  self.V,
                                  self.ram_schub_method,
                                  self.ram0_method)
-        ]
-        return ListDataset(
+        )
+        return self.TDataset.from_separate(
             pending=[],
-            validated=chain(ineq_dataset.validated(), inequalities),
+            validated=chain(inequalities, ineq_dataset.validated()),
         )
     
     @staticmethod
@@ -663,7 +815,7 @@ class GrobnerStep(FilterStep[Inequality]):
             V=self.V,
             method=self.method,
         )
-        return ListDataset(
+        return ListDataset.from_separate(
             pending=grobner_inconclusive,
             validated=chain(ineq_dataset.validated(), grobner_true),
         )
@@ -724,7 +876,7 @@ class ExportStep(FilterStep[Inequality]):
 
     def apply(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
         from .export import export_many
-        inequations = ListDataset(
+        inequations = ListDataset.from_separate(
             pending=ineq_dataset.pending(),
             validated=ineq_dataset.validated()
         )
@@ -794,6 +946,7 @@ class MomentConeStep(GeneratorStep[Inequality]):
     """
     config: Optional[Namespace] # Configuration from the command-line
     options: dict[str, Any] # Additional options passed to the constructor
+    lazy: bool # Compute lazilly the inequalities without storing intermediate results
     filters: list[InequalityFilterStr] # List of filters applied to the inequalities
     steps: list[Step] # All executed steps (for logging purpose)
 
@@ -802,6 +955,7 @@ class MomentConeStep(GeneratorStep[Inequality]):
         V: Representation,
         filters: Iterable[str | InequalityFilterStr] = default_inequalities_filters,
         config: Optional[Namespace] = None,
+        lazy: bool = False,
         **kwargs: Any,
     ):
         super().__init__(V, **kwargs)
@@ -810,15 +964,17 @@ class MomentConeStep(GeneratorStep[Inequality]):
             for name in filters
         ]
         self.config = config
+        self.lazy = lazy
         self.options = kwargs
         self.steps = []
 
     def __add_step(self, step_type: type[TStep]) -> TStep:
         """ Create and configure a new step """
+        dataset_type = LazyDataset if self.lazy else ListDataset
         if self.config is None:
-            step = step_type(self.V, **self.options)
+            step = step_type(self.V, dataset_type=dataset_type, **self.options)
         else:
-            step = step_type.from_config(self.V, self.config)
+            step = step_type.from_config(self.V, self.config, dataset_type=dataset_type)
         self.steps.append(step)
         return step
     
@@ -836,7 +992,7 @@ class MomentConeStep(GeneratorStep[Inequality]):
         # Clearing previous executed steps
         self.clear_steps()
 
-        with Task(self.name):
+        with Task(self.name) as main_task:
             # Checking if the cone has the expected dimension
             general_stab_dim_step = self.__add_step(GeneralStabilizerDimensionCheck)
             with Task(general_stab_dim_step.name):
@@ -882,6 +1038,13 @@ class MomentConeStep(GeneratorStep[Inequality]):
             export_step = self.__add_step(ExportStep)
             with Task(export_step.name):
                 ineq_candidates = export_step(ineq_candidates)
+
+            # Resume
+            main_task.log("Steps resume:", indent=1)
+            for step in self.steps:
+                if isinstance(step, (GeneratorStep, FilterStep, TransformerStep)):
+                    main_task.log(f"{step.name}: {step.output_dataset}", indent=2)
+
         
         return ineq_candidates
 
@@ -905,6 +1068,11 @@ class MomentConeStep(GeneratorStep[Inequality]):
             default=default_inequalities_filters,
             help="Sequence of filters applied to the inequalities",
         )
+        group.add_argument(
+            "--lazy",
+            action="store_true",
+            help="Compute lazilly the inequalities (without storing intermediate results)",
+        )
 
         # Adding command-line options from other steps
         import sys
@@ -922,6 +1090,7 @@ class MomentConeStep(GeneratorStep[Inequality]):
             V,
             config=config,
             filters=config.filters,
+            lazy=config.lazy,
             **kwargs
         )
         
