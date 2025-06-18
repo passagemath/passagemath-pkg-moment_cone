@@ -876,9 +876,8 @@ class ExportStep(FilterStep[Inequality]):
 
     def apply(self, ineq_dataset: Dataset[Inequality]) -> ListDataset[Inequality]:
         from .export import export_many
-        inequations = ListDataset.from_separate(
-            pending=ineq_dataset.pending(),
-            validated=ineq_dataset.validated()
+        inequations = ListDataset.from_all(
+            self._tqdm(ineq_dataset.all(), unit="ineq")
         )
         export_many(self.formats, self.V, list(inequations))
         return inequations
