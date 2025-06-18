@@ -271,7 +271,9 @@ class Step:
     
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """ Effective computation of the step """
-        self.apply(*args, **kwargs)
+        from tqdm.contrib.logging import logging_redirect_tqdm
+        with logging_redirect_tqdm():
+            self.apply(*args, **kwargs)
 
     @abstractmethod
     def apply(self, *args: Any, **kwargs: Any) -> Any:
@@ -319,7 +321,9 @@ class GeneratorStep(Step, Generic[T]):
     output_dataset: Dataset[T] # Keeping generated dataset for logging purpose
 
     def __call__(self) -> Dataset[T]:
-        self.output_dataset = self.apply()
+        from tqdm.contrib.logging import logging_redirect_tqdm
+        with logging_redirect_tqdm():
+            self.output_dataset = self.apply()
         return self.output_dataset
     
     @abstractmethod
@@ -345,8 +349,10 @@ class FilterStep(Step, Generic[T]):
     output_dataset: Dataset[T] # Keeping filtered dataset for logging purpose
 
     def __call__(self, dataset: Dataset[T], /) -> Dataset[T]:
-        self.input_dataset = dataset
-        self.output_dataset = self.apply(self.input_dataset)
+        from tqdm.contrib.logging import logging_redirect_tqdm
+        with logging_redirect_tqdm():
+            self.input_dataset = dataset
+            self.output_dataset = self.apply(self.input_dataset)
         return self.output_dataset
     
     @abstractmethod
@@ -363,8 +369,10 @@ class TransformerStep(Step, Generic[T, U]):
     output_dataset: Dataset[U] # Keeping transformed dataset for logging purpose
 
     def __call__(self, dataset: Dataset[T], /) -> Dataset[U]:
-        self.input_dataset = dataset
-        self.output_dataset = self.apply(self.input_dataset)
+        from tqdm.contrib.logging import logging_redirect_tqdm
+        with logging_redirect_tqdm():
+            self.input_dataset = dataset
+            self.output_dataset = self.apply(self.input_dataset)
         return self.output_dataset
 
     @abstractmethod
