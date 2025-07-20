@@ -1,4 +1,5 @@
 __all__ = (
+    'compute_d_minus_2_minors_via_adjugate',
     'is_not_contracted',
     'Is_Ram_contracted',
 )
@@ -20,6 +21,85 @@ from .rings import QQ, I, matrix, vector, Matrix, Polynomial, PolynomialRing
 from .utils import prod,fl_dic
 
     
+from itertools import combinations
+
+def compute_d_minus_2_minors_via_adjugate(A: Matrix):
+    d = A.nrows()
+    minors_dict = {}
+    
+    # Générer toutes les sous-matrices B en supprimant une ligne i et une colonne j
+    for i in range(1,d):
+        for j in range(1,d):
+            # Sous-matrice B = A sans la ligne i et la colonne j (taille (d-1) x (d-1))
+            B = A.matrix_from_rows_and_columns(
+                [k for k in range(d) if k != i],
+                [l for l in range(d) if l != j]
+            )
+            
+            # Calcul de l'adjugate de B
+            adj_B = B.adjugate().transpose()
+            
+            # Parcourir les coefficients de adj(B)
+            for k in range(i):
+                for l in range(j):
+                    # Trouver les indices originaux dans A
+                    # Lignes supprimées : i et la k-ème ligne restante (dans B)
+                    #rows_in_A = [i] + [m for m in range(d) if m != i][k]
+                    # Colonnes supprimées : j et la l-ème colonne restante (dans B)
+                    #cols_in_A = [j] + [n for n in range(d) if n != j][l]
+                    
+                    # Le mineur est adj_B[k, l], avec un signe dépendant des positions
+                    #sign = (-1)**(sum(rows_in_A) + sum(cols_in_A))
+                    #minor = sign * adj_B[k, l]
+                    
+                    # Stocker dans le dictionnaire (en utilisant frozenset pour l'ordre)
+                    I = (k,i)
+                    J = (l,j)
+                    minors_dict[(I, J)] = (-1)**(k+l)*adj_B[k,l] 
+    
+    return minors_dict
+
+def taylor_det_psi(k: int, A: Matrix, psi: Matrix, h_symbolic=True):
+    """
+    Compute the Taylor expansion of det(A + ψ(h)) up to order k_max,
+    as a polynomial in symbolic variables h_0, ..., h_{s-1}.
+
+    Args:
+        k_max (int): Maximum order of the expansion.
+        A (matrix): Matrix ψ(a) (constant term).
+        psi (list): 3D array where psi[k][i][j] is the coefficient of h_k in ψ(h)[i,j].
+        h_symbolic (bool): If True, use symbolic h_k (default=True).
+
+    Returns:
+        Dict[int, Polynomial]: Dictionary mapping orders k to their polynomial terms in h.
+    """
+    d = A.nrows()  # Deduce size from A
+    term = 0
+        
+    if k == 2 :
+        dic_minors = compute_d_minus_2_minors_via_adjugate(A)
+    for rows in combinations(range(d), k):
+        if k>2 : 
+            B = A.delete_rows(rows)
+        for cols in combinations(range(d), k):    
+            
+            # Minor of A (delete rows/cols)
+            if k >2 : 
+                minor_A = B.delete_columns(cols).det()
+            else :
+                minor_A =  dic_minors[(rows,cols)] 
+        
+            if minor_A != 0 :     
+                # Product of H entries: ψ(h)[i1,j1] * ... * ψ(h)[ik,jk]
+                h_monomial = psi[rows,cols].det() 
+                
+                # Sign: (-1)^(sum of rows + cols)
+                sign = (-1)**(sum(rows) + sum(cols))
+                term += sign * minor_A * h_monomial
+    return term
+    
+
+  
 def is_not_contracted(
         inversions_v: Sequence[Root],
         V: Representation,
@@ -200,7 +280,7 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
                             if delta in List_deltas[i+j+1].keys() :
                                 occ_delta.append([j+i+1,List_deltas[j+i+1][delta],y])
                         
-                        jmin,mult_min,y = min(occ_delta, key=lambda occ: [occ[1],len(gr_inv[occ[2]])])
+                        jmin,mult_min,y_weight = min(occ_delta, key=lambda occ: [occ[1],len(gr_inv[occ[2]])])
                         
                         # We minimize multiplicity of delta. If several ones, we minimize the size of the block
                            
@@ -211,8 +291,8 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
                             com_Aredj=List_Comatices[jmin].change_ring(K) # its comatrix
                             for col,idx in enumerate(zw_idx):
                                 Mn = V.T_Pi_3D('symbolic_int')[
-                                    np.ix_([idx],[V.index_of_weight(chi) for chi in tau.positive_weights(V)[y]], 
-                                    [alpha.index_in_all_of_U(V.G) for alpha in gr_inv[y]])].sum(axis=0)
+                                    np.ix_([idx],[V.index_of_weight(chi) for chi in tau.positive_weights(V)[y_weight]], 
+                                    [alpha.index_in_all_of_U(V.G) for alpha in gr_inv[y_weight]])].sum(axis=0)
                                 nrow,ncol=Mn.shape
                                 L0[0,col] = sum(
                                     Mn[r,s] * com_Aredj[r,s]
@@ -224,30 +304,29 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
                         else : # In this case we use a symbolic method to avoid computation of all small minors.
                             logger.debug(f'A symbolic case with mult {mult_min} and block of degree {len(gr_inv[y])} for:')
                             logger.debug(str(ineq))
+                            
                             Mn = V.T_Pi_3D('symbolic')[
                                     np.ix_([V.index_of_weight(chi) for chi in tau.orthogonal_weights(V)],
-                                    [V.index_of_weight(chi) for chi in tau.positive_weights(V)[y]], 
-                                    [alpha.index_in_all_of_U(V.G) for alpha in gr_inv[y]])].sum(axis=0)
+                                    [V.index_of_weight(chi) for chi in tau.positive_weights(V)[y_weight]], 
+                                    [alpha.index_in_all_of_U(V.G) for alpha in gr_inv[y_weight]])].sum(axis=0)
                             
-                            Jj=matrix(V.QV,Mn).det()
+                            psi = matrix(V.QV, Mn)
                             
-                            partial_derivatives: list[Polynomial] = [
-                                Jj.derivative(V.QV.variable(chi))                                             
-                                for chi in tau.orthogonal_weights(V)
-                            ]
+                            Aredj=Blocks_Az[jmin].change_ring(K)
                             
-                            from sage.all import gcd as sage_gcd # type: ignore
+                            taylor_term=taylor_det_psi(mult_min, Aredj, psi)
                             
-                            Jjred: Polynomial = Jj//sage_gcd([Jj] + partial_derivatives)
-                            Gradiant=[V.QV(Jjred.derivative(V.QV.variable(chi))) for chi in tau.orthogonal_weights(V)]
-                            L0QV=matrix(V.QV,1,len(tau.orthogonal_weights(V)),Gradiant)
+                            # Normalization of taylor_term
+                            variables = [V.QV.variable(chi) for chi in tau.orthogonal_weights(V)]
+                            coef_norm = next(taylor_term.coefficient({v: (mult_min if v == var else 0) for v in variables}) for var in variables if taylor_term.coefficient({v: (mult_min if v == var else 0) for v in variables}) != 0)
+                            taylor_term = taylor_term/coef_norm
                             
-                            phi = V.T_Pi_3D(method_R0, 'dict')[p]
-                            L0 = matrix(V.QZ, L0QV.apply_map(phi))
-                            L0 =L0.change_ring(K)
-                            
+                            L0 = taylor_term.nth_root(mult_min)
+                            coeffs = [L0.coefficient({v: 1}) for v in variables]
+                            L0 = vector(K, coeffs)
 
                         B0z_red=B0z.matrix_from_columns(range(sizeblocks[i], Az.ncols())).change_ring(K)
+                        
                         if (L0*B0z_red*noyau)[0] != 0 :
                             return False 
                   
