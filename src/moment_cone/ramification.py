@@ -306,7 +306,7 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
                                 )
                                                         
                         else : # In this case we use a symbolic method to avoid computation of all small minors.
-                            logger.debug(f'A symbolic case with mult {mult_min} and block of degree {len(gr_inv[y])} for:')
+                            logger.debug(f'A symbolic case with mult {mult_min} and block of degree {len(gr_inv[y_weight])} for:')
                             logger.debug(str(ineq))
                             
                             Mn = V.T_Pi_3D('symbolic')[
