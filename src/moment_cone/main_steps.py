@@ -33,6 +33,7 @@ from .kronecker import KroneckerCoefficient, KroneckerCoefficientMLCache
 from .bkr import PlethysmCache
 from .utils import to_literal
 from .export import ExportFormat
+from .tau_storage import UniqueTauStr
 
 class Dataset(Generic[T], ABC):
     """ Catalog of pending and validated objects of type T
@@ -443,22 +444,40 @@ class TauCandidatesStep(GeneratorStep[Tau]):
     It generates only pending Taus.
     """
     flatten_cnt: int
+    unique_tau: UniqueTauStr
 
-    def __init__(self, V: Representation, flatten_cnt: Optional[int] = None, **kwargs: Any):
+    def __init__(
+            self,
+            V: Representation,
+            flatten_cnt: Optional[int] = None,
+            unique_tau: UniqueTauStr = "SetOfTauCpp",
+            **kwargs: Any
+            ):
         super().__init__(V, **kwargs)
         # TODO when merged with dev_parallel2: compute so that 2^L > max_workers * chunk_size
         self.flatten_cnt = flatten_cnt or 1
+        self.unique_tau = unique_tau
 
     def apply(self) -> Dataset[Tau]:
         from .tau import find_1PS
         return self.TDataset.from_separate(
-            pending=self._tqdm(find_1PS(self.V, flatten_cnt=self.flatten_cnt, quiet=self.quiet), unit="tau"),
+            pending=self._tqdm(
+                find_1PS(
+                    self.V,
+                    flatten_cnt=self.flatten_cnt,
+                    unique_tau=self.unique_tau,
+                    quiet=self.quiet
+                ),
+                unit="tau"
+            ),
             validated=[]
         )
 
     @staticmethod
     def add_arguments(parent_parser: ArgumentParser, defaults: Mapping[str, Any] = {}) -> None:
         """ Add command-line arguments specific to this step """
+        from typing import get_args
+
         group = parent_parser.add_argument_group(
             "First list of dominent 1-PS whose kernel is supported at hyperplanes of weights"
         )
@@ -468,6 +487,13 @@ class TauCandidatesStep(GeneratorStep[Tau]):
             default=None,
             help="Flatten search graph with given number of branches. If specified, it should be greater that max_workers * chunk_size.",
         )
+        group.add_argument(
+            "--unique_tau",
+            type=lambda s: to_literal(UniqueTauStr, s),
+            choices=get_args(UniqueTauStr),
+            default="SetOfTauCpp",
+            help="Type of the storage of unique tau",
+        )
 
     @classmethod
     def from_config(cls: type[Self], V: Representation, config: Namespace, **kwargs: Any) -> "TauCandidatesStep":
@@ -476,6 +502,7 @@ class TauCandidatesStep(GeneratorStep[Tau]):
             V=V,
             config=config,
             flatten_cnt=config.flatten_cnt,
+            unique_tau=config.unique_tau,
             **kwargs,
         )
 

@@ -8,5 +8,6 @@ html*
 *.pstats
 docs/source/moment_cone
 *.txt
+!CMakeLists.txt
 *.log
 .ipynb_checkpoints

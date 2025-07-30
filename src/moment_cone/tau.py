@@ -24,6 +24,8 @@ from .blocks import Blocks
 from .root import Root
 from .rings import matrix, ZZ, QQ
 
+if TYPE_CHECKING:
+    from .tau_storage import UniqueTauStr
 
 class Tau:
     """
@@ -745,14 +747,26 @@ def unique_modulo_symmetry_list_of_tau(seq_tau: Iterable[Tau]) -> set[Tau]:
 #    return itertools.chain.from_iterable(tau.orbit_symmetries() for tau in seq_tau)
 
 
-def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> Iterator[Tau]:
+def find_1PS(
+        V: Representation,
+        flatten_cnt: int = 0,
+        unique_tau: "UniqueTauStr" = "SetOfTauCpp",
+        quiet: bool = False,
+) -> Iterator[Tau]:
     """
     Same as find_1PS_reg_mod_sym_dim without regularity condition
     Computed by 
     """
-    from .hyperplane_candidates import find_hyperplanes_reg_mod_outer, check_hyperplane_dim
-    from .utils import symmetries, UniqueFilter
     from time import perf_counter
+
+    from .hyperplane_candidates import find_hyperplanes_reg_mod_outer, check_hyperplane_dim
+    from .utils import symmetries, to_literal
+    from .tau_storage import UniqueTau, UniqueTauStr, unique_tau_dict
+
+    # Helper to create tau duplicates filter
+    unique_tau = cast(UniqueTauStr, to_literal(UniqueTauStr, unique_tau))
+    def create_tau_filter(G: LinearGroup) -> UniqueTau:
+        return unique_tau_dict[unique_tau](G)
 
     # Reduced representation
     Vred: Representation
@@ -782,7 +796,9 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
             umax=V.G.u_max(Vred.G)
 
             #Recover by induction all candidates 1-PS mod symmetry
-            List_1PS_Vred_reg = filter(UniqueFilter[Tau](),
+            tau_filter_reg = create_tau_filter(Vred.G)
+            List_1PS_Vred_reg = filter(
+                tau_filter_reg,
                 (
                     tau 
                     for taured in find_hyperplanes_reg_mod_outer(Vred.all_weights, Vred, umax, flatten_cnt=flatten_cnt)
@@ -799,11 +815,15 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
                         yield tau.sort_blocks()
         
             # Set of unique extended Tau
-            tau_filter_ext = UniqueFilter[Tau]()
+            tau_filter_ext = create_tau_filter(V.G)
             cnt_tau_reg: int = 0
             for tau_reg in List_1PS_Vred_reg:
                 cnt_tau_reg += 1
                 yield from filter(tau_filter_ext, gen_Vred_extented(tau_reg))
+
+            # Free memory used to remove duplicated tau
+            tau_filter_ext.clear()
+            tau_filter_reg.clear()
 
             duration = perf_counter() - tic
             if not quiet:
@@ -812,9 +832,12 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
                 logger.debug(f'For G={Vred.G} we get {cnt_tau_reg} candidates regular dominant in {duration}s')
         
         # Unique Tau from the original representation
-        yield from filter(UniqueFilter[Tau](),
+        tau_filter_last = create_tau_filter(V.G)
+        yield from filter(
+            tau_filter_last,
             map(Tau.sort_blocks, find_hyperplanes_reg_mod_outer(list(V.all_weights), V, V.G.dimU,flatten_cnt=flatten_cnt))
         )
+        tau_filter_last.clear()
             
 
     else:
@@ -824,7 +847,7 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
         # We use here a FilteredSet that allows to iterate through the unique added
         # elements while filtering them using a predicate.
         # The predicate checks that the candidates really give a candidate
-        tau_filter_ext = UniqueFilter[Tau]()
+        tau_filter_ext = create_tau_filter(V.G)
 
         list_partS=[p for p in Partition.all_for_integer(V.G.rank)][1:] #[1:] excludes n, so S is the center of G
         for partS in list_partS :
@@ -842,4 +865,5 @@ def find_1PS(V: Representation, flatten_cnt: int = 0, quiet: bool = False) -> It
                 tau_1PS = Tau.from_flatten(l1, V.G)
                 if tau_filter_ext(tau_1PS):
                     yield tau_1PS
-                
+        
+        tau_filter_ext.clear()
