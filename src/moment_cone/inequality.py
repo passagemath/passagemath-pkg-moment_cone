@@ -55,6 +55,13 @@ class Inequality:
         if gr_inversions is not None:
             self.gr_inversions = gr_inversions
     
+    def __getstate__(self) -> tuple[Tau, tuple[Permutation, ...]]:
+        """ Minimal state that reproduce the instance (for serialization) """
+        return self.tau, self.w
+    
+    def __setstate__(self, state: tuple[Tau, tuple[Permutation, ...]]) -> None:
+        """ Restoring instance from it's serialization state """
+        self.tau, self.w = state
     
     @cached_property
     def wtau(self) -> Tau:

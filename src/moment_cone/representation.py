@@ -190,6 +190,28 @@ class Representation(ABC):
             **kwargs,
         )
     
+    def __getnewargs_ex__(self) -> tuple[tuple[Any, ...], dict[str, Any]]:
+        """ Minimal state that need to be passed to __new__ in order to get the proper instance """
+        return (), dict(
+            G=self.G,
+            random_deep=self.random_deep,
+            seed=self.seed,
+        )
+
+    def __getstate__(self) -> dict[str, Any]:
+        """ Minimal state that reproduce the instance (for serialization) """
+        return dict(
+            G=self.G,
+            random_deep=self.random_deep,
+            seed=self.seed,
+        )
+    
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """ Restoring instance from it's serialization state """
+        self.G = state["G"]
+        self.random_deep = state["random_deep"]
+        self.seed = state["seed"]
+
     def weight(self, *args: Any, **kwargs: Any) -> WeightBase:
         """ Creates a weight for the given representation """
         return self.Weight(self.G, *args, **kwargs)
@@ -377,7 +399,7 @@ class Representation(ABC):
 
     @classmethod
     def from_config(cls: type[Self], config: Namespace, **kwargs: Any) -> "Representation":
-        """ Build a step from the representation and the command-line arguments """
+        """ Build a representation from the command-line arguments """
         G = LinearGroup(config.N)
         V: Representation
 
@@ -655,7 +677,24 @@ class ParticleRepresentation(Representation):
         kwargs: dict[str, Any] = dict(particle_cnt=self.particle_cnt)
         kwargs.update(extra)
         return super().reduce(reduced_G, **kwargs)
+        
+    def __getnewargs_ex__(self) -> tuple[tuple[Any, ...], dict[str, Any]]:
+        """ Minimal state that need to be passed to __new__ in order to get the proper instance """
+        args, kwargs = super().__getnewargs_ex__()
+        kwargs["particle_cnt"] = self.particle_cnt
+        return args, kwargs
     
+    def __getstate__(self) -> dict[str, Any]:
+        """ Minimal state that reproduce the instance (for serialization) """
+        state = super().__getstate__()
+        state["particle_cnt"] = self.particle_cnt
+        return state
+    
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """ Restoring instance from it's serialization state """
+        super().__setstate__(state)
+        self.particle_cnt = state["particle_cnt"]
+
     @cached_property
     def dim_cone(self) -> int:
         return self.G.rank

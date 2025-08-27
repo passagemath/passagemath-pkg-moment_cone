@@ -55,6 +55,18 @@ class Permutation(tuple[int, ...]): # Remark: hash of p is hash of underlying tu
         d = super().__new__(cls, indexes)
         return cls.__all_instances.setdefault(d, d)
 
+    def __getnewargs_ex__(self) -> tuple[tuple[tuple[int, ...]], dict[str, Any]]:
+        """ Minimal state that need to be passed to __new__ in order to get the proper instance """
+        return (tuple(self),), {}
+
+    def __getstate__(self) -> tuple[int, ...]:
+        """ Minimal state that reproduce the instance (for serialization) """
+        return tuple(self)
+    
+    def __setstate__(self, state: Any) -> None:
+        """ Restoring instance from it's serialization state """
+        pass
+    
     @staticmethod
     def from_inversions(n: int, inversions: Iterable[tuple[int, int]]) -> "Permutation":
         """
