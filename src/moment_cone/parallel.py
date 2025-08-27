@@ -1,10 +1,110 @@
-import contextlib
-from multiprocessing.pool import Pool
+__all__ = (
+    "Parallel",
+    "ParallelExecutorStr",
+)
+
+from contextlib import AbstractContextManager
+import concurrent.futures as futures
+from abc import ABC
 import itertools
+from argparse import ArgumentParser, Namespace
 
 from .typing import *
 
-class Parallel(contextlib.AbstractContextManager["Parallel"]):
+if TYPE_CHECKING:
+    from multiprocessing.pool import Pool
+
+class ParallelExecutor(AbstractContextManager["ParallelExecutor"], ABC):
+    """
+    Base class for a parallel (or sequential) task executor
+    
+    Support manual creation/termination or through a context.
+    """
+    max_workers: Optional[int]
+    chunk_size: int
+
+    def __init__(self, max_workers: Optional[int] = None, chunk_size: int = 1):
+        """ Default parameters for an executor
+        
+        max_workers: maximal number of tasks that run in parallel
+        chunk_size: maximal number of tasks in the queue of each worker
+
+        These parameters can be ignored for some executor (eg Sequential)
+        """
+        self.max_workers = max_workers
+        self.chunk_size = chunk_size
+
+    def shutdown(self, wait: bool = True) -> None:
+        """ Shutdown executor and possibly wait that all tasks are finished """
+        pass
+
+    def __enter__(self) -> Self:
+        """ Entering context """
+        return self
+    
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        """ Leaving context """
+        self.shutdown()
+    
+    @abstractmethod
+    def map(self, 
+            fn: Callable[..., T],
+            /,
+            *iterables: Iterable[Any],
+            chunk_size: Optional[int] = None,
+            unordered: bool = False) -> Iterable[T]:
+        """ Launch fn on each parameters from the given iterables
+        
+        This method should yield the results when available (like multiprocessing.Pool.imap),
+        possibly out of order if unordered is True.
+
+        If chunk_size is not given, the one given at the executor creation is used.
+        """
+        ...
+
+    @staticmethod
+    def _filter(args: tuple[Callable[[T, Unpack[Ts]], U], T, Unpack[Ts]]) -> tuple[U, T]:
+        """ Internal method to ease filtering """
+        return args[0](*args[1:]), args[1]
+    
+    def filter(self,
+               fn: Callable[[T, Unpack[Ts]], bool],
+               iterable: Iterable[T],
+               /,
+               *args: Unpack[Ts],
+               chunk_size: Optional[int] = None,
+               unordered: bool = False) -> Iterator[T]:
+        """ Filter the given iterable by fn
+        
+        Additional arguments may be given through args. Results may be yielded
+        out of order if unordered is True.
+
+        If chunk_size is not given, the one given at the executor creation is used.
+        """
+        from itertools import repeat
+        results = self.map(
+            ParallelExecutor._filter,
+            zip(repeat(fn), iterable, *(repeat(a) for a in args)),
+            chunk_size=chunk_size,
+            unordered=unordered
+        )
+        for keep, value in results:
+            if keep:
+                yield value
+
+
+class SequentialExecutor(ParallelExecutor):
+    """ Sequential executor (rely on map) """  
+    def map(self, 
+            fn: Callable[Concatenate[Any, ...], T],
+            /,
+            *iterables: Iterable[Any],
+            chunk_size: Optional[int] = None,
+            unordered: bool = False) -> Iterable[T]:
+        return map(fn, *iterables)
+    
+
+class MultiProcessingPoolExecutor(ParallelExecutor):
     """
     Parallel computation context with some convenient algorithms (map, filter, ...)
 
@@ -15,104 +115,247 @@ class Parallel(contextlib.AbstractContextManager["Parallel"]):
 
     Example:
     
-    >>> with Parallel(1) as p:
+    >>> with MultiProcessingPoolExecutor(1) as p:
     ...     r = p.map(round, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
     ...     r = list(r) # r in only an iterable
     >>> r
     [0, 0, 0, 0, 0, 1, 1, 1, 1]
 
     >>> from operator import gt # >= operator
-    >>> with Parallel(6) as p:
+    >>> with MultiProcessingPoolExecutor(6) as p:
     ...     r = p.filter(gt, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 0.4)
     ...     r = list(r) # results must be retrieved before the end of the parallel context
     >>> r
     [0.5, 0.6, 0.7, 0.8, 0.9]
     """
-    pool: Optional[Pool]
+    pool: "Pool"
 
-    def __init__(self, n_jobs: Optional[int] = None):
+    def __init__(self,
+                max_workers: Optional[int] = None,
+                chunk_size: int = 1,
+                *args: Any,
+                **kwargs: Any):
         """ Starting a parallel computation context
         
         If n_jobs is None, it lets multiprocessing.pool.Pool choose the number of processes
         depending on your CPU and the execution context.
         """
-        assert n_jobs is None or n_jobs > 0
-
-        if n_jobs is None or n_jobs > 1:
-            self.pool = Pool(n_jobs)
-        else:
-            self.pool = None
-
-    def __enter__(self) -> Self:
-        """ Entering context """
-        return self
+        from multiprocessing import Pool
+        super().__init__(max_workers=max_workers, chunk_size=chunk_size)
+        self.pool = Pool(self.max_workers, *args, **kwargs)
     
-    def terminate(self) -> None:
+    def shutdown(self, wait: bool = True) -> None:
         """ Terminating all processes """
-        if self.pool is not None:
-            self.pool.close()
-            self.pool.terminate()
-
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
-        """ Leaving context """
-        self.terminate()
+        pool = self.pool
+        pool.close()
+        if wait:
+            pool.join()
+        else:
+            pool.terminate()
 
     @staticmethod
     def _starmap(args: tuple[Callable[[Unpack[Ts]], T], Unpack[Ts]]) -> T:
         return args[0](*args[1:])
 
-    def map(self, func: Callable[Concatenate[Any, ...], T], /, *iterables: Iterable[Any], chunk_size: int = 1, unordered: bool = False) -> Iterable[T]:
+    def map(self,
+            func: Callable[Concatenate[Any, ...], T],
+            /, 
+            *iterables: Iterable[Any],
+            chunk_size: Optional[int] = None,
+            unordered: bool = False) -> Iterable[T]:
         """
         Like the built-in map, it applies given function with one parameter from each iterable
 
         By default, results are returned in the same order as the input
         but they can be returned when ready when setting unordered to True.
         """
-        if self.pool is None:
-            return map(func, *iterables)
+        chunk_size = chunk_size or self.chunk_size
+        if unordered:
+            imap = self.pool.imap_unordered
         else:
-            if unordered:
-                imap = self.pool.imap_unordered
-            else:
-                imap = self.pool.imap
+            imap = self.pool.imap
 
-            return imap(
-                Parallel._starmap,
-                zip(itertools.repeat(func), *iterables),
-                chunksize=chunk_size,
-            )
+        return imap(
+            MultiProcessingPoolExecutor._starmap,
+            zip(itertools.repeat(func), *iterables),
+            chunksize=chunk_size,
+        )
+
+
+class FutureParallelExecutor(ParallelExecutor, ABC):
+    """ Parallel executor based on the concurrent.futures module """
+    executor: futures.Executor
+
+    def __init__(self, executor: futures.Executor, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.executor = executor
+
+    def shutdown(self, wait: bool = True) -> None:
+        self.executor.shutdown(wait=wait, cancel_futures=not wait)
+
+    def map(self, 
+            fn: Callable[Concatenate[Any, ...], T],
+            /,
+            *iterables: Iterable[Any],
+            chunk_size: Optional[int] = None,
+            unordered: bool = False) -> Iterable[T]:
+        chunk_size = chunk_size or self.chunk_size
+        if not unordered:
+            yield from self.executor.map(fn, *iterables, chunksize=chunk_size)
+        else:
+            all_futures = (self.executor.submit(fn, *args) for args in zip(*iterables))
+            for future in futures.as_completed(all_futures):
+                yield future.result()
+
+
+class FutureProcessExecutor(FutureParallelExecutor):
+    def __init__(self,
+                max_workers: Optional[int] = None,
+                chunk_size: int = 1,
+                *args: Any,
+                **kwargs: Any):
+        executor = futures.ProcessPoolExecutor(max_workers, *args, **kwargs)
+        super().__init__(executor, max_workers=max_workers, chunk_size=chunk_size)
+
+
+class FutureThreadExecutor(FutureParallelExecutor):
+    def __init__(self,
+                max_workers: Optional[int] = None,
+                chunk_size: int = 1,
+                *args: Any,
+                **kwargs: Any):
+        executor = futures.ThreadPoolExecutor(max_workers, *args, **kwargs)
+        super().__init__(executor, max_workers=max_workers, chunk_size=chunk_size)
+
+
+class FutureMPIExecutor(FutureParallelExecutor):
+    def __init__(self,
+                max_workers: Optional[int] = None,
+                chunk_size: int = 1,
+                *args: Any,
+                **kwargs: Any):
+        from mpi4py.futures import MPIPoolExecutor
+        executor = MPIPoolExecutor(max_workers, *args, **kwargs)
+        super().__init__(executor, max_workers=max_workers, chunk_size=chunk_size)
+
+
+ParallelExecutorStr = Literal[
+    "Sequential",
+    "MultiProcessing",
+    "FutureProcess",
+    "FutureThread",
+    "FutureMPI",
+]
+
+parallel_executor_dict: Final[dict[ParallelExecutorStr, type[ParallelExecutor]]] = {
+    "Sequential": SequentialExecutor,
+    "MultiProcessing": MultiProcessingPoolExecutor,
+    "FutureProcess": FutureProcessExecutor,
+    "FutureThread": FutureThreadExecutor,
+    "FutureMPI": FutureMPIExecutor,    
+}
+
+class Parallel(AbstractContextManager["Parallel"]):
+    """ Unique parallel context
+    
+    This generates a singleton of a parallel executor
+    """
+    executor_class: ClassVar[type[ParallelExecutor]] = SequentialExecutor
+    max_workers: ClassVar[Optional[int]] = None
+    chunk_size: ClassVar[int] = 1
+    kwargs: ClassVar[dict[str, Any]] = dict()
+    __executor: ClassVar[Optional[ParallelExecutor]] = None
+
+    def __init__(self) -> None:
+        self.start()
 
     @staticmethod
-    def _filter(args: tuple[Callable[[T, Unpack[Ts]], U], T, Unpack[Ts]]) -> tuple[U, T]:
-        return args[0](*args[1:]), args[1]
-    
-    def filter(self, func: Callable[Concatenate[Any, ...], bool], iterable: Iterable[T], /, *args: Any, chunk_size: int = 1, unordered: bool = False) -> Generator[T]:
-        """
-        Like the built-in filter, it returns the elements from iterable for whose func returns True.
+    def configure(executor_class: type[ParallelExecutor] | ParallelExecutorStr,
+                  max_workers: Optional[int] = None,
+                  chunk_size: int = 1,
+                  **kwargs: Any) -> None:
+        """ Configure the parallel executor class and it's init parameters """
+        if isinstance(executor_class, str):
+            from .utils import to_literal
+            executor_class = cast(ParallelExecutorStr, to_literal(ParallelExecutorStr, executor_class))
+            executor_class = parallel_executor_dict[executor_class]
 
-        The element is passed as the first parameter to func, the additional args (not iterables)
-        are passed as supplementary parameters to each call of func.
+        Parallel.executor_class = executor_class
+        Parallel.max_workers = max_workers
+        Parallel.chunk_size = chunk_size
+        Parallel.kwargs = kwargs
 
-        By default, results are returned in the same order as the input
-        but they can be returned when ready when setting unordered to True.
-        """
-        from itertools import repeat
-        if self.pool is None:
-            for el in iterable:
-                if func(el, *args):
-                    yield el
-        else:
-            if unordered:
-                imap = self.pool.imap_unordered
-            else:
-                imap = self.pool.imap
-
-            results = imap(
-                Parallel._filter,
-                zip(repeat(func), iterable, *(repeat(a) for a in args)),
-                chunksize=chunk_size,
+    @staticmethod
+    def start() -> None:
+        """ Start a parallel context """
+        if Parallel.__executor is None:
+            Parallel.__executor = Parallel.executor_class(
+                max_workers=Parallel.max_workers,
+                chunk_size=Parallel.chunk_size,
+                **Parallel.kwargs,
             )
-            for keep, el in results:
-                if keep:
-                    yield el
+
+    #def stop(self, *args: Any, **kwargs: Any) -> None:
+    @staticmethod
+    def shutdown(wait: bool = True) -> None:
+        """ Stop a parallel context, eventually wait to finish tasks """
+        if Parallel.__executor is not None:
+            Parallel.__executor.shutdown(wait)
+            Parallel.__executor = None
+
+    @property
+    def executor(self) -> ParallelExecutor:
+        """ Returns associated parallel executor """
+        Parallel.start()
+        assert Parallel.__executor is not None
+        return Parallel.__executor
     
+    def __enter__(self) -> Self:
+        """ Entering context """
+        self.start()
+        return self
+    
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
+        """ Leaving context """
+        self.shutdown()
+
+
+    @staticmethod
+    def add_arguments(parent_parser: ArgumentParser, defaults: Mapping[str, Any] = {}) -> None:
+        """ Add command-line arguments that configure the parallelization """
+        import typing
+        from .utils import to_literal
+        group = parent_parser.add_argument_group(
+            "Parallel computation"
+        )
+        group.add_argument(
+            "--parallel",
+            type=lambda s: to_literal(ParallelExecutorStr, s),
+            choices=typing.get_args(ParallelExecutorStr),
+            nargs='?',
+            default="Sequential",
+            const="FutureProcess",
+            help="Type of parallel executor. FutureProcess is used if no executor is specified."
+        )
+        group.add_argument(
+            "--max_workers",
+            type=int,
+            default=None,
+            help="Number of workers for the parallel computation. Use number of cores if None."
+        )
+        group.add_argument(
+            "--chunk_size",
+            type=int,
+            default=1,
+            help="Number of tasks to pass to each work at once. You should increase this value in order to reduce overhead when there are enough tasks comparing to the number of workers."
+        )
+
+    @classmethod
+    def from_config(cls: type[Self], config: Namespace, **kwargs: Any) -> "Parallel":
+        """ Configure the parallel context from the command-line arguments """
+        Parallel.configure(
+            executor_class=config.parallel,
+            max_workers=config.max_workers,
+            chunk_size=config.chunk_size,
+        )
+        return Parallel()
