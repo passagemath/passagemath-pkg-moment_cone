@@ -25,7 +25,7 @@ def bench(step: TauCandidatesStep, display_step: int = 100) -> tuple[float, floa
     def get_time() -> float:
         return time.perf_counter() - initial_time
     
-    with step._tqdm(find_1PS(step.V, flatten_cnt=step.flatten_cnt, unique_tau=step.unique_tau, quiet=step.quiet), unit="tau", leave=True) as pb:
+    with step._tqdm(step.apply().all(), unit="tau", leave=True) as pb:
         for i, _ in enumerate(pb):
             if i % display_step == 0:
                 mem = get_mem()
@@ -42,7 +42,7 @@ def bench(step: TauCandidatesStep, display_step: int = 100) -> tuple[float, floa
 def main_from_cmd() -> None:
     import argparse
     from moment_cone import Representation
-    from moment_cone.main_steps import TauCandidatesStep
+    from moment_cone.main_steps import TauCandidatesStep, LazyDataset
 
     parser = argparse.ArgumentParser(
         "Memory benchmark of Tau candidates generator",
@@ -79,9 +79,10 @@ def main_from_cmd() -> None:
     V = Representation.from_config(config)
     
     # Creating the overall cone computational step
-    step = TauCandidatesStep.from_config(V, config)
+    step = TauCandidatesStep.from_config(V, config, dataset_type=LazyDataset)
 
     wall_time, memory = bench(step, display_step=config.display_step)
+    print()
     print(f"Wall time: {wall_time:.4g}s")
     print("Memory usage:", fancy_mem(memory))
 
