@@ -22,8 +22,13 @@ class ParallelExecutor(AbstractContextManager["ParallelExecutor"], ABC):
     """
     max_workers: Optional[int]
     chunk_size: int
+    unordered: bool
 
-    def __init__(self, max_workers: Optional[int] = None, chunk_size: int = 1):
+    def __init__(
+            self, max_workers: Optional[int] = None,
+            chunk_size: int = 1,
+            unordered: bool = False,
+        ):
         """ Default parameters for an executor
         
         max_workers: maximal number of tasks that run in parallel
@@ -33,6 +38,7 @@ class ParallelExecutor(AbstractContextManager["ParallelExecutor"], ABC):
         """
         self.max_workers = max_workers
         self.chunk_size = chunk_size
+        self.unordered = unordered
 
     def shutdown(self, wait: bool = True) -> None:
         """ Shutdown executor and possibly wait that all tasks are finished """
@@ -52,7 +58,7 @@ class ParallelExecutor(AbstractContextManager["ParallelExecutor"], ABC):
             /,
             *iterables: Iterable[Any],
             chunk_size: Optional[int] = None,
-            unordered: bool = False) -> Iterable[T]:
+            unordered: Optional[bool] = None) -> Iterable[T]:
         """ Launch fn on each parameters from the given iterables
         
         This method should yield the results when available (like multiprocessing.Pool.imap),
@@ -73,7 +79,7 @@ class ParallelExecutor(AbstractContextManager["ParallelExecutor"], ABC):
                /,
                *args: Unpack[Ts],
                chunk_size: Optional[int] = None,
-               unordered: bool = False) -> Iterable[T]:
+               unordered: Optional[bool] = None) -> Iterable[T]:
         """ Filter the given iterable by fn
         
         Additional arguments may be given through args. Results may be yielded
@@ -100,7 +106,7 @@ class SequentialExecutor(ParallelExecutor):
             /,
             *iterables: Iterable[Any],
             chunk_size: Optional[int] = None,
-            unordered: bool = False) -> Iterable[T]:
+            unordered: Optional[bool] = None) -> Iterable[T]:
         return map(fn, *iterables)
     
 
@@ -133,6 +139,7 @@ class MultiProcessingPoolExecutor(ParallelExecutor):
     def __init__(self,
                 max_workers: Optional[int] = None,
                 chunk_size: int = 1,
+                unordered: bool = False,
                 *args: Any,
                 **kwargs: Any):
         """ Starting a parallel computation context
@@ -141,7 +148,11 @@ class MultiProcessingPoolExecutor(ParallelExecutor):
         depending on your CPU and the execution context.
         """
         from multiprocessing import Pool
-        super().__init__(max_workers=max_workers, chunk_size=chunk_size)
+        super().__init__(
+            max_workers=max_workers,
+            chunk_size=chunk_size,
+            unordered=unordered
+        )
         self.pool = Pool(self.max_workers, *args, **kwargs)
     
     def shutdown(self, wait: bool = True) -> None:
@@ -162,7 +173,7 @@ class MultiProcessingPoolExecutor(ParallelExecutor):
             /, 
             *iterables: Iterable[Any],
             chunk_size: Optional[int] = None,
-            unordered: bool = False) -> Iterable[T]:
+            unordered: Optional[bool] = None) -> Iterable[T]:
         """
         Like the built-in map, it applies given function with one parameter from each iterable
 
@@ -170,6 +181,7 @@ class MultiProcessingPoolExecutor(ParallelExecutor):
         but they can be returned when ready when setting unordered to True.
         """
         chunk_size = chunk_size or self.chunk_size
+        if unordered is None: unordered = self.unordered
         if unordered:
             imap = self.pool.imap_unordered
         else:
@@ -198,45 +210,91 @@ class FutureParallelExecutor(ParallelExecutor, ABC):
             /,
             *iterables: Iterable[Any],
             chunk_size: Optional[int] = None,
-            unordered: bool = False) -> Iterable[T]:
+            unordered: Optional[bool] = None) -> Iterable[T]:
         chunk_size = chunk_size or self.chunk_size
+        if unordered is None: unordered = self.unordered
         if not unordered:
             yield from self.executor.map(fn, *iterables, chunksize=chunk_size)
         else:
-            all_futures = (self.executor.submit(fn, *args) for args in zip(*iterables))
-            for future in futures.as_completed(all_futures):
-                yield future.result()
+            """
+            Previous implementation was :
+                all_futures = (self.executor.submit(fn, *args) for args in zip(*iterables))
+            with the use of futures.as_completed but it seems to force the complete
+            evaluation of all_futures before continuing, thus breaking the lazy features.
+
+            The implementation below relies on futures.wait instead and replace finished
+            tasks by new ones to keep a pool of running tasks.
+
+            As before, chunk_size is not used and performance may be worse but the lazy
+            computation now works.
+            """
+            from concurrent.futures import Future
+            not_done: set[Future[T]] = set()
+            all_args = iter(zip(*iterables))
+            max_workers: int = self.executor._max_workers # type: ignore
+            for _ in range(max_workers):
+                try:
+                    not_done.add(self.executor.submit(fn, *next(all_args)))
+                except StopIteration:
+                    pass
+
+            while not_done:
+                done, not_done = futures.wait(not_done, return_when=futures.FIRST_COMPLETED)
+                for future in done:
+                    yield future.result()
+                    try:
+                        not_done.add(self.executor.submit(fn, *next(all_args)))
+                    except StopIteration:
+                        pass
 
 
 class FutureProcessExecutor(FutureParallelExecutor):
     def __init__(self,
                 max_workers: Optional[int] = None,
                 chunk_size: int = 1,
+                unordered: bool = False,
                 *args: Any,
                 **kwargs: Any):
         executor = futures.ProcessPoolExecutor(max_workers, *args, **kwargs)
-        super().__init__(executor, max_workers=max_workers, chunk_size=chunk_size)
+        super().__init__(
+            executor,
+            max_workers=max_workers,
+            chunk_size=chunk_size,
+            unordered=unordered,
+        )
 
 
 class FutureThreadExecutor(FutureParallelExecutor):
     def __init__(self,
                 max_workers: Optional[int] = None,
                 chunk_size: int = 1,
+                unordered: bool = False,
                 *args: Any,
                 **kwargs: Any):
         executor = futures.ThreadPoolExecutor(max_workers, *args, **kwargs)
-        super().__init__(executor, max_workers=max_workers, chunk_size=chunk_size)
+        super().__init__(
+            executor,
+            max_workers=max_workers,
+            chunk_size=chunk_size,
+            unordered=unordered,
+        )
 
 
 class FutureMPIExecutor(FutureParallelExecutor):
     def __init__(self,
                 max_workers: Optional[int] = None,
                 chunk_size: int = 1,
+                unordered: bool = False,
                 *args: Any,
                 **kwargs: Any):
         from mpi4py.futures import MPIPoolExecutor
         executor = MPIPoolExecutor(max_workers, *args, **kwargs)
-        super().__init__(executor, max_workers=max_workers, chunk_size=chunk_size)
+        super().__init__(
+            executor,
+            max_workers=max_workers,
+            chunk_size=chunk_size,
+            unordered=unordered,
+        )
 
 
 ParallelExecutorStr = Literal[
@@ -349,6 +407,11 @@ class Parallel(AbstractContextManager["Parallel"]):
             default=1,
             help="Number of tasks to pass to each work at once. You should increase this value in order to reduce overhead when there are enough tasks comparing to the number of workers."
         )
+        group.add_argument(
+            "--unordered",
+            action="store_true",
+            help="Yield elements when ready, possibly out of order. It may slow down the computation but it is necessary to have a working --lazy in parallel."
+        )
 
     @classmethod
     def from_config(cls: type[Self], config: Namespace, **kwargs: Any) -> "Parallel":
@@ -357,5 +420,6 @@ class Parallel(AbstractContextManager["Parallel"]):
             executor_class=config.parallel,
             max_workers=config.max_workers,
             chunk_size=config.chunk_size,
+            unordered=config.unordered,
         )
         return Parallel()

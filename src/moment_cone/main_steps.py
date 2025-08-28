@@ -1145,7 +1145,7 @@ class MomentConeStep(GeneratorStep[Inequality]):
         group.add_argument(
             "--lazy",
             action="store_true",
-            help="Compute lazilly the inequalities (without storing intermediate results)",
+            help="Compute lazilly the inequalities (without storing intermediate results). When using --parallel, this option should be set together with --unordered.",
         )
 
         # Adding command-line options from other steps
