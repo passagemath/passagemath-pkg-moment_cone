@@ -42,8 +42,15 @@ class WeightSieve:
         )
 
 
-def is_parallelizable(St: WeightSieve,nbTrue,nbFalse) -> bool :
-    return(len(St.zero)>=nbTrue or len(St.excluded)>=nbFalse)
+@dataclass
+class IsParallelizable:
+    """ Functor that returns True if a branch is heavier enough to be parallelized """
+    nb_true: int # Threshold on the number of zero in the weight sieve
+    nb_false: int # Threshold on the number of excluded in the weight sieve
+
+    def __call__(self, St: WeightSieve) -> bool:
+        return len(St.zero) >= self.nb_true or len(St.excluded) >= self.nb_false
+
 
 def smart_remove(l: list[T], idx: int) -> None:
     """
@@ -186,7 +193,8 @@ def find_hyperplanes_reg_mod_outer(
 
     # Initialisation of the criterium to be parallelizable
     NbTrue = 2
-    NbFalse = len(weights_free) //10
+    NbFalse = len(weights_free) // 10
+    is_parallelizable = IsParallelizable(NbTrue, NbFalse)
     
     #Preparatory: Matrix of weights_free
 
@@ -229,24 +237,32 @@ def find_hyperplanes_reg_mod_outer(
 
     # Initialisation of St
     St = WeightSieve([], [], [], [0],[0])
+
     # Some weights that are necessarily excluded: if there are not enough incomparable weights to span an hyperplane.
-    Excluded = []
-    Indeterminate=[]
     for id_chi1, chi1 in enumerate(weights_free):
         nb_comp=len([chi2 for chi2 in weights_free if chi2.leq(chi1,sym) or chi1.leq(chi2,sym)])
         if len(weights_free)-nb_comp<exp_dim-1 :
             St.excluded.append(id_chi1)
         else :
             St.indeterminate.append(id_chi1)    
-
-    #St.indeterminate=[i for i in range(len(weights_free))]
-
     
-    yield from find_hyperplanes_reg_impl(weights_free,V,mult_chi_tab,St, u,exp_dim,dom_order_matrix, M_weights,orbit_as_dic_idx, NbTrue,NbFalse,sym=sym) 
+    yield from find_hyperplanes_reg_impl(weights_free,V,mult_chi_tab,St, u,exp_dim,dom_order_matrix, M_weights,orbit_as_dic_idx, is_parallelizable, sym=sym) 
 
 
 
-def find_hyperplanes_reg_impl(weights: Sequence[Weight],V: Representation,MW: NDArray[np.int8], St: WeightSieve, u: int, exp_dim: int, MO: NDArray[np.int8], M_weights : NDArray[np.int8], orbit_as_dic_idx:dict[int, list[int]], NbTrue: int,NbFalse: int, sym: Optional[Sequence[int]] = None) -> Iterable[Tau]: # Tau for V.G
+def find_hyperplanes_reg_impl(
+        weights: Sequence[Weight],
+        V: Representation,
+        MW: NDArray[np.int8],
+        St: WeightSieve,
+        u: int, 
+        exp_dim: int,
+        MO: NDArray[np.int8],
+        M_weights : NDArray[np.int8],
+        orbit_as_dic_idx:dict[int, list[int]],
+        is_parallelizable: Callable[[WeightSieve], bool],
+        sym: Optional[Sequence[int]] = None,
+    ) -> Iterable[Tau]: # Tau for V.G
     """ 
     Recursive part to find the hyperplane candidates.
     u is the maximal number of positive weights
@@ -301,10 +317,10 @@ def find_hyperplanes_reg_impl(weights: Sequence[Weight],V: Representation,MW: ND
                 St.indeterminate.remove(id_chi2)
                 St.excluded.append(id_chi2)
 
-        if is_parallelizable(St,NbTrue,NbFalse) : #parallel
-            yield from find_hyperplanes_reg_impl(weights, V, MW, St, u,exp_dim, MO, M_weights,orbit_as_dic_idx,NbTrue,NbFalse, sym=sym)
+        if is_parallelizable(St): #parallel
+            yield from find_hyperplanes_reg_impl(weights, V, MW, St, u,exp_dim, MO, M_weights,orbit_as_dic_idx, is_parallelizable, sym=sym)
         else : # sequential 
-            yield from find_hyperplanes_reg_impl(weights, V, MW, St, u,exp_dim, MO, M_weights,orbit_as_dic_idx,NbTrue,NbFalse, sym=sym)
+            yield from find_hyperplanes_reg_impl(weights, V, MW, St, u,exp_dim, MO, M_weights,orbit_as_dic_idx, is_parallelizable, sym=sym)
 
         # 2. We explore the branch where it is defined as a zero element (on the hyperplane)
         St2.zero.append(id_chi)
@@ -318,11 +334,11 @@ def find_hyperplanes_reg_impl(weights: Sequence[Weight],V: Representation,MW: ND
 
         # 2.2 Continuing if there are not too much positive elements
         
-        if St2.nb_positive[0] <=u:
-            if is_parallelizable(St,NbTrue,NbFalse) : #parallel
-                yield from find_hyperplanes_reg_impl(weights, V, MW, St2, u,exp_dim, MO, M_weights,orbit_as_dic_idx,NbTrue,NbFalse, sym=sym)
+        if St2.nb_positive[0] <= u:
+            if is_parallelizable(St): #parallel
+                yield from find_hyperplanes_reg_impl(weights, V, MW, St2, u,exp_dim, MO, M_weights,orbit_as_dic_idx, is_parallelizable, sym=sym)
             else : # sequential 
-                yield from find_hyperplanes_reg_impl(weights, V, MW, St2, u,exp_dim, MO, M_weights,orbit_as_dic_idx,NbTrue,NbFalse, sym=sym)    
+                yield from find_hyperplanes_reg_impl(weights, V, MW, St2, u,exp_dim, MO, M_weights,orbit_as_dic_idx, is_parallelizable, sym=sym)    
             
 
 
