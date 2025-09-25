@@ -506,11 +506,11 @@ class SubModuleConditionStep(FilterStep[Tau]):
     """
     def apply(self, tau_dataset: Dataset[Tau]) -> Dataset[Tau]:
         from .parallel import Parallel
+        from .utils import PartialFunction
         executor = Parallel().executor
         pending_tau = executor.filter(
-            Tau.is_sub_module,
+            PartialFunction(Tau.is_sub_module, self.V),
             self._tqdm(tau_dataset.pending(), unit="tau"),
-            self.V,
             chunk_size=executor.chunk_size * 32,
         )
         return self.TDataset.from_separate(
@@ -540,12 +540,12 @@ class StabilizerConditionStep(FilterStep[Tau]):
         
     def apply(self, tau_dataset: Dataset[Tau]) -> Dataset[Tau]:
         from .parallel import Parallel
+        from .utils import PartialFunction
 
         executor = Parallel().executor
         pending_tau = executor.filter(
-            StabilizerConditionStep.tau_filter,
+            PartialFunction(StabilizerConditionStep.tau_filter, self.V),
             self._tqdm(tau_dataset.pending(), unit="tau"),
-            self.V,
         )
         
         return self.TDataset.from_separate(
@@ -570,16 +570,15 @@ class InequalityCandidatesStep(TransformerStep[Tau, Inequality]):
     def apply(self, tau_dataset: Dataset[Tau]) -> Dataset[Inequality]:
         from .list_of_W import List_Inv_Ws_Mod
         from .parallel import Parallel
-        from itertools import repeat
+        from .utils import PartialFunction
 
         executor = Parallel().executor
         pending_tau = self._tqdm(tau_dataset.pending(), unit="tau")
 
         def ineq_generator():
             inversions = executor.map(
-                InequalityCandidatesStep.List_Inv_Ws_Mod,
+                PartialFunction(InequalityCandidatesStep.List_Inv_Ws_Mod, self.V),
                 pending_tau,
-                repeat(self.V),
                 chunk_size=executor.chunk_size * 2,
             )
             for tau, Lw in inversions:
@@ -622,11 +621,12 @@ class PiDominancyStep(FilterStep[Inequality]):
     def apply(self, ineq_dataset: Dataset[Inequality]) -> Dataset[Inequality]:
         from .list_of_W import Check_Rank_Tpi
         from .parallel import Parallel
+        from .utils import PartialFunction
+
         executor = Parallel().executor
         inequalities = executor.filter(
-            Check_Rank_Tpi,
+            PartialFunction(Check_Rank_Tpi, self.V, self.tpi_method),
             self._tqdm(ineq_dataset.pending(), unit="ineq"),
-            self.V, self.tpi_method,
             chunk_size=executor.chunk_size * 32,
         )
         return self.TDataset.from_separate(
@@ -797,15 +797,13 @@ class BirationalityStep(FilterStep[Inequality]):
     def apply(self, ineq_dataset: Dataset[Inequality]) -> Dataset[Inequality]:
         from .ramification import Is_Ram_contracted
         from .parallel import Parallel
+        from .utils import PartialFunction
         from itertools import chain
 
         executor = Parallel().executor
         inequalities = executor.filter(
-            Is_Ram_contracted,
+            PartialFunction(Is_Ram_contracted, self.V, self.ram_schub_method, self.ram0_method),
             self._tqdm(ineq_dataset.pending(), unit="ineq"),
-            self.V,
-            self.ram_schub_method,
-            self.ram0_method,
         )
 
         return self.TDataset.from_separate(

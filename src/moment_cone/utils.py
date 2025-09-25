@@ -32,6 +32,7 @@ __all__ = (
     "UniqueFilter",
     "generate_seed",
     "manual_seed",
+    "PartialFunction",
 )
 
 if TYPE_CHECKING:
@@ -677,3 +678,16 @@ def manual_seed(
     return seed
 
         
+class PartialFunction:
+    """ Function wrapper with partially defined arguments
+    
+    Like functools.partial except that the arguments at execution are passed
+    at first positions.
+    """
+    def __init__(self, func, *args, **kwargs):
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, arg):
+        return self.func(arg, *self.args, **self.kwargs)
