@@ -42,6 +42,10 @@ class ParallelExecutor(AbstractContextManager["ParallelExecutor"], ABC):
         self.chunk_size = chunk_size
         self.unordered = unordered
 
+    @property
+    def is_parallel(self) -> bool:
+        return True
+
     def shutdown(self, wait: bool = True) -> None:
         """ Shutdown executor and possibly wait that all tasks are finished """
         pass
@@ -103,6 +107,10 @@ class ParallelExecutor(AbstractContextManager["ParallelExecutor"], ABC):
 
 class SequentialExecutor(ParallelExecutor):
     """ Sequential executor (rely on map) """  
+    @property
+    def is_parallel(self) -> bool:
+        return False
+
     def map(self, 
             fn: Callable[Concatenate[Any, ...], T],
             /,
