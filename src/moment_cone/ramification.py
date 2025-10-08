@@ -282,7 +282,8 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
                     psi = matrix(V.QV, Mn)
                     mult = merged_deltas[delta][1]
                     taylor_term=taylor_det_psi(mult, Ared_i, psi)
-                    print(taylor_term)       
+                    #print(taylor_term)       
+                    
                     # Computation of L0 such that L0^mult_min = constant * taylor_term
                     variables = [V.QV.variable(chi) for chi in tau.orthogonal_weights(V)]
                     vars = taylor_term.variables()

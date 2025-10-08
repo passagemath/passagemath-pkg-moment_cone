@@ -691,16 +691,16 @@ def merge_factorizations(
 
     for i, d in enumerate(delta_list):
         for pol, val in d.items():
-            if pol not in result:
-                # first time we see this polynomial
-                result[pol] = [i, val,val,size_blocks[i+1]-size_blocks[i]]
+            try:
+                curr_result = result[pol]
+            except KeyError:
+                result[pol] = [i, val, val, size_blocks[i+1] - size_blocks[i]]
             else:
-                result[pol][2]+=val
-                current_i, current_val,sum_val,current_degJ = result[pol]
-                if val < current_val:
-                    # found a smaller value -> update
-                    result[pol] = [i, val,sum_val,size_blocks[i+1]-size_blocks[i]]   
-                if val == current_val and size_blocks[i+1]-size_blocks[i]<current_degJ: # In this case, we minimize the size of the matrix
-                    result[pol] = [i, val,sum_val,size_blocks[i+1]-size_blocks[i]] 
+                curr_result[2] += val
+                curr_i, curr_val, sum_val, curr_degJ = curr_result
+                degJ = size_blocks[i + 1] - size_blocks[i]
+                if val < curr_val or (val == curr_val and degJ < curr_degJ):
+                    curr_result[:] = [i, val, sum_val, degJ]
+
 
     return result
