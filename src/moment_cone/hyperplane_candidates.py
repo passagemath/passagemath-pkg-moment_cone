@@ -252,7 +252,7 @@ def find_hyperplanes_reg_mod_outer(
     seq_kernel = partial(find_hyperplanes_reg_impl, weights_free, V, mult_chi_tab, u, exp_dim, dom_order_matrix, M_weights, orbit_as_dic_idx, is_parallelizable=None, sym=sym)
 
     executor = Parallel().executor
-    if executor.is_parallel or True:
+    if executor.is_parallel:
         #print(f"\nParallel execution for V = {V} with {len(weights_free)} free weights")
         import time
         import copy
