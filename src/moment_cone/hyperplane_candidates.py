@@ -50,7 +50,8 @@ class IsParallelizable:
 
     def __call__(self, St: WeightSieve) -> bool:
         #return len(St.zero) >= self.nb_true or len(St.excluded) >= self.nb_false
-        return len(St.zero) >= self.nb_true or (len(St.zero) >0 and len(St.excluded) >= self.nb_false) or (len(St.excluded) >= 2*self.nb_false)    
+        return len(St.zero) >= self.nb_true or (len(St.zero) >0 and len(St.excluded) >= self.nb_false) or (len(St.excluded) >= 2*self.nb_false)
+        #return len(St.zero) >= self.nb_true or (len(St.zero) >0 and 2*len(St.excluded) >= self.nb_false) or (len(St.excluded) >= 2*self.nb_false)
 
 def smart_remove(l: list[T], idx: int) -> None:
     """
@@ -193,7 +194,7 @@ def find_hyperplanes_reg_mod_outer(
 
     # Initialisation of the criterium to be parallelizable
     NbTrue = 2
-    NbFalse = len(weights_free) // 2
+    NbFalse = len(weights_free) // 2 # // 2 dans les tests
     is_parallelizable = IsParallelizable(NbTrue, NbFalse)
     
     #Preparatory: Matrix of weights_free
