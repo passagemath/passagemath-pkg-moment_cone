@@ -33,6 +33,7 @@ __all__ = (
     "generate_seed",
     "manual_seed",
     "PartialFunction",
+    "clear_cached_property",
 )
 
 if TYPE_CHECKING:
@@ -691,3 +692,11 @@ class PartialFunction:
 
     def __call__(self, arg):
         return self.func(arg, *self.args, **self.kwargs)
+    
+
+def clear_cached_property(obj: Any) -> None:
+    """ Clear all cached result of cache_property decorator """
+    # Probably non-consistent way of doing this by comparing
+    # dir and __dict__ so that intersection indicates cached_property
+    for prop in set(dir(obj)) & obj.__dict__.keys():
+        del obj.__dict__[prop]
