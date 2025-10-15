@@ -1008,6 +1008,7 @@ class MomentConeStep(GeneratorStep[Inequality]):
     config: Optional[Namespace] # Configuration from the command-line
     options: dict[str, Any] # Additional options passed to the constructor
     lazy: bool # Compute lazilly the inequalities without storing intermediate results
+    store_steps: bool # Store all steps and their input/output datasets
     filters: list[InequalityFilterStr] # List of filters applied to the inequalities
     steps: list[Step] # All executed steps (for logging purpose)
 
@@ -1017,6 +1018,7 @@ class MomentConeStep(GeneratorStep[Inequality]):
         filters: Iterable[str | InequalityFilterStr] = default_inequalities_filters,
         config: Optional[Namespace] = None,
         lazy: bool = False,
+        store_steps: bool = False,
         **kwargs: Any,
     ):
         super().__init__(V, **kwargs)
@@ -1026,6 +1028,7 @@ class MomentConeStep(GeneratorStep[Inequality]):
         ]
         self.config = config
         self.lazy = lazy
+        self.store_steps = store_steps
         self.options = kwargs
         self.steps = []
 
@@ -1036,7 +1039,10 @@ class MomentConeStep(GeneratorStep[Inequality]):
             step = step_type(self.V, dataset_type=dataset_type, **self.options)
         else:
             step = step_type.from_config(self.V, self.config, dataset_type=dataset_type)
-        self.steps.append(step)
+        
+        if self.store_steps:
+            self.steps.append(step)
+
         return step
     
     def clear_steps(self) -> None:
@@ -1134,6 +1140,11 @@ class MomentConeStep(GeneratorStep[Inequality]):
             action="store_true",
             help="Compute lazilly the inequalities (without storing intermediate results). When using --parallel, this option should be set together with --unordered.",
         )
+        group.add_argument(
+            "--store_steps",
+            action="store_true",
+            help="Store all intermediate steps and their input/ouptut datasets"
+        )
 
         # Adding command-line options from other steps
         import sys
@@ -1152,6 +1163,7 @@ class MomentConeStep(GeneratorStep[Inequality]):
             config=config,
             filters=config.filters,
             lazy=config.lazy,
+            store_steps=config.store_steps,
             **kwargs
         )
         
