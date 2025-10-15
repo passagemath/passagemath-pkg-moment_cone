@@ -321,6 +321,10 @@ class FutureMPIExecutor(FutureParallelExecutor):
 
 
 class MultiProcessingQueueExecutor(ParallelExecutor):
+    """ Trying to parallelize using input and output queues
+    
+    Not very efficient in practice...
+    """
     manager: SyncManager
 
     def __init__(
@@ -394,8 +398,6 @@ class MultiProcessingQueueExecutor(ParallelExecutor):
         # Cleaning
         for p in processes:
             p.join()
-        #input_queue.join()
-        #output_queue.join()
 
     @staticmethod
     def _worker(input_queue: "Queue", output_queue: "Queue", fn) -> None:
