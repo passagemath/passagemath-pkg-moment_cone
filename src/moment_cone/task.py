@@ -54,8 +54,17 @@ class Task(contextlib.AbstractContextManager["Task"]):
     @classmethod
     def current_process_time(cls) -> int:
         """ Process (including childrens) CPU time (user + system) """
-        cpu_times = sum(cpu_times.user + cpu_times.system for p in cls.process.children(recursive=True) for cpu_times in (p.cpu_times(),))
-        return round(1e9 * cpu_times) + time.process_time_ns()
+        from psutil import ZombieProcess, NoSuchProcess
+        all_cpu_times = 0.
+        for p in cls.process.children(recursive=True):
+            try:
+                cpu_times = p.cpu_times()
+            except (ZombieProcess, NoSuchProcess):
+                pass
+            else:
+                all_cpu_times += cpu_times.user + cpu_times.system
+
+        return round(1e9 * all_cpu_times) + time.process_time_ns()
     
     @staticmethod
     def is_clear(task: "Task") -> TypeGuard["ClearTask"]:
