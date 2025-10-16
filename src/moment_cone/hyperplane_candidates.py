@@ -283,13 +283,18 @@ def find_hyperplanes_reg_impl(
 
         if isinstance(V, KroneckerRepresentation) :
             taured_test_dom=taured
+            if taured_test_dom.is_dom_reg : # We keep only dominant regular 1-PS
+                yield taured
+            elif taured_test_dom.opposite.is_dom_reg:
+                yield taured.opposite
         else:
             assert sym is not None
-            taured_test_dom=Tau.from_flatten(taured.flattened,LinearGroup(sym))
-        if taured_test_dom.is_dom_reg : # We keep only dominant regular 1-PS
-            yield taured
-        elif taured_test_dom.opposite.is_dom_reg :
-            yield taured.opposite
+            if not any(a == b for a, b in itertools.pairwise(sorted(taured.flattened))):
+                taured_test_dom=Tau.from_flatten(taured.flattened,LinearGroup(sym))
+                if taured_test_dom.is_dom_reg : # We keep only dominant regular 1-PS
+                    yield taured.modulo_gcd()
+                if taured_test_dom.opposite.is_dom_reg:
+                    yield taured.opposite.modulo_gcd()
         
     # Case when St.indeterminate is sufficiently big to get hyperplanes
     elif len(St.zero) + len(St.indeterminate) >= exp_dim and len(St.indeterminate) > 0:
