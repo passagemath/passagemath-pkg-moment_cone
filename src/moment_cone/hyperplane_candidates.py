@@ -217,7 +217,7 @@ def find_hyperplanes_reg_mod_outer(
     #               we use the indeces in weights_free
 
     dom_order_matrix = np.zeros((len(weights_free),len(weights_free)), dtype=np.int8)
-    mult_chi_tab = np.zeros((len(weights_free),), dtype=np.int8)
+    mult_chi_tab = np.zeros((len(weights_free),), dtype=np.uint16)
     for i, chi1 in enumerate(weights_free):
         mult_chi_tab[i] = chi1.mult
         for j, chi2 in enumerate(weights_free):
@@ -233,7 +233,7 @@ def find_hyperplanes_reg_mod_outer(
         List_orbits=[[weights_free.index(chi2) for chi2 in weights_free[i].orbit_symmetries(V.G.outer)] for i in weights_free_mod_outer]
         orbit_as_dic_idx = {i: orbit for orbit in List_orbits for i in orbit}
     else :
-        orbit_as_dic_idx = {i: [i] for i in weights_free_mod_outer}    
+        orbit_as_dic_idx = {i: [i] for i in range(len(weights_free))}    
 
 
     # Initialisation of St
@@ -364,13 +364,18 @@ def find_hyperplanes_reg_impl(
 
         if isinstance(V, KroneckerRepresentation) :
             taured_test_dom=taured
+            if taured_test_dom.is_dom_reg : # We keep only dominant regular 1-PS
+                yield taured
+            elif taured_test_dom.opposite.is_dom_reg:
+                yield taured.opposite
         else:
             assert sym is not None
-            taured_test_dom=Tau.from_flatten(taured.flattened,LinearGroup(sym))
-        if taured_test_dom.is_dom_reg : # We keep only dominant regular 1-PS
-            yield taured
-        elif taured_test_dom.opposite.is_dom_reg :
-            yield taured.opposite
+            if not any(a == b for a, b in itertools.pairwise(sorted(taured.flattened))):
+                taured_test_dom=Tau.from_flatten(taured.flattened,LinearGroup(sym))
+                if taured_test_dom.is_dom_reg : # We keep only dominant regular 1-PS
+                    yield taured.modulo_gcd()
+                if taured_test_dom.opposite.is_dom_reg:
+                    yield taured.opposite.modulo_gcd()
         
     # Case when St.indeterminate is sufficiently big to get hyperplanes
     elif len(St.zero) + len(St.indeterminate) >= exp_dim and len(St.indeterminate) > 0:
@@ -393,7 +398,7 @@ def find_hyperplanes_reg_impl(
             smart_remove(St.indeterminate, idx)
             St.excluded.append(id_chi)
         else : 
-            for id_chi2 in orbit_as_dic_idx[id_chi]:#coucou
+            for id_chi2 in orbit_as_dic_idx[id_chi]:
                 #smart_remove(St.indeterminate, id_chi2)        
                 St.indeterminate.remove(id_chi2)
                 St.excluded.append(id_chi2)

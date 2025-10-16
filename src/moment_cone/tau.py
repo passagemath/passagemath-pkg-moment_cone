@@ -631,6 +631,11 @@ class Tau:
             tuple(tuple(v // res_gcd for v in cj) for cj in columns) +((ccomponent // res_gcd,),)
         )
 
+    def modulo_gcd(self) -> "Tau":
+        from math import gcd
+        L = self.flattened
+        divisor = gcd(*L)
+        return Tau.from_flatten((x // divisor for x in L), self.G)
 
     def summands_Vtau(self,V : Representation)  -> list[list[int]] : 
         """

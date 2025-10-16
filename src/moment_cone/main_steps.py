@@ -575,7 +575,7 @@ class InequalityCandidatesStep(TransformerStep[Tau, Inequality]):
         executor = Parallel().executor
         pending_tau = self._tqdm(tau_dataset.pending(), unit="tau")
 
-        def ineq_generator():
+        def ineq_generator() -> Iterator[Inequality]:
             inversions = executor.map(
                 PartialFunction(InequalityCandidatesStep.List_Inv_Ws_Mod, self.V),
                 pending_tau,

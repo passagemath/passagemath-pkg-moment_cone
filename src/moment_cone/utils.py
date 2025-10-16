@@ -32,9 +32,11 @@ __all__ = (
     "UniqueFilter",
     "generate_seed",
     "manual_seed",
+    "merge_factorizations",
     "PartialFunction",
     "clear_cached_property",
 )
+
 
 if TYPE_CHECKING:
     from line_profiler import LineProfiler
@@ -679,6 +681,31 @@ def manual_seed(
     return seed
 
         
+def merge_factorizations(
+        delta_list: list[dict[T, int]],
+        size_blocks : list[int]
+    ) -> dict[T, list[int]]:
+    """
+    Merge a list of dictionaries (index -> polynomial -> value).
+    Result: dict with polynomial -> [index, min_value, sum_values,degJ].
+    """
+    result: dict[T, list[int]] = {}
+
+    for i, d in enumerate(delta_list):
+        for pol, val in d.items():
+            try:
+                curr_result = result[pol]
+            except KeyError:
+                result[pol] = [i, val, val, size_blocks[i+1] - size_blocks[i]]
+            else:
+                curr_result[2] += val
+                curr_i, curr_val, sum_val, curr_degJ = curr_result
+                degJ = size_blocks[i + 1] - size_blocks[i]
+                if val < curr_val or (val == curr_val and degJ < curr_degJ):
+                    curr_result[:] = [i, val, sum_val, degJ]
+
+
+    return result
 class PartialFunction:
     """ Function wrapper with partially defined arguments
     
