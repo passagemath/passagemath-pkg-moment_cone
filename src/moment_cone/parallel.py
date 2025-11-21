@@ -131,14 +131,14 @@ class MultiProcessingPoolExecutor(ParallelExecutor):
 
     Example:
     
-    >>> with MultiProcessingPoolExecutor(1) as p:
+    >>> with MultiProcessingPoolExecutor(1, unordered=False) as p:
     ...     r = p.map(round, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
     ...     r = list(r) # r in only an iterable
     >>> r
     [0, 0, 0, 0, 0, 1, 1, 1, 1]
 
     >>> from operator import gt # >= operator
-    >>> with MultiProcessingPoolExecutor(6) as p:
+    >>> with MultiProcessingPoolExecutor(6, unordered=False) as p:
     ...     r = p.filter(gt, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 0.4)
     ...     r = list(r) # results must be retrieved before the end of the parallel context
     >>> r
@@ -339,7 +339,7 @@ class MultiProcessingQueueExecutor(ParallelExecutor):
         super().__init__(max_workers, chunk_size, unordered)
         self.manager = Manager()
 
-    def shutdown(self, wait: bool = True):
+    def shutdown(self, wait: bool = True) -> None:
         self.manager.shutdown()
 
     def map(self, 
