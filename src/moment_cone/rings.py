@@ -109,7 +109,8 @@ class PolynomialRingForWeights:
     Aggregate a Sage PolynomialRing with dedicated function to manage variables associated to weights.
 
     Examples:
-    >>> from sage.all import QQ, I
+    >>> from sage.rings.rational_field import QQ
+    >>> from sage.rings.imaginary_unit import I
     >>> QZ = PolynomialRingForWeights(QQ, "z")
     >>> QZ
     Univariate Polynomial Ring in z over Rational Field
