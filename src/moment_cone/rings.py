@@ -12,6 +12,11 @@ Remark: it is recommended to import this module instead of importing directly fr
 
 
 """
+try:
+    import sage.all__sagemath_flint
+except ImportError:
+    import sage.all
+
 from sage.rings.ring import Ring # type: ignore
 from sage.rings.polynomial.polynomial_ring_constructor import PolynomialRing as PolynomialRing # type: ignore
 from sage.rings.polynomial.polynomial_element import Polynomial # type: ignore
