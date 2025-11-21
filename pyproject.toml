@@ -47,6 +47,15 @@ dev = [
    "pyprof2calltree", # Converter of functions call stats for kcachegrind
    "types-tqdm", # Stubs for tqdm
 ]
+passagemath = [
+   "lrcalc",
+   "sympy",
+   "passagemath-combinat",
+   "passagemath-modules",
+   "passagemath-polyhedra",
+   "passagemath-repl",
+   "passagemath-singular",
+]
 
 [project.scripts]
 moment_cone = "moment_cone.main:moment_cone_from_cmd"
