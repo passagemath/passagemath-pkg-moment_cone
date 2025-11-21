@@ -73,7 +73,7 @@ def sign_assignment(id_chi: int,
                     S_ind: list[int],
                     nb_positive: list[int],
                     MO: NDArray[np.int8],
-                    MW: NDArray[np.int8],
+                    MW: NDArray[np.uint16],
                     V: Representation) -> None:
     """ Determining the sign of weight from S_input by comparing it to the curring weight chi """
     pos_ex = np.flatnonzero(MO[id_chi,:][np.ix_(S_ex,)])
@@ -104,7 +104,7 @@ def put_negative(S_ex: list[int],
                     S_ind: list[int],
                     current_u: int,
                     MO: NDArray[np.int8],
-                    MW: NDArray[np.int8]) -> None:
+                    MW: NDArray[np.uint16]) -> None:
     """ Determining the sign of weight from S_input by comparing it to the curring weight chi """
     # TODO : faire pour particule
     NbSup = MO[np.ix_(S_ex+S_ind,S_ex+S_ind)].sum(axis=1)
@@ -303,7 +303,7 @@ class ToList:
 def find_hyperplanes_reg_impl(
         weights: Sequence[Weight],
         V: Representation,
-        MW: NDArray[np.int8],
+        MW: NDArray[np.uint16],
         u: int, 
         exp_dim: int,
         MO: NDArray[np.int8],
@@ -319,7 +319,7 @@ def find_hyperplanes_reg_impl(
 def find_hyperplanes_reg_impl(
         weights: Sequence[Weight],
         V: Representation,
-        MW: NDArray[np.int8],
+        MW: NDArray[np.uint16],
         u: int, 
         exp_dim: int,
         MO: NDArray[np.int8],
@@ -334,7 +334,7 @@ def find_hyperplanes_reg_impl(
 def find_hyperplanes_reg_impl(
         weights: Sequence[Weight],
         V: Representation,
-        MW: NDArray[np.int8],
+        MW: NDArray[np.uint16],
         u: int, 
         exp_dim: int,
         MO: NDArray[np.int8],

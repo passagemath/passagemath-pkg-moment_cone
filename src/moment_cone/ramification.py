@@ -19,7 +19,6 @@ from .inequality import *
 from .permutation import *
 from .rings import QQ, I, matrix, vector, Matrix, Polynomial, PolynomialRing
 from .utils import prod,fl_dic,merge_factorizations
-from sage.interfaces.singular import singular # Used only if ram0_method=symbolic 
 
     
 from itertools import combinations
@@ -227,8 +226,8 @@ def Is_Ram_contracted(ineq : Inequality, V: Representation, method_S: Method, me
             B0z=matrix(ring_R0,B0zn)
 
         List_C_mult_dec=sorted(gr_inv.keys(),reverse=True)
+
         # Compute Jz and its factorizations
-        Factors_Jz=[]
         Blocks_Az=[]
         List_deltas=[]
         shift=0

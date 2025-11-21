@@ -706,11 +706,15 @@ def merge_factorizations(
 
 
     return result
+
+
 class PartialFunction:
     """ Function wrapper with partially defined arguments
     
     Like functools.partial except that the arguments at execution are passed
     at first positions.
+
+    TODO: typing
     """
     def __init__(self, func, *args, **kwargs):
         self.func = func

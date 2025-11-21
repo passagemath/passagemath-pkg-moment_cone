@@ -11,6 +11,10 @@ from .inequality import Inequality
 from .main_steps import Dataset, InequalityFilterStr, default_inequalities_filters
 from .main_steps import MomentConeStep
 
+if TYPE_CHECKING:
+    from tracemalloc import Snapshot as TraceMallocSnapshot
+
+
 @overload
 def moment_cone(V: Representation,
          filters: Sequence[InequalityFilterStr],
@@ -191,7 +195,7 @@ def moment_cone_from_cmd() -> None:
                 
 
 # From the official documentation: https://docs.python.org/3/library/tracemalloc.html#pretty-top
-def display_top(snapshot, key_type='lineno', limit=10):
+def display_top(snapshot: "TraceMallocSnapshot", key_type: str = 'lineno', limit: int = 10) -> None:
     import tracemalloc
     import linecache
 
